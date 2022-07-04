@@ -43,3 +43,5 @@ jobs:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
       mail_user: ${{ secrets.MAIL_USERNAME }}
       mail_pass: ${{ secrets.MAIL_PASSWORD }}
+
+# cmt
