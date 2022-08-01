@@ -7,8 +7,8 @@ on:
   pull_request:
     branches: [develop]
     types: [opened, synchronize, closed]
-  #schedule:
-  #  - cron: "0 5 * * 1-6"
+  schedule:
+    - cron: "0 6 * * 1-6"
 
   workflow_dispatch:
     inputs:
