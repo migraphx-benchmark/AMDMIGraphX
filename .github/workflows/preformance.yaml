@@ -7,8 +7,7 @@ on:
     branches: [develop]
     types: [opened, synchronize, closed]
   #schedule:
-  #  - cron: "0 5 * * 1-6"
-  
+  #  - cron: "0 5 * * 1-6" 
   workflow_dispatch:
     inputs:
       rocm_release:
