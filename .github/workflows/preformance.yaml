@@ -27,7 +27,7 @@ on:
         required: true
         default: '-s'
 
-concurrency: benchmark
+#concurrency: benchmark
 
 jobs:
   release:
