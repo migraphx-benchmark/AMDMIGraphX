@@ -28,7 +28,6 @@ on:
         default: '-s'
 
 #concurrency: benchmark
-
 jobs:
   release:
     uses: migraphx-benchmark/actions/.github/workflows/perf-test.yml@main
