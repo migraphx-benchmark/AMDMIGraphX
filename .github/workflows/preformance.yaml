@@ -1,6 +1,7 @@
 name: MIGraphX Performance Tests
 
 on:
+
   #push:
   #  branches: [develop]
   
