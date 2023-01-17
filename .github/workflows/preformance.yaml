@@ -35,7 +35,7 @@ concurrency: "perftest-${{ github.head_ref ||  github.base_ref || 'schedule' }}"
 
 jobs:
   release:
-    if: !contains(github.event.pull_request.labels.*.name,'skip bot checks')
+    if: github.event.label.name != 'skip bot checks'
     uses: migraphx-benchmark/actions/.github/workflows/perf-test.yml@main
     with:
       rocm_release: ${{ github.event.inputs.rocm_release || '5.3' }}
