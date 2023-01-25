@@ -9,8 +9,8 @@ on:
     branches: [develop]
     types: [opened, synchronize, closed]
   
-  #schedule:
-  #  - cron: "*/15 * * * 1-6"
+  schedule:
+    - cron: "*/15 * * * 1-6"
   
   workflow_dispatch:
     inputs:
