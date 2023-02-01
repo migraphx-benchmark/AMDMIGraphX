@@ -19,7 +19,7 @@ on:
 
 jobs:
   release:
-    uses: migraphx-benchmark/actions/.github/workflows/res_between_dates.yml@results_between_dates
+    uses: migraphx-benchmark/actions/.github/workflows/history.yml@main
     with:
       start_date: ${{ github.event.inputs.start_date || 'yyyy-mm-dd' }}
       end_date: ${{ github.event.inputs.end_date || 'yyyy-mm-dd' }}
