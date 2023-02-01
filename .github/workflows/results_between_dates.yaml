@@ -1,0 +1,30 @@
+name: MIGraphX results between dates
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: Start date for results analysis
+        required: true
+        default: 'yyyy-mm-dd'
+      end_date:
+        description: End date for results analysis
+        required: true
+        default: 'yyyy-mm-dd'
+      results_between_date_repo:
+        description: Result repository between target dates
+        required: true
+        default: 'migraphx-benchmark/migraphx-reports-between-dates'
+
+jobs:
+  release:
+    uses: migraphx-benchmark/actions/.github/workflows/res_between_dates.yml@results_between_dates
+    with:
+      start_date: ${{ github.event.inputs.start_date || 'yyyy-mm-dd' }}
+      end_date: ${{ github.event.inputs.end_date || 'yyyy-mm-dd' }}
+      results_between_date_repo: ${{ github.event.inputs.results_between_date_repo || 'migraphx-benchmark/migraphx-reports-between-dates' }}
+    secrets:
+      gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+      mail_user: ${{ secrets.MAIL_USERNAME }}
+      mail_pass: ${{ secrets.MAIL_PASSWORD }}
