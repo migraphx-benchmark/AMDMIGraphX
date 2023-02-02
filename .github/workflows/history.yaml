@@ -1,4 +1,4 @@
-name: Hisotry
+name: History
 
 on:
 
@@ -12,10 +12,10 @@ on:
         description: End date for results analysis
         required: true
         default: 'yyyy-mm-dd'
-      results_between_date_repo:
-        description: Result repository between target dates
+      history_repo:
+        description: Repository for history results between dates
         required: true
-        default: 'migraphx-benchmark/migraphx-reports-between-dates'
+        default: 'ROCmSoftwarePlatform/migraphx-reports'
 
 jobs:
   release:
@@ -23,7 +23,7 @@ jobs:
     with:
       start_date: ${{ github.event.inputs.start_date || 'yyyy-mm-dd' }}
       end_date: ${{ github.event.inputs.end_date || 'yyyy-mm-dd' }}
-      results_between_date_repo: ${{ github.event.inputs.results_between_date_repo || 'migraphx-benchmark/migraphx-reports-between-dates' }}
+      history_repo: ${{ github.event.inputs.history_repo || 'ROCmSoftwarePlatform/migraphx-reports' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
       mail_user: ${{ secrets.MAIL_USERNAME }}
