@@ -19,7 +19,7 @@ jobs:
        path: ${{ env.PERFORMANCE_DIR }}
        token: ${{ secrets.gh_token }}
     - name: Do something
-       run:|
+      run: |
         echo "CHECK PERFORMANCE_DIR"
         echo "----------------------------------"
         ls -la ${{ env.PERFORMANCE_DIR }}
