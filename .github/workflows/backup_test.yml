@@ -15,8 +15,7 @@ jobs:
     - name: Checkout performance
       uses: actions/checkout@v3
       with:
-       repository: migraphx-benchmark/performance-backup
-       branch: main
+       repository: migraphx-benchmark/performance-backup@main
        path: ${{ env.PERFORMANCE_DIR }}
        token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
     - name: Do something
