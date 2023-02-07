@@ -1,37 +1,39 @@
 name: Backup test
 
 on:
-	workflow_dispatch:
+  workflow_dispatch:
 
 env:
-	PERFORMANCE_PATH: "/home/htec/igor/git"
-	PERFORMANCE_DIR: performance-backup
+  PERFORMANCE_PATH: "/home/htec/igor/git"
+  PERFORMANCE_DIR: performance-backup
 
 jobs:
-	checkout:
-		name: Checkout repo
-		uses: actions/checkout@v3
-		with:
-			repository: "migraphx-benchmark/performance-backup"
-			path: ${{ env.PERFORMANCE_DIR }}
-			token: ${{ secrets.gh_token }}
-	
-	something:
-		name: Do something
-		run: |
-			echo "CHECK PERFORMANCE_DIR"
-			echo "----------------------------------"
-			ls -la ${{ env.PERFORMANCE_DIR }}
-			echo "CHECK PERFORMANCE_PATH"
-			echo "----------------------------------"
-			ls -la $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
-			echo "COPY TO REPO"
-			cp -r ${{ env.PERFORMANCE_PATH }}/test/perf-* $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
-			echo "CHECK COPY"
-			cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
-			ls -la
-			git add .
-			git config --local user.email github-actions
-			git config --local user.name github-actions@github.com
-			git commit -m "Test push" -a
-			git push
+  checkout:
+    name: Checkout repo
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v3
+      with:
+       repository: "migraphx-benchmark/performance-backup"
+       path: ${{ env.PERFORMANCE_DIR }}
+       token: ${{ secrets.gh_token }}
+  something:
+    name: Do something
+    runs-on: self-hosted
+     run:|
+      echo "CHECK PERFORMANCE_DIR"
+      echo "----------------------------------"
+      ls -la ${{ env.PERFORMANCE_DIR }}
+      echo "CHECK PERFORMANCE_PATH"
+      echo "----------------------------------"
+      ls -la $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+      echo "COPY TO REPO"
+      cp -r ${{ env.PERFORMANCE_PATH }}/test/perf-* $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+      echo "CHECK COPY"
+      cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+      ls -la
+      git add .
+      git config --local user.email github-actions
+      git config --local user.name github-actions@github.com
+      git commit -m "Test push" -a
+      git push
