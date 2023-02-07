@@ -17,7 +17,7 @@ jobs:
       with:
        repository: "migraphx-benchmark/performance-backup"
        path: ${{ env.PERFORMANCE_DIR }}
-       token: ${{ secrets.gh_token }}
+       token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
     - name: Do something
       run: |
         echo "CHECK PERFORMANCE_DIR"
