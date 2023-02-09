@@ -1,4 +1,4 @@
-name: ROCM Docker image build
+name: ROCM Docker image build HTEC
 
 on:
   workflow_dispatch:
