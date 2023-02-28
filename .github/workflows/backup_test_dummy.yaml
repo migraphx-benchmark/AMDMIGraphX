@@ -9,7 +9,7 @@ env :
 
 jobs:
   backup:
-    name: Backup test
+    name: Backup_test_MM
     runs-on: self-hosted
     steps:
     - name: Checkout performance
@@ -22,9 +22,17 @@ jobs:
       run: |
         echo "Check"
         cd ${{ env.PERFORMANCE_PATH }}
-        pwd && ls -la
         git init
         if ! git remote | grep -q '^origin$'; then
-          echo "Remote 'origin' not found "
+          git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
+          git branch -M main
+          git add $(find . -type d -name "*perf*" -exec echo {} \;)
+          git commit -m 'Added latest perf folders to backup'
+          git push -u origin main'
+        else
+          git branch -M main
+          git add $(find . -type d -name "*perf*" -exec echo {} \;)
+          git commit -m 'testing purposes
+          git push -u origin main'  
         fi  
 
