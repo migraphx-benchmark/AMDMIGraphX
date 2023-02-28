@@ -1,0 +1,30 @@
+name: Backup test
+
+on:
+  workflow_dispatch:
+env :
+  PERFORMANCE_PATH: "/usr/share/migraphx/test-results"
+  PERFORMANCE_DIR: performance-backup
+  
+
+jobs:
+  backup:
+    name: Backup test
+    runs-on: self-hosted
+    steps:
+    - name: Checkout performance
+      uses: actions/checkout@v3
+      with:
+       repository: migraphx-benchmark/performance-backup
+       path: ${{ env.PERFORMANCE_DIR }}
+       token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+    - name : run
+      run: |
+        echo "Check"
+        cd ${{ env.PERFORMANCE_PATH }}
+        pwd && ls -la
+        git init
+        if ! git remote | grep -q '^origin$'; then
+          echo "Remote 'origin' not found "
+        fi  
+
