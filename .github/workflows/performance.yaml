@@ -20,7 +20,7 @@ on:
       benchmark_utils_repo:
         description: Repository where benchmark utils are stored
         required: true
-        default: "ROCmSoftwarePlatform/benchmark-utils"
+        default: "ROCmSoftwarePlatform/migraphx-benchmark-utils"
       organization:
         description: Organization based on which location of files will be different
         required: true
@@ -45,7 +45,7 @@ jobs:
       result_number: ${{ github.event.inputs.result_number || '10' }}
       flags: ${{ github.event.inputs.flags || '-r' }}
       performance_reports_repo: ${{ github.event.inputs.performance_reports_repo || 'ROCmSoftwarePlatform/migraphx-reports' }}
-      benchmark_utils_repo: ${{ github.event.inputs.benchmark_utils_repo || 'ROCmSoftwarePlatform/benchmark-utils' }}
+      benchmark_utils_repo: ${{ github.event.inputs.benchmark_utils_repo || 'ROCmSoftwarePlatform/migraphx-benchmark-utils' }}
       organization: ${{ github.event.inputs.organization || 'AMD' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
