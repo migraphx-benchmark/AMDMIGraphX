@@ -31,7 +31,7 @@ jobs:
         git add $(find . -type d -name "*perf*" -exec echo {} \;)
         git commit -m 'Added latest perf folders to backup'
         git status
-        git push -u origin main'
+        git push -u origin main
         # else
         #   git branch -M main
         #   git add $(find . -type d -name "*perf*" -exec echo {} \;)
