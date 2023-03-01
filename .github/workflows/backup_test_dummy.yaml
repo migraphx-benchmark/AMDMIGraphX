@@ -17,10 +17,13 @@ jobs:
       with:
        repository: migraphx-benchmark/performance-backup
        path: ${{ env.PERFORMANCE_DIR }}
-       token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+       mail_user: ${{ secrets.MAIL_USERNAME }}
+       mail_pass: ${{ secrets.MAIL_PASSWORD }}
     - name : run
       run: |
-        echo "Check"
+        echo "Checking dir"
+        pwd && ls -la
         cd ${{ env.PERFORMANCE_PATH }}
         git config --local user.email github-actions
         git config --local user.name github-actions@github.com
