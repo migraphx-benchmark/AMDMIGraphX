@@ -25,9 +25,11 @@ jobs:
         pwd && ls -la
         cd ${{ env.PERFORMANCE_PATH }}
         git init
+        git branch -M main
         git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
-        git add $(find . -type d -name "*perf*" -exec echo {} \;)
+        # git add $(find . -type d -name "*perf*" -exec echo {} \;)
+        git add vgg16_1l
         git commit -m 'Added latest perf folders to backup'
         git status
-        git push 
+        git push -u origin main
    
