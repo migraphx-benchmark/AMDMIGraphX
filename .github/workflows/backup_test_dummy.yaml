@@ -17,18 +17,19 @@ jobs:
       with:
        repository: migraphx-benchmark/performance-backup
        path: ${{ env.PERFORMANCE_DIR }}
-       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
-       mail_user: ${{ secrets.MAIL_USERNAME }}
-       mail_pass: ${{ secrets.MAIL_PASSWORD }}
+       token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+
     - name : run
       run: |
         echo "Checking dir"
         pwd && ls -la
         cd ${{ env.PERFORMANCE_PATH }}
-        git config --local user.email github-actions
-        git config --local user.name github-actions@github.com
-        git add $(find . -type d -name "*perf*" -exec echo {} \;)
+        git init
+        git branch -M main
+        git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
+        # git add $(find . -type d -name "*perf*" -exec echo {} \;)
+        git add vgg16_1l
         git commit -m 'Added latest perf folders to backup'
         git status
-        git push 
+        git push -u origin main
    
