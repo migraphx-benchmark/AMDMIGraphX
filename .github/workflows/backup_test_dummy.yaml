@@ -1,15 +1,49 @@
+# name: Backup test
+
+# on:
+#   workflow_dispatch:
+# env :
+#   PERFORMANCE_PATH: "/usr/share/migraphx/test-results"
+#   PERFORMANCE_DIR: performance-backup
+  
+
+# jobs:
+#   backup:
+#     name: Backup_test_MM
+#     runs-on: self-hosted
+#     steps:
+#     - name: Checkout performance
+#       uses: actions/checkout@v3
+#       with:
+#        repository: migraphx-benchmark/performance-backup
+#        path: ${{ env.PERFORMANCE_DIR }}
+#        token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+
+#     - name : run
+#       run: |
+#         echo "Checking dir"
+#         pwd && ls -la
+#         cd ${{ env.PERFORMANCE_PATH }}
+#         git init
+#         git branch -M main
+#         git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
+#         # git add $(find . -type d -name "*perf*" -exec echo {} \;)
+#         git add vgg16_1l
+#         git commit -m 'Added latest perf folders to backup'
+#         git status
+#         git push -u origin main
 name: Backup test
 
 on:
   workflow_dispatch:
-env :
-  PERFORMANCE_PATH: "/usr/share/migraphx/test-results"
+
+env:
+  PERFORMANCE_PATH: "/home/htec/milos"
   PERFORMANCE_DIR: performance-backup
-  
 
 jobs:
-  backup:
-    name: Backup_test_MM
+  backup_test:
+    name: Backup test
     runs-on: self-hosted
     steps:
     - name: Checkout performance
@@ -18,18 +52,21 @@ jobs:
        repository: migraphx-benchmark/performance-backup
        path: ${{ env.PERFORMANCE_DIR }}
        token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
-
-    - name : run
+    - name: Do something
       run: |
-        echo "Checking dir"
-        pwd && ls -la
-        cd ${{ env.PERFORMANCE_PATH }}
-        git init
-        git branch -M main
-        git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
-        # git add $(find . -type d -name "*perf*" -exec echo {} \;)
-        git add vgg16_1l
-        git commit -m 'Added latest perf folders to backup'
-        git status
-        git push -u origin main
-   
+        echo "CHECK PERFORMANCE_DIR"
+        echo "----------------------------------"
+        ls -la ${{ env.PERFORMANCE_DIR }}
+        echo "CHECK PERFORMANCE_PATH"
+        echo "----------------------------------"
+        ls -la $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+        echo "COPY TO REPO"
+        cp -r ${{ env.PERFORMANCE_PATH }}/perf-* $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+        echo "CHECK COPY"
+        cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+        ls -la
+        git add .
+        git config --local user.email github-actions
+        git config --local user.name github-actions@github.com
+        git commit -m "Test push" -a
+        git push
