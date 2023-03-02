@@ -38,7 +38,7 @@ on:
   workflow_dispatch:
 
 env:
-  PERFORMANCE_PATH: "/home/htec/milos"
+  PERFORMANCE_PATH: "/usr/share/migraphx/test-results"
   PERFORMANCE_DIR: performance-backup
 
 jobs:
@@ -66,6 +66,7 @@ jobs:
         cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
         ls -la
         git add .
+        git status
         git config --local user.email github-actions
         git config --local user.name github-actions@github.com
         git commit -m "Test push" -a
