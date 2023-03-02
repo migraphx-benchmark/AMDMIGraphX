@@ -17,25 +17,18 @@ jobs:
       with:
        repository: migraphx-benchmark/performance-backup
        path: ${{ env.PERFORMANCE_DIR }}
-       token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+       mail_user: ${{ secrets.MAIL_USERNAME }}
+       mail_pass: ${{ secrets.MAIL_PASSWORD }}
     - name : run
       run: |
-        echo "Check"
+        echo "Checking dir"
+        pwd && ls -la
         cd ${{ env.PERFORMANCE_PATH }}
-        git init
-        # if ! git remote | grep -q '^origin$'; then
-        git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
-        git branch -M main
         git config --local user.email github-actions
         git config --local user.name github-actions@github.com
         git add $(find . -type d -name "*perf*" -exec echo {} \;)
         git commit -m 'Added latest perf folders to backup'
         git status
-        git push -u origin main
-        # else
-        #   git branch -M main
-        #   git add $(find . -type d -name "*perf*" -exec echo {} \;)
-        #   git commit -m 'testing purposes
-        #   git push -u origin main'  
-        # fi  
-
+        git push 
+   
