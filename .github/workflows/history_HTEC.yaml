@@ -20,6 +20,10 @@ on:
         description: Repository where benchmark utils are stored
         required: true
         default: "migraphx-benchmark/benchmark-utils"
+      organization:
+        description: Organization based on which location of files will be different
+        required: true
+        default: "HTEC"
 
 jobs:
   release:
@@ -29,6 +33,7 @@ jobs:
       end_date: ${{ github.event.inputs.end_date || 'yyyy-mm-dd' }}
       history_repo: ${{ github.event.inputs.history_repo || 'migraphx-benchmark/migraphx-reports' }}
       benchmark_utils_repo: ${{ github.event.inputs.benchmark_utils_repo || 'migraphx-benchmark/benchmark-utils' }}
+      organization: ${{ github.event.inputs.organization || 'HTEC' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
       mail_user: ${{ secrets.MAIL_USERNAME }}
