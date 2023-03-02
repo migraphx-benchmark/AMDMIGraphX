@@ -49,7 +49,7 @@ jobs:
     - name: Checkout performance
       uses: actions/checkout@v3
       with:
-       repository: migraphx-benchmark/Backup-test
+       repository: migraphx-benchmark/Backup-test@main
        path: ${{ env.PERFORMANCE_DIR }}
        token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
     - name: Do something
