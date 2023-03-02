@@ -32,7 +32,5 @@ jobs:
         cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
         ls -la
         git add .
-        git config --local user.email github-actions
-        git config --local user.name github-actions@github.com
         git commit -m "Test push" -a
         git push
