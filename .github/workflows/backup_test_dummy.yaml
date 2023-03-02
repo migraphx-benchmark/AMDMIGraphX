@@ -61,7 +61,7 @@ jobs:
         echo "----------------------------------"
         ls -la $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
         echo "COPY TO REPO"
-        cp -r ${{ env.PERFORMANCE_PATH }}/test/perf-* $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
+        cp -r ${{ env.PERFORMANCE_PATH }}/perf-* $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
         echo "CHECK COPY"
         cd $GITHUB_WORKSPACE/${{ env.PERFORMANCE_DIR }}
         ls -la
