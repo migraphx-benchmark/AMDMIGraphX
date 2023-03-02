@@ -39,7 +39,7 @@ on:
 
 env:
   PERFORMANCE_PATH: "/home/htec/milos"
-  PERFORMANCE_DIR: Backup-test
+  PERFORMANCE_DIR: performance-backup
 
 jobs:
   backup_test:
@@ -49,7 +49,7 @@ jobs:
     - name: Checkout performance
       uses: actions/checkout@v3
       with:
-       repository: migraphx-benchmark/Backup-test@main
+       repository: migraphx-benchmark/performance-backup
        path: ${{ env.PERFORMANCE_DIR }}
        token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
     - name: Do something
