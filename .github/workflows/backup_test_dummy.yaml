@@ -72,17 +72,30 @@ jobs:
     #     git config --local user.name github-actions@github.com
     #     git commit -m "Test push" -a
     #     git push
-    - name: Clean closed PR data
-      #if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == false}}
-      run: >
-          docker run alpine/git
-          -v ${{ env.PERFORMANCE_PATH }}:/migraphx
+    # - name: Clean closed PR data
+    #   #if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == false}}
+    #   run: >
+    #       docker run alpine/git
+    #       -v ${{ env.PERFORMANCE_PATH }}:/migraphx
+    #       --workdir /migraphx
+
+    # - name: Check out the repo
+    #   uses: actions/checkout@v2
+    - name: Run the build process with Docker
+      uses: addnab/docker-run-action@v3
+      with:
+        image: alpine/git
+        # options: 
+        run: |
           --workdir /migraphx
+          -v ${{ env.PERFORMANCE_PATH }}:/migraphx
           git init
           git branch -M main
           git remote add origin https://github.com/migraphx-benchmark/performance-backup.git
           git add $(find . -type d -name "*perf*" -exec echo {} \;)
-          git add vgg16_1l
+          git add .
           git commit -m 'Added latest perf folders to backup'
           git status
-          git push -u origin main
+          git push -u origin main          
+
+       
