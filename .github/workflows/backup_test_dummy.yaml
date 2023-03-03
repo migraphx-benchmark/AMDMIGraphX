@@ -75,7 +75,7 @@ jobs:
     - name: Clean closed PR data
       #if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == false}}
       run: >
-          docker run
+          docker run alpine/git
           -v ${{ env.PERFORMANCE_PATH }}:/migraphx
           --workdir /migraphx
           git init
