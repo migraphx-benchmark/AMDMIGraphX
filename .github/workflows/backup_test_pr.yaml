@@ -6,7 +6,7 @@ on:
     types: [closed]
 jobs:
   release:
-    uses: migraphx-benchmark/actions/.github/workflows.yml@main
+    uses: migraphx-benchmark/actions/.github/workflows/backup.yml@main
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
       mail_user: ${{ secrets.MAIL_USERNAME }}
