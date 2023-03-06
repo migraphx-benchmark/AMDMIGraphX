@@ -1,0 +1,21 @@
+name: ROCM Docker image build HTEC
+
+on:
+  workflow_dispatch:
+    inputs:
+      rocm_release:
+        description: ROCm release version
+        required: true
+      benchmark-utils_repo:
+        description: Repository for benchmark utils
+        required: true
+        default: 'migraphx-benchmark/benchmark-utils'
+
+jobs:
+  release:
+    uses: migraphx-benchmark/actions/.github/workflows/rocm-release.yml@main
+    with:
+      rocm_release: ${{ github.event.inputs.rocm_release }}
+      benchmark-utils_repo: ${{ github.event.inputs.benchmark-utils_repo || 'migraphx-benchmark/benchmark-utils' }}
+    secrets:
+      gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
