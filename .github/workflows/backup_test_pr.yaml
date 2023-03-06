@@ -1,0 +1,13 @@
+name: PR-Backup
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [closed]
+jobs:
+  release:
+    uses: migraphx-benchmark/actions/.github/workflows.yml@main
+    secrets:
+      gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+      mail_user: ${{ secrets.MAIL_USERNAME }}
+      mail_pass: ${{ secrets.MAIL_PASSWORD }}
