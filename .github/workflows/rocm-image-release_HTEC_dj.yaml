@@ -12,9 +12,9 @@ on:
         default: 'migraphx-benchmark/benchmark-utils'
       overwrite:
         type: string
-        description: Overwrite image if it already exists
-        required: false
-        default: no
+        description: Overwrite image if it already exists (yes/no)
+        required: true
+        default: 'yes'
 
 jobs:
   release:
