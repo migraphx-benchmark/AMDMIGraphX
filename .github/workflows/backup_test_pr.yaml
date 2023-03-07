@@ -2,7 +2,7 @@ name: PR-Backup
 
 on:
   pull_request:
-    branches: [dyn_batch_pass]
+    branches: [develop]
     types: [closed]
 jobs:
   release:
