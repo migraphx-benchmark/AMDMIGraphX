@@ -11,8 +11,8 @@ on:
         required: true
         default: 'migraphx-benchmark/benchmark-utils'
       overwrite:
-        type: string
-        description: Overwrite image if it already exists (yes/no)
+        type: boolean
+        description: Overwrite image if it already exists (true/false)
         required: true
 
 jobs:
@@ -21,6 +21,6 @@ jobs:
     with:
       rocm_release: ${{ github.event.inputs.rocm_release }}
       benchmark-utils_repo: ${{ github.event.inputs.benchmark-utils_repo || 'migraphx-benchmark/benchmark-utils' }}
-      overwrite: ${{ github.event.inputs.overwrite == 'yes' }}
+      overwrite: ${{ github.event.inputs.overwrite == 'true' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
