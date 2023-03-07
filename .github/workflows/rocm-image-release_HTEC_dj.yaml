@@ -10,10 +10,11 @@ on:
         description: Repository for benchmark utils
         required: true
         default: 'migraphx-benchmark/benchmark-utils'
-      overwrite_image:
-        description: 'Do you want to overwrite Docker image? Enter "yes" or "no".'
-        required: true
-        default: 'yes'
+      overwrite:
+        type: string
+        description: Overwrite image if it already exists
+        required: false
+        default: no
 
 jobs:
   release:
