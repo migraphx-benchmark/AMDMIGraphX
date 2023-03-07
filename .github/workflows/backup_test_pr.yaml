@@ -7,3 +7,5 @@ on:
 jobs:
   release:
     uses: migraphx-benchmark/actions/.github/workflows/backup.yml@main
+    secrets:
+      gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
