@@ -6,13 +6,14 @@ on:
       rocm_release:
         description: ROCm release version
         required: true
+        default: "5.1.3"
       benchmark-utils_repo:
         description: Repository for benchmark utils
         required: true
         default: 'migraphx-benchmark/benchmark-utils'
       overwrite:
         type: boolean
-        description: Overwrite image if it already exists (true/false)
+        description: Overwrite image if it already exists
         required: true
 
 jobs:
@@ -20,7 +21,7 @@ jobs:
     uses: migraphx-benchmark/actions/.github/workflows/rocm-release-htec-dj.yml@main
     with:
       rocm_release: ${{ github.event.inputs.rocm_release }}
-      benchmark-utils_repo: ${{ github.event.inputs.benchmark-utils_repo || 'migraphx-benchmark/benchmark-utils' }}
+      benchmark-utils_repo: ${{ github.event.inputs.benchmark-utils_repo }}
       overwrite: ${{ github.event.inputs.overwrite == 'true' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
