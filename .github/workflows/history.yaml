@@ -24,7 +24,6 @@ on:
         description: Organization based on which location of files will be different
         required: true
         default: "AMD"
-
 jobs:
   release:
     uses: ROCmSoftwarePlatform/migraphx-benchmark/.github/workflows/history.yml@main
