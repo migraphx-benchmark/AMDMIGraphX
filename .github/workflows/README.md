@@ -1,18 +1,15 @@
 # AMD MIGraphX
 
-```
-AMD MIGraphX is AMD's graph inference engine that accelerates machine learning model inference. AMD MIGraphX can be used by installing binaries directly or building from source code.
-```
-
----
+<p> AMD MIGraphX is AMD's graph inference engine that accelerates machine learning model inference. <br> AMD MIGraphX can be used by installing binaries directly or building from source code.
+</p>
 
 # Workflows
 
 ## `backup_test.yml`
 
-```
-This workflow backs up the performance benchmarks of the `migraphx-benchmark/performance-backup` repository to a local directory, and pushes the changes to the repository.
-```
+<p>
+This workflow backs up the performance benchmarks of the `migraphx-benchmark/performance-backup` repository <br> to a local directory, and pushes the changes to the repository.
+</p>
 
 - ### Trigger
 
@@ -45,9 +42,9 @@ For more details, please refer to the [backup_test.yml](https://github.com/migra
 
 ## `backup_test_pr.yaml`
 
-```
-This workflow triggers the `backup.yml` workflow in the `migraphx-benchmark/actions` repository whenever a pull request is closed on the `develop` branch.
-```
+<p>
+This workflow triggers the `backup.yml` workflow in the `migraphx-benchmark/actions` repository <br> whenever a pull request is closed on the `develop` branch.
+</p>
 
 - ### Trigger
 
@@ -78,9 +75,9 @@ For more details, please refer to the [backup_test_pr.yaml](https://github.com/m
 
 ## `benchmark.yaml`
 
-```
-This workflow runs the MiGraphX performance benchmarks and generates comparison reports by comparing the results with the reference data.
-```
+<p>
+This workflow runs the MiGraphX performance benchmarks and generates comparison reports by comparing the results <br> with the reference data.
+</p>
 
 - ### Trigger
 
@@ -104,9 +101,9 @@ For more details, please refer to the [benchmark.yaml](https://github.com/migrap
 ---
 ## `history.yml`
 
-```
-This workflow generates a report of the MiGraphX benchmark results between two dates and sends it to a specified email address. The report is also uploaded to a specified repository.
-```
+<p>
+This workflow generates a report of the MiGraphX benchmark results between two dates and sends it to <br> a specified email address. The report is also uploaded to a specified repository.
+</p>
 
 - ### Trigger
 
@@ -152,9 +149,9 @@ For more details, please refer to the [history.yaml](https://github.com/migraphx
 ---
 ## `history_HTEC.yaml`
 
-```
-This workflow analyzes the benchmark results between two dates and generates a report of the performance comparison. It uses the `migraphx-benchmark/actions/.github/workflows/history.yml` workflow.
-```
+<p>
+This workflow analyzes the benchmark results between two dates and generates a report of the performance comparison. <br> It uses the `migraphx-benchmark/actions/.github/workflows/history.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -202,9 +199,9 @@ For more details, please refer to the [history.yaml](https://github.com/migraphx
 ---
 ## `miopen_database.yaml`
 
-```
-This workflow generates a MIOpen database and pushes it to a specified repository. It uses the `migraphx-benchmark/actions/.github/workflows/miopen-db.yml` workflow.
-```
+<p>
+This workflow generates a MIOpen database and pushes it to a specified repository. It uses the <br> `migraphx-benchmark/actions/.github/workflows/miopen-db.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -252,9 +249,9 @@ For more details, please refer to the [miopen_database.yaml](https://github.com/
 ---
 ## `performance.yaml`
 
-```
-This workflow runs performance tests on the MIGraphX repository and generates a report of the results. It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
-```
+<p>
+This workflow runs performance tests on the MIGraphX repository and generates a report of the results. <br> It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -309,9 +306,9 @@ For more details, please refer to the [performance.yaml](https://github.com/migr
 ---
 ## `performance_HTEC.yaml`
 
-```
-This workflow runs performance tests for the MIGraphX library and generates a report of the results. It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
-```
+<p>
+This workflow runs performance tests for the MIGraphX library and generates a report of the results. <br> It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -366,9 +363,9 @@ For more details, please refer to the [performance_HTEC.yaml](https://github.com
 ---
 ## `rocm-image-release.yaml`
 
-```
-This workflow builds a Docker image for the specified ROCm release version using the `migraphx-benchmark/.github/workflows/rocm-release.yml` workflow.
-```
+<p>
+This workflow builds a Docker image for the specified ROCm release version using the <br> `migraphx-benchmark/.github/workflows/rocm-release.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -410,9 +407,9 @@ For more details, please refer to the [rocm-image-release.yaml](https://github.c
 ---
 ## `rocm-image-release_HTEC.yaml`
 
-```
-This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository. It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release.yml` workflow.
-```
+<p>
+This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository.<br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -455,9 +452,9 @@ For more details, please refer to the [rocm-image-release_HTEC.yaml](https://git
 
 ## `rocm-image-release_HTEC_dj.yaml`
 
-```
-This workflow builds a Docker image for the ROCm release and pushes it to a container registry. It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release-htec-dj.yml` workflow.
-```
+<p>
+This workflow builds a Docker image for the ROCm release and pushes it to a container registry. <br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release-htec-dj.yml` workflow.
+</p>
 
 - ### Trigger
 
@@ -506,10 +503,10 @@ For more details, please refer to the [rocm-image-release_HTEC_dj.yaml](https://
 ---
 
 ## Using the Workflows 
-```
-To use these workflows, simply push changes to the repository and the appropriate workflow will be triggered automatically. You can also trigger the workflows manually by clicking the "Run workflow" button in the Actions tab.
+<p>
+To use these workflows, simply push changes to the repository and the appropriate workflow will be triggered automatically.<br> You can also trigger the workflows manually by clicking the "Run workflow" button in the Actions tab.
 
-If you need to modify the workflows, you can do so by editing the `.github/workflows/*.yml` files in the repository. Be sure to test your changes before committing them.
+If you need to modify the workflows, you can do so by editing the `.github/workflows/*.yml` files in the repository. <br> Be sure to test your changes before committing them.
 
-Some of the workflows require environment variables or secrets to be set in order to function correctly. You can set these values in the repository or organization settings under "Secrets".
-```
+Some of the workflows require environment variables or secrets to be set in order to function correctly. <br> You can set these values in the repository or organization settings under "Secrets".
+</p>
