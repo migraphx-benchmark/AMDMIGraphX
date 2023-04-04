@@ -5,74 +5,6 @@
 
 # Workflows
 
-## `backup_test.yml`
-
-<p>
-This workflow backs up the performance benchmarks of the `migraphx-benchmark/performance-backup` repository <br> to a local directory, and pushes the changes to the repository.
-</p>
-
-- ### Trigger
-
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Environment Variables
-
-
-The workflow uses the following environment variables:
-
-```
-- `PERFORMANCE_PATH`: the path to the root directory.
-- `PERFORMANCE_DIR`: the name of the directory where the benchmarks will be backed up.
-```
-
-- ### Steps
-
-The following steps are executed in the workflow:
-```
-1. Checkout the `migraphx-benchmark/performance-backup` repository to the local `PERFORMANCE_DIR` directory.
-2. Copy the performance benchmarks to the local directory.
-3. Push the changes to the `migraphx-benchmark/performance-backup` repository.
-```
-
-For more details, please refer to the [backup_test.yml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/backup_test.yml) file in the repository.
-
----
-
-## `backup_test_pr.yaml`
-
-<p>
-This workflow triggers the `backup.yml` workflow in the `migraphx-benchmark/actions` repository <br> whenever a pull request is closed on the `develop` branch.
-</p>
-
-- ### Trigger
-
-```
-The workflow is triggered when a pull request is closed on the `develop` branch.
-```
-
-- ### Secrets
-
-
-The workflow uses the following secrets:
-
-```
-- `gh_token`: the GitHub token used to authenticate and authorize access to the repository.
-```
-
-- ### Jobs
-
-The following job is executed in the workflow:
-```
-1. Uses the `backup.yml` workflow from the `migraphx-benchmark/actions` repository.
-2. Authenticates using the `gh_token` secret.
-```
-
-For more details, please refer to the [backup_test_pr.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/backup_test_pr.yaml) file in the repository.
-
----
-
 ## `benchmark.yaml`
 
 <p>
@@ -408,7 +340,7 @@ For more details, please refer to the [rocm-image-release.yaml](https://github.c
 ## `rocm-image-release_HTEC.yaml`
 
 <p>
-This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository.<br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release.yml` workflow.
+This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository.<br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release.yml` workflow. <br> If image already exists nothing will happen, and there is also option to overwrite existing image.
 </p>
 
 - ### Trigger
@@ -447,58 +379,6 @@ The following steps are executed in the workflow:
 ```
 
 For more details, please refer to the [rocm-image-release_HTEC.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/rocm-image-release_HTEC.yaml) file in the repository.
-
----
-
-## `rocm-image-release_HTEC_dj.yaml`
-
-<p>
-This workflow builds a Docker image for the ROCm release and pushes it to a container registry. <br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release-htec-dj.yml` workflow.
-</p>
-
-- ### Trigger
-
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
-The workflow requires the following inputs:
-
-```
-- `rocm_release`: The version of the ROCm release.
-- `benchmark_utils_repo`: The repository where benchmark utils are stored.
-- `base_image`: The base image for the ROCm Docker build.
-- `docker_image`: The name of the Docker image for the ROCm Docker build.
-- `build_navi`: The build number for the Docker image.
-- `organization`: The organization based on which the location of files will be different.
-- `overwrite`: A boolean value that specifies whether to overwrite the Docker image if it already exists.
-```
-
-- ### Environment Variables
-
-
-The workflow uses the following environment variables:
-
-```
-- `gh_token`: The personal access token used to push the Docker image to the container registry.
-```
-
-- ### Steps
-
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Build the Docker image using the specified ROCm release version and base image.
-4. Tag the Docker image with the specified build number and organization.
-5. Push the Docker image to the container registry.
-6. (Optional) Remove the Docker image from the local machine.
-```
-
-For more details, please refer to the [rocm-image-release_HTEC_dj.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/rocm-image-release_HTEC_dj.yaml) file in the repository.
 
 ---
 
