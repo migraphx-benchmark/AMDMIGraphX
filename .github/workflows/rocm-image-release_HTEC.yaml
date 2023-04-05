@@ -25,7 +25,7 @@ on:
       organization:
         type: string
         description: Organization based on which location of files will be different
-        required: true
+        required: false
         default: "HTEC"
       overwrite:
         type: boolean
