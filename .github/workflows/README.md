@@ -1,80 +1,49 @@
-# AMD MIGraphX
-
-<p> AMD MIGraphX is AMD's graph inference engine that accelerates machine learning model inference. <br> AMD MIGraphX can be used by installing binaries directly or building from source code.
-</p>
-
 # Workflows
 
 ## `benchmark.yaml`
 
 <p>
-This workflow runs the MiGraphX performance benchmarks and generates comparison reports by comparing the results <br> with the reference data.
+This workflow runs the MiGraphX performance benchmarks and generates comparison reports by comparing the results with the reference data.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [benchmarks.yml](https://github.com/migraphx-benchmark/actions/blob/main/.github/workflows/benchmarks.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow uses the following input parameters:
 
-```
-- `rocm_version`: the version of ROCm to use for running the benchmarks.
-- `script_repo`: the repository containing the benchmark scripts.
-- `result_path`: the path where the benchmark results will be stored.
-- `result_repo`: the repository where the benchmark results will be pushed for comparison.
-```
+> - `rocm_version`: the version of ROCm to use for running the benchmarks.
+
+> - `script_repo`: the repository containing the benchmark scripts.
+
+> - `result_path`: the path where the benchmark results will be stored.
+
+> - `result_repo`: the repository where the benchmark results will be pushed for comparison.
+
 For more details, please refer to the [benchmark.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/benchmark.yaml) file in the repository.
 
 ---
-## `history.yml`
+## `history.yaml`
 
 <p>
-This workflow generates a report of the MiGraphX benchmark results between two dates and sends it to <br> a specified email address. The report is also uploaded to a specified repository.
+This workflow generates a report of the MiGraphX benchmark results between two dates and sends it to a specified email address. The report is also uploaded to a specified repository.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [history.yml](https://github.com/ROCmSoftwarePlatform/migraphx-benchmark/blob/main/.github/workflows/history.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository. 
-```
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
-```
-- `start_date`: Start date for results analysis.
-- `end_date`: End date for results analysis.
-- `history_repo`: Repository for history results between dates.
-- `benchmark_utils_repo`: Repository where benchmark utils are stored.
-- `organization`: Organization based on which location of files will be different.
-```
 
-- ### Environment Variables
+> - `start_date`: Start date for results analysis.
 
+> - `end_date`: End date for results analysis.
 
-The workflow uses the following environment variables:
+> - `history_repo`: Repository for history results between dates.
 
-```
-- `MAIL_USERNAME`: the username for the email account used to send the report.
-- `MAIL_PASSWORD`: the password for the email account used to send the report.
-```
+> - `benchmark_utils_repo`: Repository where benchmark utils are stored.
 
-- ### Steps
-
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Clone the `migraphx-reports` repository.
-4. Generate the report.
-5. Send the report to the specified email address.
-6. Push the report to the specified repository.
-```
+> - `organization`: Organization based on which location of files will be different.
 
 For more details, please refer to the [history.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/history.yaml) file in the repository.
 
@@ -82,99 +51,58 @@ For more details, please refer to the [history.yaml](https://github.com/migraphx
 ## `history_HTEC.yaml`
 
 <p>
-This workflow analyzes the benchmark results between two dates and generates a report of the performance comparison. <br> It uses the `migraphx-benchmark/actions/.github/workflows/history.yml` workflow.
+This workflow analyzes the benchmark results between two dates and generates a report of the performance comparison.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [history.yml](https://github.com/migraphx-benchmark/actions/blob/main/.github/workflows/history.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `start_date`: Start date for analysis.
-- `end_date`: End date for analysis.
-- `history_repo`: Repository for history results between dates.
-- `benchmark_utils_repo`: Repository where benchmark utils are stored.
-- `organization`: Organization based on which location of files will be different.
-```
+> - `start_date`: Start date for analysis.
 
-- ### Environment Variables
+> - `end_date`: End date for analysis.
 
+> - `history_repo`: Repository for history results between dates.
 
-The workflow uses the following environment variables:
+> - `benchmark_utils_repo`: Repository where benchmark utils are stored.
 
-```
-- `MAIL_USERNAME`: the username for the email account used to send the report.
-- `MAIL_PASSWORD`: the password for the email account used to send the report.
-```
+> - `organization`: Organization based on which location of files will be different.
 
-- ### Steps
-
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Clone the `migraphx-reports` repository.
-4. Generate the report.
-5. Send the report to the specified email address.
-6. Push the report to the specified repository.
-```
-
-For more details, please refer to the [history.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/history.yaml) file in the repository.
+For more details, please refer to the [history_HTEC.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/history_HTEC.yaml) file in the repository.
 
 ---
 ## `miopen_database.yaml`
 
 <p>
-This workflow generates a MIOpen database and pushes it to a specified repository. It uses the <br> `migraphx-benchmark/actions/.github/workflows/miopen-db.yml` workflow.
+This workflow generates a MIOpen database and pushes it to a specified repository.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [miopen-db.yml](https://github.com/migraphx-benchmark/actions/blob/main/.github/workflows/miopen-db.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `rocm_release`: ROCm release version.
-- `miopen_db_repo`: Repository for MIOpen database.
-- `script_repo`: Repository where script files are stored.
-- `saved_models_path`: Path to the saved models.
-- `test_results_dir`: Path to the test results.
-```
+> - `rocm_release`: ROCm release version.
 
-- ### Environment Variables
+> - `miopen_db_repo`: Repository for MIOpen database.
 
+> - `script_repo`: Repository where script files are stored.
 
+> - `saved_models_path`: Path to the saved models.
+
+> - `test_results_dir`: Path to the test results.
+
+- ## Environment Variables
 The workflow uses the following environment variables:
 
-```
-- `ROCM_VERSION`: ROCm version based on the release input.
-- `MIOPEN_PATH`: Path to the MIOpen databases.
-- `SCRIPT_PATH`: Path to the script files.
-```
+> - `ROCM_VERSION`: ROCm version based on the release input.
 
-- ### Steps
+> - `MIOPEN_PATH`: Path to the MIOpen databases.
 
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `rocm-migraphx` repository.
-3. Clone the `miopen-databases` repository.
-4. Generate the MIOpen database.
-5. Push the MIOpen database to the specified repository.
-```
+> - `SCRIPT_PATH`: Path to the script files.
 
 For more details, please refer to the [miopen_database.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/miopen_database.yaml) file in the repository.
 
@@ -182,56 +110,34 @@ For more details, please refer to the [miopen_database.yaml](https://github.com/
 ## `performance.yaml`
 
 <p>
-This workflow runs performance tests on the MIGraphX repository and generates a report of the results. <br> It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
+This workflow runs performance tests on the MIGraphX repository and generates a report of the results.
 </p>
 
-- ### Trigger
+- ## Trigger
+The workflow will run reusable workflow [perf-test.yml](https://github.com/ROCmSoftwarePlatform/migraphx-benchmark/blob/main/.github/workflows/perf-test.yml) by the following events:
 
-```
-The workflow is triggered by the following events:
-- Pull requests opened, synchronized or closed on the `develop` branch.
-- Schedule: Runs every day of the week from Monday to Saturday at 6:00 AM.
-- Manual trigger through the "Run workflow" button in the Actions tab of the repository.
-```
+> - Pull requests opened, synchronized or closed on the `develop` branch.
 
-- ### Input Parameters
+> - Schedule: Runs every day of the week from Monday to Saturday at 6:00 AM.
 
+> - Manual trigger through the "Run workflow" button in the Actions tab of the repository.
 
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `rocm_release`: ROCm version to use for the performance tests.
-- `performance_reports_repo`: Repository where the performance reports are stored.
-- `benchmark_utils_repo`: Repository where the benchmark utilities are stored.
-- `organization`: Organization based on which location of files will be different.
-- `result_number`: Last N results.
-- `model_timeout`: If a model in the performance test script passes this threshold, it will be skipped.
-- `flags`: Command line arguments to be passed to the performance test script. Default is `-r`.
-```
+> - `rocm_release`: ROCm version to use for the performance tests.
 
-- ### Environment Variables
+> - `performance_reports_repo`: Repository where the performance reports are stored.
 
+> - `benchmark_utils_repo`: Repository where the benchmark utilities are stored.
 
-The workflow uses the following environment variables:
+> - `organization`: Organization based on which location of files will be different.
 
-```
-- `gh_token`: Personal access token used for authentication with GitHub.
-- `mail_user`: The username for the email account used to send the report.
-- `mail_pass`: The password for the email account used to send the report.
-```
+> - `result_number`: Last N results.
 
-- ### Steps
+> - `model_timeout`: If a model in the performance test script passes this threshold, it will be skipped.
 
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Clone the `migraphx-reports` repository.
-4. Run the performance tests.
-5. Generate the report.
-6. Send the report to the specified email address.
-7. Push the report to the specified repository.
-```
+> - `flags`: Command line arguments to be passed to the performance test script. Default is `-r`.
 
 For more details, please refer to the [performance.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/performance.yaml) file in the repository.
 
@@ -239,56 +145,32 @@ For more details, please refer to the [performance.yaml](https://github.com/migr
 ## `performance_HTEC.yaml`
 
 <p>
-This workflow runs performance tests for the MIGraphX library and generates a report of the results. <br> It uses the `migraphx-benchmark/actions/.github/workflows/perf-test.yml` workflow.
+This workflow runs performance tests for the MIGraphX library and generates a report of the results.
 </p>
 
-- ### Trigger
+- ## Trigger
+The workflow will run reusable workflow [perf-test.yml](https://github.com/migraphx-benchmark/actions/blob/main/.github/workflows/perf-test.yml) by the following events:
 
-```
-The workflow is triggered by the following events:
+> - A pull request being opened, synchronized or closed on the `develop` branch.
 
-- A pull request being opened, synchronized or closed on the `develop` branch.
-- A manual trigger using the "Run workflow" button in the Actions tab of the repository.
-```
+> - A manual trigger using the "Run workflow" button in the Actions tab of the repository.
 
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `rocm_release`: ROCm version to use for the performance tests.
-- `performance_reports_repo`: Repository where the performance reports will be stored.
-- `benchmark_utils_repo`: Repository where benchmark utils are stored.
-- `organization`: Organization based on which location of files will be different.
-- `result_number`: The number of most recent results to use for comparison.
-- `model_timeout`: The maximum time in minutes to wait for each model before skipping it.
-- `flags`: Flags to use for the performance test script. Use -m for Max value, -s for Std dev, and -r for Threshold file.
-```
+> - `rocm_release`: ROCm version to use for the performance tests.
 
-- ### Environment Variables
+> - `performance_reports_repo`: Repository where the performance reports will be stored.
 
+> - `benchmark_utils_repo`: Repository where benchmark utils are stored.
 
-The workflow uses the following environment variables:
+> - `organization`: Organization based on which location of files will be different.
 
-```
-- `gh_token`: GitHub token used to push the report to the specified repository.
-- `mail_user`: The username for the email account used to send the report.
-- `mail_pass`: The password for the email account used to send the report.
-```
+> - `result_number`: The number of most recent results to use for comparison.
 
-- ### Steps
+> - `model_timeout`: The maximum time in minutes to wait for each model before skipping it.
 
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Clone the `migraphx-reports` repository.
-4. Run the performance tests.
-5. Generate the report.
-6. Send the report to the specified email address.
-7. Push the report to the specified repository.
-```
+> - `flags`: Flags to use for the performance test script. Use -m for Max value, -s for Std dev, and -r for Threshold file.
 
 For more details, please refer to the [performance_HTEC.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/performance_HTEC.yaml) file in the repository.
 
@@ -296,43 +178,18 @@ For more details, please refer to the [performance_HTEC.yaml](https://github.com
 ## `rocm-image-release.yaml`
 
 <p>
-This workflow builds a Docker image for the specified ROCm release version using the <br> `migraphx-benchmark/.github/workflows/rocm-release.yml` workflow.
+This workflow builds a Docker image for the specified ROCm release version.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [rocm-release.yml](https://github.com/ROCmSoftwarePlatform/migraphx-benchmark/blob/main/.github/workflows/rocm-release.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `rocm_release`: ROCm release version for building the Docker image.
-- `benchmark-utils_repo`: Repository for benchmark utils.
-```
+> - `rocm_release`: ROCm release version for building the Docker image.
 
-- ### Environment Variables
-
-
-The workflow uses the following environment variables:
-
-```
-- `gh_token`: the access token for the GitHub bot account used to run the workflow.
-```
-
-- ### Steps
-
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Build the Docker image for the specified ROCm release version.
-4. Push the Docker image to Docker Hub.
-```
+> - `benchmark-utils_repo`: Repository for benchmark utils.
 
 For more details, please refer to the [rocm-image-release.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/rocm-image-release.yaml) file in the repository.
 
@@ -340,53 +197,29 @@ For more details, please refer to the [rocm-image-release.yaml](https://github.c
 ## `rocm-image-release_HTEC.yaml`
 
 <p>
-This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository.<br> It uses the `migraphx-benchmark/actions/.github/workflows/rocm-release.yml` workflow. <br> If image already exists nothing will happen, and there is also option to overwrite existing image.
+This workflow builds a Docker image for a specified ROCm release version and pushes it to the specified repository. If image already exists nothing will happen, and there is also option to overwrite existing image.
 </p>
 
-- ### Trigger
+- ## Trigger
+> The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository and it will run reusable workflow [rocm-release.yml](https://github.com/migraphx-benchmark/actions/blob/main/.github/workflows/rocm-release.yml)
 
-```
-The workflow is triggered manually through the "Run workflow" button in the Actions tab of the repository.
-```
-
-- ### Input Parameters
-
-
+- ## Input Parameters
 The workflow requires the following inputs:
 
-```
-- `rocm_release`: ROCm release version to build Docker image for.
-- `benchmark_utils_repo`: Repository where benchmark utils are stored.
-```
+> - `rocm_release`: ROCm release version to build Docker image for.
 
-- ### Environment Variables
+> - `benchmark_utils_repo`: Repository where benchmark utils are stored.
 
+> - `base_image`: Base image for ROCm Docker build.
 
-The workflow uses the following environment variables:
+> - `docker_image`: Docker image name for ROCm Docker build.
 
-```
-- `gh_token`: GitHub token used to push the Docker image to the repository.
-```
+> - `build_navi`: Build number for the Navi architecture.
 
-- ### Steps
+> - `organization`: The organization name used to determine the location of files.
 
-The following steps are executed in the workflow:
-```
-1. Set up the environment.
-2. Clone the `migraphx-benchmark-utils` repository.
-3. Build the Docker image for the specified ROCm release version.
-4. Push the Docker image to the specified repository.
-```
+> - `overwrite`: Specify whether to overwrite the Docker image if it already exists.
 
 For more details, please refer to the [rocm-image-release_HTEC.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/rocm-image-release_HTEC.yaml) file in the repository.
 
 ---
-
-## Using the Workflows 
-<p>
-To use these workflows, simply push changes to the repository and the appropriate workflow will be triggered automatically.<br> You can also trigger the workflows manually by clicking the "Run workflow" button in the Actions tab.
-
-If you need to modify the workflows, you can do so by editing the `.github/workflows/*.yml` files in the repository. <br> Be sure to test your changes before committing them.
-
-Some of the workflows require environment variables or secrets to be set in order to function correctly. <br> You can set these values in the repository or organization settings under "Secrets".
-</p>
