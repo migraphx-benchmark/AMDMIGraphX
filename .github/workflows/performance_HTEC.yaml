@@ -34,6 +34,10 @@ on:
         description: Last N results
         required: true
         default: '10'
+      performance_backup_repo:
+        description: Repository for backup
+        required: true  
+        default: migraphx-benchmark/performance-backup
       model_timeout:
         description: If model in performance test script passes this threshold, it will be skipped
         required: true
