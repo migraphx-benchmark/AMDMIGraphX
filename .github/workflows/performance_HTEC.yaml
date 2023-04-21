@@ -9,7 +9,7 @@ on:
     branches: [develop]
     types: [opened, synchronize, closed]
 
- schedule:
+  schedule:
    - cron: "*/5 * * * *"
 
   workflow_dispatch:
