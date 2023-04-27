@@ -139,6 +139,8 @@ The workflow requires the following inputs:
 
 > - `flags`: Command line arguments to be passed to the performance test script. Default is `-r`.
 
+> - `performance_backup_repo`: The repository where the performance backups are stored, which is a required parameter.
+
 For more details, please refer to the [performance.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/performance.yaml) file in the repository.
 
 ---
@@ -171,6 +173,8 @@ The workflow requires the following inputs:
 > - `model_timeout`: The maximum time in minutes to wait for each model before skipping it.
 
 > - `flags`: Flags to use for the performance test script. Use -m for Max value, -s for Std dev, and -r for Threshold file.
+
+> - `performance_backup_repo`: The repository where the performance backups are stored, which is a required parameter.
 
 For more details, please refer to the [performance_HTEC.yaml](https://github.com/migraphx-benchmark/AMDMIGraphX/blob/develop/.github/workflows/performance_HTEC.yaml) file in the repository.
 
