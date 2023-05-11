@@ -4,10 +4,6 @@ on:
 
   workflow_dispatch:
     inputs:
-      benchmark_utils_repo:
-        description: Repository where benchmark utils are stored
-        required: true
-        default: 'migraphx-benchmark/benchmark-utils'
       htec_repo:
         description: HTEC repository for comparison
         required: true
@@ -32,6 +28,7 @@ jobs:
       htec_branch: ${{ github.event.inputs.htec_branch }}
       amd_repo: ${{ github.event.inputs.amd_repo }}
       amd_branch: ${{ github.event.inputs.amd_branch }}
+      benchmark_utils_repo: ${{ github.event.inputs.benchmark_utils_repo || 'migraphx-benchmark/benchmark-utils' }}
     secrets:
       gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
       mail_user: ${{ secrets.MAIL_USERNAME }}
