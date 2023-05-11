@@ -1,0 +1,38 @@
+name: Comparer
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      benchmark_utils_repo:
+        description: Repository where benchmark utils are stored
+        required: true
+        default: 'migraphx-benchmark/benchmark-utils'
+      htec_repo:
+        description: HTEC repository for comparison
+        required: true
+        default: 'migraphx-benchmark/benchmark-utils'
+      htec_branch:
+        description: HTEC branch for comparison
+        required: true
+        default: 'main'
+      amd_repo:
+        description: AMD repository for comparison
+        required: true
+        default: 'ROCmSoftwarePlatform/migraphx-benchmark-utils'
+      amd_branch:
+        description: AMD branch for comparison
+        required: true
+        default: "main"
+jobs:
+  release:
+    uses: ROCmSoftwarePlatform/migraphx-benchmark/.github/workflows/history.yml@main
+    with:
+      htec_repo: ${{ github.event.inputs.htec_repo }}
+      htec_branch: ${{ github.event.inputs.htec_branch }}
+      amd_repo: ${{ github.event.inputs.amd_repo }}
+      amd_branch: ${{ github.event.inputs.amd_branch }}
+    secrets:
+      gh_token: ${{ secrets.MIGRAPHX_BOT_TOKEN }}
+      mail_user: ${{ secrets.MAIL_USERNAME }}
+      mail_pass: ${{ secrets.MAIL_PASSWORD }}
