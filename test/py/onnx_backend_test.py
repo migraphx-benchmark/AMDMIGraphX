@@ -107,6 +107,55 @@ def disabled_tests_onnx_1_10_0(backend_test):
 def disabled_tests_onnx_1_12_0(backend_test):
     backend_test.exclude(r'test_scatter_elements_with_duplicate_indices_cpu')
 
+def disabled_tests_onnx_1_14_0(backend_test):
+    backend_test.exclude(r'test_averagepool_2d_dilations_cpu')
+    backend_test.exclude(r'test_constant_pad_axes_cpu')
+    backend_test.exclude(r'test_constant_pad_negative_axes_cpu')
+    backend_test.exclude(r'test_dequantizelinear_e4m3fn_cpu')
+    backend_test.exclude(r'test_dequantizelinear_e5m2_cpu')
+    backend_test.exclude(r'test_elu_default_expanded_ver18_cpu')
+    backend_test.exclude(r'test_elu_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_elu_expanded_ver18_cpu')
+    backend_test.exclude(r'test_equal_string_broadcast_cpu')
+    backend_test.exclude(r'test_equal_string_cpu')
+    backend_test.exclude(r'test_hardsigmoid_default_expanded_ver18_cpu')
+    backend_test.exclude(r'test_hardsigmoid_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_hardsigmoid_expanded_ver18_cpu')
+    backend_test.exclude(r'test_identity_opt_cpu')
+    backend_test.exclude(r'test_if_opt_cpu')
+    backend_test.exclude(r'test_leakyrelu_default_expanded_cpu')
+    backend_test.exclude(r'test_leakyrelu_example_expanded_cpu')
+    backend_test.exclude(r'test_leakyrelu_expanded_cpu')
+    backend_test.exclude(r'test_quantizelinear_e4m3fn_cpu')
+    backend_test.exclude(r'test_quantizelinear_e5m2_cpu')
+    backend_test.exclude(r'.*test_reduce_l1.*')
+    backend_test.exclude(r'.*test_reduce_l2.*')
+    backend_test.exclude(r'.*test_reduce_log_sum.*')
+    backend_test.exclude(r'.*test_reduce_max.*')
+    backend_test.exclude(r'.*test_reduce_mean.*')
+    backend_test.exclude(r'.*test_reduce_min.*')
+    backend_test.exclude(r'.*test_reduce_prod.*')
+    backend_test.exclude(r'.*test_reduce_sum_square.*')
+    backend_test.exclude(r'test_relu_expanded_ver18_cpu')
+    backend_test.exclude(r'test_roialign_aligned_false_cpu')
+    backend_test.exclude(r'test_roialign_aligned_true_cpu')
+    backend_test.exclude(r'test_roialign_mode_max_cpu')
+    backend_test.exclude(r'test_scatter_elements_with_reduction_max_cpu')
+    backend_test.exclude(r'test_scatter_elements_with_reduction_min_cpu')
+    backend_test.exclude(r'test_scatternd_add_cpu')
+    backend_test.exclude(r'test_scatternd_max_cpu')
+    backend_test.exclude(r'test_scatternd_min_cpu')
+    backend_test.exclude(r'test_scatternd_multiply_cpu')
+    backend_test.exclude(r'test_selu_default_expanded_ver18_cpu')
+    backend_test.exclude(r'test_selu_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_selu_expanded_ver18_cpu')
+    backend_test.exclude(r'test_softplus_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_softplus_expanded_ver18_cpu')
+    backend_test.exclude(r'test_softsign_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_softsign_expanded_ver18_cpu')
+    backend_test.exclude(r'test_thresholdedrelu_default_expanded_ver18_cpu')
+    backend_test.exclude(r'test_thresholdedrelu_example_expanded_ver18_cpu')
+    backend_test.exclude(r'test_thresholdedrelu_expanded_ver18_cpu')
 
 def create_backend_test(testname=None, target_device=None):
     if target_device is not None:
@@ -333,6 +382,9 @@ def create_backend_test(testname=None, target_device=None):
 
         if version.parse(onnx.__version__) >= version.parse("1.12.0"):
             disabled_tests_onnx_1_12_0(backend_test)
+
+        if version.parse(onnx.__version__) >= version.parse("1.14.0"):
+            disabled_tests_onnx_1_14_0(backend_test)
 
 
 # import all test cases at global scope to make
