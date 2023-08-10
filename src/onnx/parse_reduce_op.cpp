@@ -38,8 +38,10 @@ instruction_ref parse_reduce_oper(const std::string& op_name,
 {
     // default to reduce over all dimensions
     std::vector<int64_t> axes;
+    args.at(0)->debug_print();
     if(args.size() == 2)
     {
+        args.at(1)->debug_print();
         auto arg_axes = args.at(1)->eval();
         check_arg_empty(arg_axes, "PARSE_" + op_name + ": cannot handle variable axes!");
         axes.clear();
@@ -120,7 +122,7 @@ struct parse_reduce_l1 : op_parser<parse_reduce_l1>
                           std::vector<instruction_ref> args) const
     {
         auto abs_ins = info.add_instruction(make_op("abs"), args[0]);
-        return parse_reduce_oper("reduce_sum", parser, std::move(info), {abs_ins});
+        return parse_reduce_oper("reduce_sum", parser, std::move(info), {abs_ins, args[1]});
     }
 };
 
@@ -134,7 +136,7 @@ struct parse_reduce_l2 : op_parser<parse_reduce_l2>
                           std::vector<instruction_ref> args) const
     {
         auto square_ins = info.add_instruction(make_op("mul"), args[0], args[0]);
-        auto sum_ins    = parse_reduce_oper("reduce_sum", parser, info, {square_ins});
+        auto sum_ins    = parse_reduce_oper("reduce_sum", parser, info, {square_ins, args[1]});
         return info.add_instruction(make_op("sqrt"), sum_ins);
     }
 };
@@ -163,7 +165,7 @@ struct parse_reduce_log_sum_exp : op_parser<parse_reduce_log_sum_exp>
                           std::vector<instruction_ref> args) const
     {
         auto exp_ins = info.add_instruction(make_op("exp"), args[0]);
-        auto sum_ins = parse_reduce_oper("reduce_sum", parser, info, {exp_ins});
+        auto sum_ins = parse_reduce_oper("reduce_sum", parser, info, {exp_ins, args[1]});
         return info.add_instruction(make_op("log"), sum_ins);
     }
 };
@@ -178,7 +180,7 @@ struct parse_reduce_sum_square : op_parser<parse_reduce_sum_square>
                           std::vector<instruction_ref> args) const
     {
         auto square_ins = info.add_instruction(make_op("mul"), args[0], args[0]);
-        return parse_reduce_oper("reduce_sum", parser, std::move(info), {square_ins});
+        return parse_reduce_oper("reduce_sum", parser, std::move(info), {square_ins, args[1]});
     }
 };
 
