@@ -376,11 +376,20 @@ def parse_args():
 
     return args
 
+import migraphx
 
 if __name__ == '__main__':
-    if sys.version_info < (3, 0):
-        sys.exit()
+    model = migraphx.parse_onnx("reducemin_18_const_axis.onnx")
+    print("BLAHEM")
+    data = migraphx.argument(np.array([[-1, 5], [0, 13]], dtype=np.int64));
+    axes = migraphx.argument(np.array([]))
+    # print("HELLO: ", axes.shape())
+    # y = model.run({"data": data, "axes": axes})
+    y = model.run({"data": data})
+    print(y)
+    # if sys.version_info < (3, 0):
+    #     sys.exit()
 
-    args = parse_args()
-    backend_test = create_backend_test(args.testname, args.device)
-    unittest.main()
+    # args = parse_args()
+    # backend_test = create_backend_test(args.testname, args.device)
+    # unittest.main()
