@@ -80,15 +80,17 @@ template <class Derived>
 struct reduce_op : op_name<Derived>
 {
     std::vector<std::int64_t> axes{};
+    bool runtime_axes = false;
 
     template <class Self, class F>
     static auto reflect(Self& self, F f)
     {
-        return pack(f(self.axes, "axes"));
+        return pack(f(self.axes, "axes"), f(self.runtime_axes, "runtime_axes"));
     }
 
     value attributes() const
     {
+        std::cout << "REDUCE OP ATTRIBUTES" << std::endl;
         value normalize;
         normalize["axes"] = value::array{normalize_attribute::include_min};
         return {{"normalize_axes", normalize}, {"reduce", true}};
@@ -115,8 +117,26 @@ struct reduce_op : op_name<Derived>
      */
     shape normalize_compute_shape(std::vector<shape> inputs) const
     {
-        check_shapes{inputs, *this, true}.has(1);
+        std::cout << "NORMALIZE COMPUTE SHAPE" << std::endl;
+        check_shapes{inputs, *this, true}.has(2);
+        // if(axes.empty()) {
+        //     MIGRAPHX_THROW("Axes is empty");
+        // }
         auto s = inputs.at(0);
+        if(axes.empty())
+        {
+            std::vector<shape::dynamic_dimension> dyn_dims;
+            dyn_dims.reserve(s.lens().size());
+            for(const auto& l : s.lens())
+            {
+                dyn_dims.push_back(shape::dynamic_dimension{1, l});
+            }
+            shape ret{s.type(), std::move(dyn_dims)};
+            std::cout << s << std::endl;
+            std::cout << ret << std::endl;
+            return ret;
+            // MIGRAPHX_THROW("Axes is empty");
+        }
         if(s.dynamic())
         {
             auto output_dyn_dims = s.dyn_dims();
@@ -175,19 +195,45 @@ struct reduce_op : op_name<Derived>
 
     argument compute(const dyn_output& dyn_out, std::vector<argument> args) const
     {
-        argument result{dyn_out.computed_shape};
-        auto arg_lens   = args.front().get_shape().lens();
-        auto tuned_axes = tune_axes(arg_lens.size());
-        std::vector<std::size_t> batch_lens(dyn_out.computed_shape.lens().size(), 1);
+        std::cout << "REDUCE COMPUTE" << std::endl;
+        std::cout << dyn_out.ins_shape << std::endl;
+        std::cout << dyn_out.computed_shape << std::endl;
+        auto& data_arg = args[0];
+        auto axes_arg  = args[1];
+
+        std::vector<int64_t> a(axes_arg.get_shape().lens()[0]);
+        axes_arg.visit([&](auto&& s) { a.assign(s.begin(), s.end()); });
+        std::cout << "PARSED AXES" << std::endl;
+        for(auto x : a)
+        {
+            std::cout << x << std::endl;
+        }
+
+        auto lens = data_arg.get_shape().lens();
+        for(const auto& x : a)
+        {
+            lens[x] = 1;
+        }
+        shape computed_shape = data_arg.get_shape().with_lens(lens);
+        std::cout << data_arg.get_shape() << std::endl;
+        std::cout << "COMPUTED SHAPE" << std::endl;
+        std::cout << computed_shape << std::endl;
+        argument result{computed_shape};
+        auto arg_lens = args.front().get_shape().lens();
+        // auto tuned_axes = tune_axes(arg_lens.size());
+        auto tuned_axes = a;
+        // This throws when the computed shape is dynamic
+        std::vector<std::size_t> batch_lens(computed_shape.lens().size(), 1);
         tune_dims(tuned_axes, arg_lens, batch_lens);
-        shape batch_shape{dyn_out.computed_shape.type(), batch_lens};
+        shape batch_shape{computed_shape.type(), batch_lens};
         visit_all(result, args[0])([&](auto output, auto input) {
-            par_for(dyn_out.computed_shape.elements(), [&](auto i) {
-                auto out_idx = dyn_out.computed_shape.multi(i);
+            par_for(computed_shape.elements(), [&](auto i) {
+                auto out_idx = computed_shape.multi(i);
                 this->reduce(input, batch_shape, tuned_axes, out_idx, output);
             });
         });
 
+        std::cout << "COMPUTE FINISHED" << std::endl;
         return result;
     }
 

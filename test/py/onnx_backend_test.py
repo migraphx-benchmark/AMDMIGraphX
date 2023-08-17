@@ -379,13 +379,17 @@ def parse_args():
 import migraphx
 
 if __name__ == '__main__':
-    model = migraphx.parse_onnx("reducemin_18_const_axis.onnx")
-    print("BLAHEM")
+    model = migraphx.parse_onnx("reducemin_18.onnx")
+    print("FINISHED PARSING")
+    # model.compile(migraphx.get_target("gpu"))
+    model.print()
     data = migraphx.argument(np.array([[-1, 5], [0, 13]], dtype=np.int64));
-    axes = migraphx.argument(np.array([]))
+    axes = migraphx.argument(np.array([1]))
+    x = migraphx.argument(np.array([-2, 2]))
     # print("HELLO: ", axes.shape())
-    # y = model.run({"data": data, "axes": axes})
-    y = model.run({"data": data})
+    print("BEFORE RUN")
+    y = model.run({"data": data, "axes": axes})
+    # y = model.run({"x": x, "z": x})
     print(y)
     # if sys.version_info < (3, 0):
     #     sys.exit()

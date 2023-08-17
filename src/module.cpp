@@ -255,18 +255,22 @@ insert_generic_instructions(module& m,
 
 instruction_ref module::add_instruction(const operation& op, std::vector<instruction_ref> args)
 {
+    std::cout << "Module add instruction" << std::endl;
     return insert_instruction(impl->instructions.end(), op, std::move(args));
 }
 instruction_ref module::insert_instruction(instruction_ref ins,
                                            const operation& op,
                                            std::vector<instruction_ref> args)
 {
+    std::cout << "insert instruciton" << std::endl; 
     assert(has_instruction(ins) or is_end(ins, this->end()));
     assert(not starts_with(op.name(), "@"));
     shape r     = compute_shape(op, args);
+    std::cout << r << std::endl; 
     auto result = impl->insert(ins, {op, r, std::move(args)});
     instruction::backreference(result);
     assert(result->valid(begin()));
+    std::cout << "insert instruciton finished" << std::endl; 
     return result;
 }
 

@@ -40,8 +40,12 @@ instruction_ref parse_reduce_oper(const std::string& op_name,
     std::vector<int64_t> axes;
     if(args.size() == 2)
     {
+        std::cout << "TWO ARGS" << std::endl;
         auto arg_axes = args.at(1)->eval();
-        check_arg_empty(arg_axes, "PARSE_" + op_name + ": cannot handle variable axes!");
+        // check_arg_empty(arg_axes, "PARSE_" + op_name + ": cannot handle variable axes!");
+        // Need to check that the number of axes listed in axes is not bigger than the number of
+        // axes in data
+        return info.add_instruction(make_op(op_name, {{"runtime_axes", true}}), std::move(args));
         axes.clear();
         arg_axes.visit([&](auto s) { axes.assign(s.begin(), s.end()); });
     }

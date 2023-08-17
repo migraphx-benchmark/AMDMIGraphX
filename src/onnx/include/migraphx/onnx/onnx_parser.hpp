@@ -79,6 +79,7 @@ struct onnx_parser
         template <class... Ts>
         instruction_ref add_instruction(const operation& op, Ts... xs) const
         {
+            std::cout << "ADD INSTRUCTION WRAPPER" << std::endl;
             return add_instruction(op, {xs...});
         }
         instruction_ref add_literal(literal l) const;

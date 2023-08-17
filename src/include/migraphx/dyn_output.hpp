@@ -50,9 +50,12 @@ struct compute_output_shape
 
     operator dyn_output() const
     {
+        std::cout << "DYN_OUTPUT" << std::endl;
         return ins_inputs([](const auto& x, shape ins_shape, const std::vector<argument>& inputs) {
-            if(ins_shape.dynamic())
+            if(ins_shape.dynamic()) {
+                std::cout << "INS SHAPE DYNAMIC" << std::endl;
                 return dyn_output{ins_shape, compute_shape(x, to_shapes(inputs))};
+            }
             return dyn_output{ins_shape, ins_shape};
         });
     }

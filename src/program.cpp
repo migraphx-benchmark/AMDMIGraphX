@@ -482,6 +482,7 @@ std::vector<argument> generic_eval(const module* mod,
         }
         else
         {
+            std::cout << "ELSE" << std::endl;
             values.resize(ins->inputs().size());
             std::transform(
                 ins->inputs().begin(), ins->inputs().end(), values.begin(), [&](instruction_ref i) {
@@ -497,8 +498,12 @@ std::vector<argument> generic_eval(const module* mod,
             results.emplace(
                 ins, trace(ins, [&] {
                     auto op = ins->normalized_operator();
-                    if(op.is_context_free())
-                        return op.compute(ins->get_shape(), values, mod_args, module_eval);
+                    if(op.is_context_free()) {
+                        std::cout << "CONTEXT FREE" << std::endl;
+                        auto bla = ins->get_shape();
+                        std::cout << "CONTEXT FREE" << std::endl;
+                        return op.compute(bla, values, mod_args, module_eval);
+                    }
                     if(ins->get_target_id() >= ctx.size())
                         MIGRAPHX_THROW("No context available for " + op.name());
                     return op.compute(
@@ -526,6 +531,7 @@ std::vector<argument> generic_eval(const program& p,
 
 std::vector<argument> program::eval(parameter_map params, execution_environment exec_env) const
 {
+    std::cout << "PROGRAM EVAL" << std::endl;
     auto& contexts = this->impl->contexts;
 
     auto trace_level = value_of(MIGRAPHX_TRACE_EVAL{});
@@ -593,6 +599,7 @@ std::vector<argument> program::eval(parameter_map params, execution_environment 
     }
     else
     {
+        std::cout << "GENERIC EVAL" << std::endl;
         ret = generic_eval(*this, contexts, std::move(params), [&](auto&&, auto f) { return f(); });
     }
 

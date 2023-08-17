@@ -179,6 +179,7 @@ instruction_ref
 onnx_parser::node_info::add_instruction(const operation& op,
                                         const std::vector<instruction_ref>& args) const
 {
+    std::cout << "ADD INSTUCTION" << std::endl;
     return mod->add_instruction(op, args);
 }
 

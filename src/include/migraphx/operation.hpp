@@ -140,6 +140,7 @@ template <class T>
 auto compute_shape_op(rank<2>, const T& x, const std::vector<shape>& inputs)
     -> decltype(x.normalize_compute_shape(inputs))
 {
+    std::cout << "Compute shape op" << std::endl;
     if(inputs.empty())
         MIGRAPHX_THROW("At least one input is required for " + x.name());
     dependent_type<operation, T> y = x;
@@ -687,6 +688,7 @@ struct operation
 
     argument compute(const shape& output, const std::vector<argument>& input) const
     {
+        std::cout << "BOFFA" << std::endl;
         assert((*this).private_detail_te_handle_mem_var);
         return (*this).private_detail_te_get_handle().compute(output, input);
     }
@@ -697,6 +699,7 @@ struct operation
                      std::function<std::vector<argument>(
                          module_ref&, const std::unordered_map<std::string, argument>&)> run) const
     {
+        std::cout << "BLAHELKJLKSD" << std::endl;
         assert((*this).private_detail_te_handle_mem_var);
         return (*this).private_detail_te_get_handle().compute(
             output, input, module_args, std::move(run));
@@ -716,6 +719,7 @@ struct operation
 
     value to_value() const
     {
+        std::cout << "TO VALUE" << std::endl;
         assert((*this).private_detail_te_handle_mem_var);
         return (*this).private_detail_te_get_handle().to_value();
     }

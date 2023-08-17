@@ -486,6 +486,7 @@ std::vector<shape> to_shapes(const std::vector<instruction_ref>& args)
 
 shape compute_shape(const operation& op, const std::vector<instruction_ref>& args)
 {
+    std::cout << "COMPUTE SHAPE" << std::endl; 
     return op.compute_shape(to_shapes(args));
 }
 

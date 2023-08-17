@@ -32,9 +32,13 @@ operation make_op(const std::string& name) { return load_op(name); }
 template <class F>
 operation make_op_generic(const std::string& name, F for_each)
 {
+    std::cout << "MAKE OP GENERIC" << std::endl;
     auto op = load_op(name);
     // Merge values
     value w = op.to_value();
+    std::cout << std::boolalpha << w.contains("axes") << std::endl;
+    std::cout << w.at("axes") << std::endl;
+    std::cout << std::boolalpha << w.contains("bla") << std::endl;
     for_each([&](const auto& key, const auto& x) {
         if(not w.contains(key))
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
@@ -42,6 +46,7 @@ operation make_op_generic(const std::string& name, F for_each)
         w.at(key) = x;
     });
     op.from_value(w);
+    std::cout << "MAKE OP GENERIC FINISHED" << std::endl;
     return op;
 }
 

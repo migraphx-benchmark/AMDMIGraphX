@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2022 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2015-2023 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,22 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <migraphx/operation.hpp>
-#include <migraphx/make_op.hpp>
+
+#ifndef MIGRAPHX_GUARD_OPERATORS_BITWISE_NOT_HPP
+#define MIGRAPHX_GUARD_OPERATORS_BITWISE_NOT_HPP
+
+#include <migraphx/config.hpp>
+#include <migraphx/op/unary.hpp>
+#include <cmath>
+#include <type_traits>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
+namespace op {
 
-void migraphx_to_value(value& v, const operation& op)
+struct bitwise_not : unary<bitwise_not>
 {
-    std::cout << "MIGRAPHX TO VALUE" << std::endl;
-    v["name"]     = op.name();
-    v["operator"] = op.to_value();
-}
-void migraphx_from_value(const value& v, operation& op)
-{
-    op = make_op(v.at("name").to<std::string>(), v.at("operator"));
-}
+    auto apply() const
+    {
+        return [](auto x) -> decltype(x) {
+            using T = std::decay_t<decltype(x)>;
+            if constexpr(std::is_integral_v<T> && !std::is_same_v<T, bool>)
+            {
+                return ~x;
+            }
+            else
+            {
+                MIGRAPHX_THROW("BitwiseNot: Only applicable to integer types");
+            }
+        };
+    }
+};
 
+} // namespace op
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx
+
+#endif
