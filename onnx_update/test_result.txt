@@ -1,0 +1,1939 @@
+Test project /code/AMDMIGraphX/build/test
+        Start 319: test_py_3.8_backend
+        Start 308: test_verify_general
+        Start 306: test_api_gpu
+        Start 317: test_py_3.8_gpu
+        Start 307: test_api_custom_op_gpu
+        Start  65: test_simplify_algebra_test
+        Start 320: test_py_3.8_gpu_async
+        Start 316: test_py_3.8_gpu_offload
+        Start 318: test_py_3.8_array
+        Start  48: test_reduce_dims
+        Start  47: test_quantization
+        Start 300: test_api_ref
+        Start  54: test_ref_rnn_ops_test
+        Start  26: test_jit
+        Start  69: test_sqlite
+        Start 311: test_py_3.8_save_load
+        Start 304: test_api_custom_op
+        Start  53: test_ref_ops_test
+        Start 310: test_py_3.8_ref
+        Start  33: test_memory_coloring_test
+        Start  89: test_onnx_test
+        Start  67: test_simplify_reshapes_test
+        Start 313: test_py_3.8_shape
+        Start 315: test_py_3.8_literal
+        Start 314: test_py_3.8_module_construct
+        Start 312: test_py_3.8_op
+        Start 278: header_src_targets_gpu_include_migraphx_gpu_perfdb_hpp
+        Start 213: header_src_include_migraphx_split_single_dyn_dim_hpp
+        Start 283: header_src_targets_gpu_include_migraphx_gpu_reverse_hpp
+        Start 246: header_src_targets_gpu_include_migraphx_gpu_compile_miopen_hpp
+        Start 270: header_src_targets_gpu_include_migraphx_gpu_mlir_hpp
+        Start 250: header_src_targets_gpu_include_migraphx_gpu_config_hpp
+  1/320 Test #213: header_src_include_migraphx_split_single_dyn_dim_hpp ......................   Passed    1.00 sec
+        Start 207: header_src_include_migraphx_shape_hpp
+  2/320 Test #250: header_src_targets_gpu_include_migraphx_gpu_config_hpp ....................   Passed    1.00 sec
+        Start 276: header_src_targets_gpu_include_migraphx_gpu_pack_int8_args_hpp
+  3/320 Test #283: header_src_targets_gpu_include_migraphx_gpu_reverse_hpp ...................   Passed    1.00 sec
+        Start 229: header_src_include_migraphx_type_traits_hpp
+  4/320 Test #278: header_src_targets_gpu_include_migraphx_gpu_perfdb_hpp ....................   Passed    1.00 sec
+        Start 282: header_src_targets_gpu_include_migraphx_gpu_reduce_op_hpp
+  5/320 Test #270: header_src_targets_gpu_include_migraphx_gpu_mlir_hpp ......................   Passed    1.00 sec
+        Start 214: header_src_include_migraphx_sqlite_hpp
+  6/320 Test #246: header_src_targets_gpu_include_migraphx_gpu_compile_miopen_hpp ............   Passed    1.00 sec
+        Start 256: header_src_targets_gpu_include_migraphx_gpu_fuse_mlir_hpp
+  7/320 Test #312: test_py_3.8_op ............................................................   Passed    1.00 sec
+        Start  66: test_simplify_qdq_test
+  8/320 Test #315: test_py_3.8_literal .......................................................   Passed    1.01 sec
+        Start 244: header_src_targets_gpu_include_migraphx_gpu_compile_hip_hpp
+  9/320 Test #314: test_py_3.8_module_construct ..............................................   Passed    1.01 sec
+        Start 292: header_src_targets_gpu_include_migraphx_gpu_tuning_config_hpp
+ 10/320 Test #313: test_py_3.8_shape .........................................................   Passed    1.02 sec
+        Start 178: header_src_include_migraphx_par_for_hpp
+ 11/320 Test #207: header_src_include_migraphx_shape_hpp .....................................   Passed    0.12 sec
+        Start 169: header_src_include_migraphx_normalize_ops_hpp
+ 12/320 Test #282: header_src_targets_gpu_include_migraphx_gpu_reduce_op_hpp .................   Passed    0.12 sec
+        Start 274: header_src_targets_gpu_include_migraphx_gpu_oper_hpp
+ 13/320 Test #229: header_src_include_migraphx_type_traits_hpp ...............................   Passed    0.12 sec
+        Start 241: header_src_targets_gpu_include_migraphx_gpu_argmin_hpp
+ 14/320 Test #276: header_src_targets_gpu_include_migraphx_gpu_pack_int8_args_hpp ............   Passed    0.13 sec
+        Start 249: header_src_targets_gpu_include_migraphx_gpu_concat_gpu_opt_hpp
+ 15/320 Test #214: header_src_include_migraphx_sqlite_hpp ....................................   Passed    0.13 sec
+        Start 124: header_src_include_migraphx_eliminate_allocation_hpp
+ 16/320 Test #292: header_src_targets_gpu_include_migraphx_gpu_tuning_config_hpp .............   Passed    0.12 sec
+        Start 260: header_src_targets_gpu_include_migraphx_gpu_gemm_impl_hpp
+ 17/320 Test  #67: test_simplify_reshapes_test ...............................................   Passed    1.15 sec
+        Start 257: header_src_targets_gpu_include_migraphx_gpu_fuse_ops_hpp
+ 18/320 Test #256: header_src_targets_gpu_include_migraphx_gpu_fuse_mlir_hpp .................   Passed    0.15 sec
+        Start 165: header_src_include_migraphx_module_hpp
+ 19/320 Test  #66: test_simplify_qdq_test ....................................................   Passed    0.15 sec
+        Start 205: header_src_include_migraphx_schedule_model_hpp
+ 20/320 Test #244: header_src_targets_gpu_include_migraphx_gpu_compile_hip_hpp ...............   Passed    0.15 sec
+        Start 258: header_src_targets_gpu_include_migraphx_gpu_gather_hpp
+ 21/320 Test #178: header_src_include_migraphx_par_for_hpp ...................................   Passed    0.15 sec
+        Start 235: header_src_targets_ref_include_migraphx_ref_lowering_hpp
+ 22/320 Test #310: test_py_3.8_ref ...........................................................   Passed    1.17 sec
+        Start 112: header_src_include_migraphx_compile_src_hpp
+ 23/320 Test #274: header_src_targets_gpu_include_migraphx_gpu_oper_hpp ......................   Passed    0.07 sec
+        Start 209: header_src_include_migraphx_simplify_algebra_hpp
+ 24/320 Test #169: header_src_include_migraphx_normalize_ops_hpp .............................   Passed    0.08 sec
+        Start 289: header_src_targets_gpu_include_migraphx_gpu_target_hpp
+ 25/320 Test #311: test_py_3.8_save_load .....................................................   Passed    1.20 sec
+        Start 275: header_src_targets_gpu_include_migraphx_gpu_pack_args_hpp
+ 26/320 Test  #33: test_memory_coloring_test .................................................   Passed    1.20 sec
+        Start 200: header_src_include_migraphx_rewrite_pooling_hpp
+ 27/320 Test #260: header_src_targets_gpu_include_migraphx_gpu_gemm_impl_hpp .................   Passed    0.07 sec
+        Start 130: header_src_include_migraphx_eliminate_pad_hpp
+ 28/320 Test #241: header_src_targets_gpu_include_migraphx_gpu_argmin_hpp ....................   Passed    0.08 sec
+        Start 204: header_src_include_migraphx_schedule_hpp
+ 29/320 Test #249: header_src_targets_gpu_include_migraphx_gpu_concat_gpu_opt_hpp ............   Passed    0.08 sec
+        Start 210: header_src_include_migraphx_simplify_qdq_hpp
+ 30/320 Test #124: header_src_include_migraphx_eliminate_allocation_hpp ......................   Passed    0.08 sec
+        Start 248: header_src_targets_gpu_include_migraphx_gpu_compiler_hpp
+ 31/320 Test #257: header_src_targets_gpu_include_migraphx_gpu_fuse_ops_hpp ..................   Passed    0.07 sec
+        Start 220: header_src_include_migraphx_target_hpp
+ 32/320 Test #165: header_src_include_migraphx_module_hpp ....................................   Passed    0.07 sec
+        Start 223: header_src_include_migraphx_tf_hpp
+ 33/320 Test #258: header_src_targets_gpu_include_migraphx_gpu_gather_hpp ....................   Passed    0.07 sec
+        Start 129: header_src_include_migraphx_eliminate_identity_hpp
+ 34/320 Test #205: header_src_include_migraphx_schedule_model_hpp ............................   Passed    0.07 sec
+        Start 126: header_src_include_migraphx_eliminate_concat_hpp
+ 35/320 Test #235: header_src_targets_ref_include_migraphx_ref_lowering_hpp ..................   Passed    0.08 sec
+        Start 164: header_src_include_migraphx_memory_coloring_hpp
+ 36/320 Test #112: header_src_include_migraphx_compile_src_hpp ...............................   Passed    0.08 sec
+        Start 264: header_src_targets_gpu_include_migraphx_gpu_kernel_hpp
+ 37/320 Test #209: header_src_include_migraphx_simplify_algebra_hpp ..........................   Passed    0.07 sec
+        Start 103: header_src_include_migraphx_auto_contiguous_hpp
+ 38/320 Test #289: header_src_targets_gpu_include_migraphx_gpu_target_hpp ....................   Passed    0.07 sec
+        Start 231: header_src_include_migraphx_verify_hpp
+ 39/320 Test #275: header_src_targets_gpu_include_migraphx_gpu_pack_args_hpp .................   Passed    0.07 sec
+        Start  94: header_src_include_migraphx_allocation_model_hpp
+ 40/320 Test #200: header_src_include_migraphx_rewrite_pooling_hpp ...........................   Passed    0.07 sec
+        Start 255: header_src_targets_gpu_include_migraphx_gpu_fuse_ck_hpp
+ 41/320 Test #210: header_src_include_migraphx_simplify_qdq_hpp ..............................   Passed    0.07 sec
+        Start 228: header_src_include_migraphx_type_name_hpp
+ 42/320 Test #223: header_src_include_migraphx_tf_hpp ........................................   Passed    0.07 sec
+        Start 268: header_src_targets_gpu_include_migraphx_gpu_lrn_hpp
+ 43/320 Test #130: header_src_include_migraphx_eliminate_pad_hpp .............................   Passed    0.08 sec
+        Start 144: header_src_include_migraphx_half_hpp
+ 44/320 Test #204: header_src_include_migraphx_schedule_hpp ..................................   Passed    0.08 sec
+        Start 179: header_src_include_migraphx_pass_hpp
+ 45/320 Test #126: header_src_include_migraphx_eliminate_concat_hpp ..........................   Passed    0.07 sec
+        Start 113: header_src_include_migraphx_concat_opt_hpp
+ 46/320 Test #248: header_src_targets_gpu_include_migraphx_gpu_compiler_hpp ..................   Passed    0.08 sec
+        Start 212: header_src_include_migraphx_source_location_hpp
+ 47/320 Test #220: header_src_include_migraphx_target_hpp ....................................   Passed    0.08 sec
+        Start 206: header_src_include_migraphx_serialize_hpp
+ 48/320 Test #129: header_src_include_migraphx_eliminate_identity_hpp ........................   Passed    0.08 sec
+        Start 262: header_src_targets_gpu_include_migraphx_gpu_int8_conv_pack_hpp
+ 49/320 Test #164: header_src_include_migraphx_memory_coloring_hpp ...........................   Passed    0.07 sec
+        Start 152: header_src_include_migraphx_iterator_for_hpp
+ 50/320 Test #264: header_src_targets_gpu_include_migraphx_gpu_kernel_hpp ....................   Passed    0.08 sec
+        Start 198: header_src_include_migraphx_requires_hpp
+ 51/320 Test #255: header_src_targets_gpu_include_migraphx_gpu_fuse_ck_hpp ...................   Passed    0.07 sec
+        Start 173: header_src_include_migraphx_optimize_module_hpp
+ 52/320 Test #231: header_src_include_migraphx_verify_hpp ....................................   Passed    0.08 sec
+        Start 224: header_src_include_migraphx_time_hpp
+ 53/320 Test #103: header_src_include_migraphx_auto_contiguous_hpp ...........................   Passed    0.08 sec
+        Start 110: header_src_include_migraphx_common_hpp
+ 54/320 Test  #94: header_src_include_migraphx_allocation_model_hpp ..........................   Passed    0.08 sec
+        Start 251: header_src_targets_gpu_include_migraphx_gpu_context_hpp
+ 55/320 Test #144: header_src_include_migraphx_half_hpp ......................................   Passed    0.08 sec
+        Start 271: header_src_targets_gpu_include_migraphx_gpu_multinomial_hpp
+ 56/320 Test #228: header_src_include_migraphx_type_name_hpp .................................   Passed    0.09 sec
+        Start 116: header_src_include_migraphx_convert_to_json_hpp
+ 57/320 Test #268: header_src_targets_gpu_include_migraphx_gpu_lrn_hpp .......................   Passed    0.08 sec
+        Start 199: header_src_include_migraphx_rewrite_gelu_hpp
+ 58/320 Test #206: header_src_include_migraphx_serialize_hpp .................................   Passed    0.07 sec
+        Start 273: header_src_targets_gpu_include_migraphx_gpu_nonzero_hpp
+ 59/320 Test #113: header_src_include_migraphx_concat_opt_hpp ................................   Passed    0.08 sec
+        Start 151: header_src_include_migraphx_iterator_hpp
+ 60/320 Test #212: header_src_include_migraphx_source_location_hpp ...........................   Passed    0.08 sec
+        Start 190: header_src_include_migraphx_ranges_hpp
+ 61/320 Test #152: header_src_include_migraphx_iterator_for_hpp ..............................   Passed    0.08 sec
+        Start 120: header_src_include_migraphx_dfor_hpp
+ 62/320 Test #262: header_src_targets_gpu_include_migraphx_gpu_int8_conv_pack_hpp ............   Passed    0.09 sec
+        Start 108: header_src_include_migraphx_clamp_hpp
+ 63/320 Test #179: header_src_include_migraphx_pass_hpp ......................................   Passed    0.10 sec
+        Start 201: header_src_include_migraphx_rewrite_quantization_hpp
+ 64/320 Test #304: test_api_custom_op ........................................................   Passed    1.41 sec
+        Start 208: header_src_include_migraphx_shape_for_each_hpp
+ 65/320 Test #198: header_src_include_migraphx_requires_hpp ..................................   Passed    0.08 sec
+        Start 104: header_src_include_migraphx_auto_register_hpp
+ 66/320 Test #173: header_src_include_migraphx_optimize_module_hpp ...........................   Passed    0.08 sec
+        Start 267: header_src_targets_gpu_include_migraphx_gpu_lowering_hpp
+ 67/320 Test #251: header_src_targets_gpu_include_migraphx_gpu_context_hpp ...................   Passed    0.08 sec
+        Start 286: header_src_targets_gpu_include_migraphx_gpu_scatter_hpp
+ 68/320 Test #224: header_src_include_migraphx_time_hpp ......................................   Passed    0.09 sec
+        Start 242: header_src_targets_gpu_include_migraphx_gpu_code_object_op_hpp
+ 69/320 Test #110: header_src_include_migraphx_common_hpp ....................................   Passed    0.09 sec
+        Start 175: header_src_include_migraphx_output_iterator_hpp
+ 70/320 Test #273: header_src_targets_gpu_include_migraphx_gpu_nonzero_hpp ...................   Passed    0.08 sec
+        Start 153: header_src_include_migraphx_json_hpp
+ 71/320 Test #271: header_src_targets_gpu_include_migraphx_gpu_multinomial_hpp ...............   Passed    0.08 sec
+        Start 154: header_src_include_migraphx_layout_nhwc_hpp
+ 72/320 Test #151: header_src_include_migraphx_iterator_hpp ..................................   Passed    0.07 sec
+        Start 182: header_src_include_migraphx_preallocate_param_hpp
+ 73/320 Test #116: header_src_include_migraphx_convert_to_json_hpp ...........................   Passed    0.08 sec
+        Start 184: header_src_include_migraphx_program_hpp
+ 74/320 Test #199: header_src_include_migraphx_rewrite_gelu_hpp ..............................   Passed    0.08 sec
+        Start 133: header_src_include_migraphx_errors_hpp
+ 75/320 Test #190: header_src_include_migraphx_ranges_hpp ....................................   Passed    0.08 sec
+        Start  92: header_src_include_migraphx_adjust_allocation_hpp
+ 76/320 Test #201: header_src_include_migraphx_rewrite_quantization_hpp ......................   Passed    0.08 sec
+        Start 176: header_src_include_migraphx_pad_calc_hpp
+ 77/320 Test #108: header_src_include_migraphx_clamp_hpp .....................................   Passed    0.08 sec
+        Start 168: header_src_include_migraphx_normalize_attributes_hpp
+ 78/320 Test #120: header_src_include_migraphx_dfor_hpp ......................................   Passed    0.08 sec
+        Start 230: header_src_include_migraphx_value_hpp
+ 79/320 Test #104: header_src_include_migraphx_auto_register_hpp .............................   Passed    0.09 sec
+        Start 281: header_src_targets_gpu_include_migraphx_gpu_prefuse_ops_hpp
+ 80/320 Test #208: header_src_include_migraphx_shape_for_each_hpp ............................   Passed    0.10 sec
+        Start 218: header_src_include_migraphx_support_metric_hpp
+ 81/320 Test #267: header_src_targets_gpu_include_migraphx_gpu_lowering_hpp ..................   Passed    0.09 sec
+        Start 183: header_src_include_migraphx_process_hpp
+ 82/320 Test #242: header_src_targets_gpu_include_migraphx_gpu_code_object_op_hpp ............   Passed    0.08 sec
+        Start 215: header_src_include_migraphx_stream_model_hpp
+ 83/320 Test #286: header_src_targets_gpu_include_migraphx_gpu_scatter_hpp ...................   Passed    0.09 sec
+        Start 160: header_src_include_migraphx_make_signed_hpp
+ 84/320 Test #175: header_src_include_migraphx_output_iterator_hpp ...........................   Passed    0.08 sec
+        Start 261: header_src_targets_gpu_include_migraphx_gpu_hip_hpp
+ 85/320 Test #184: header_src_include_migraphx_program_hpp ...................................   Passed    0.08 sec
+        Start 239: header_src_targets_gpu_include_migraphx_gpu_analyze_streams_hpp
+ 86/320 Test #153: header_src_include_migraphx_json_hpp ......................................   Passed    0.09 sec
+        Start 202: header_src_include_migraphx_rewrite_rnn_hpp
+ 87/320 Test #154: header_src_include_migraphx_layout_nhwc_hpp ...............................   Passed    0.09 sec
+        Start 232: header_src_include_migraphx_verify_args_hpp
+ 88/320 Test #182: header_src_include_migraphx_preallocate_param_hpp .........................   Passed    0.09 sec
+        Start 227: header_src_include_migraphx_tune_axis_hpp
+ 89/320 Test #133: header_src_include_migraphx_errors_hpp ....................................   Passed    0.09 sec
+        Start 131: header_src_include_migraphx_env_hpp
+ 90/320 Test  #53: test_ref_ops_test .........................................................   Passed    1.54 sec
+        Start 266: header_src_targets_gpu_include_migraphx_gpu_loop_hpp
+ 91/320 Test  #92: header_src_include_migraphx_adjust_allocation_hpp .........................   Passed    0.08 sec
+        Start  93: header_src_include_migraphx_algorithm_hpp
+ 92/320 Test #168: header_src_include_migraphx_normalize_attributes_hpp ......................   Passed    0.09 sec
+        Start 171: header_src_include_migraphx_operation_hpp
+ 93/320 Test #176: header_src_include_migraphx_pad_calc_hpp ..................................   Passed    0.09 sec
+        Start 192: header_src_include_migraphx_raw_data_hpp
+ 94/320 Test #230: header_src_include_migraphx_value_hpp .....................................   Passed    0.09 sec
+        Start 296: test_api_compile_options
+ 95/320 Test #281: header_src_targets_gpu_include_migraphx_gpu_prefuse_ops_hpp ...............   Passed    0.09 sec
+        Start 119: header_src_include_migraphx_dead_code_elimination_hpp
+ 96/320 Test  #54: test_ref_rnn_ops_test .....................................................   Passed    1.60 sec
+        Start 243: header_src_targets_gpu_include_migraphx_gpu_compile_gen_hpp
+ 97/320 Test #218: header_src_include_migraphx_support_metric_hpp ............................   Passed    0.09 sec
+        Start 226: header_src_include_migraphx_tracer_hpp
+ 98/320 Test #183: header_src_include_migraphx_process_hpp ...................................   Passed    0.09 sec
+        Start 259: header_src_targets_gpu_include_migraphx_gpu_gemm_hpp
+ 99/320 Test #215: header_src_include_migraphx_stream_model_hpp ..............................   Passed    0.09 sec
+        Start  98: header_src_include_migraphx_argument_hpp
+100/320 Test #261: header_src_targets_gpu_include_migraphx_gpu_hip_hpp .......................   Passed    0.09 sec
+        Start 139: header_src_include_migraphx_functional_hpp
+101/320 Test #160: header_src_include_migraphx_make_signed_hpp ...............................   Passed    0.09 sec
+        Start 236: header_src_targets_ref_include_migraphx_ref_target_hpp
+102/320 Test #239: header_src_targets_gpu_include_migraphx_gpu_analyze_streams_hpp ...........   Passed    0.09 sec
+        Start 233: header_src_targets_ref_include_migraphx_ref_context_hpp
+103/320 Test #202: header_src_include_migraphx_rewrite_rnn_hpp ...............................   Passed    0.09 sec
+        Start 280: header_src_targets_gpu_include_migraphx_gpu_prefix_scan_sum_hpp
+104/320 Test #232: header_src_include_migraphx_verify_args_hpp ...............................   Passed    0.08 sec
+        Start 156: header_src_include_migraphx_literal_hpp
+105/320 Test #227: header_src_include_migraphx_tune_axis_hpp .................................   Passed    0.08 sec
+        Start 277: header_src_targets_gpu_include_migraphx_gpu_pad_hpp
+106/320 Test #131: header_src_include_migraphx_env_hpp .......................................   Passed    0.09 sec
+        Start 118: header_src_include_migraphx_cpp_generator_hpp
+107/320 Test #266: header_src_targets_gpu_include_migraphx_gpu_loop_hpp ......................   Passed    0.09 sec
+        Start 265: header_src_targets_gpu_include_migraphx_gpu_logsoftmax_hpp
+108/320 Test  #93: header_src_include_migraphx_algorithm_hpp .................................   Passed    0.09 sec
+        Start 254: header_src_targets_gpu_include_migraphx_gpu_device_name_hpp
+109/320 Test #296: test_api_compile_options ..................................................   Passed    0.08 sec
+        Start 279: header_src_targets_gpu_include_migraphx_gpu_pooling_hpp
+110/320 Test #192: header_src_include_migraphx_raw_data_hpp ..................................   Passed    0.09 sec
+        Start 167: header_src_include_migraphx_msgpack_hpp
+111/320 Test #171: header_src_include_migraphx_operation_hpp .................................   Passed    0.09 sec
+        Start 109: header_src_include_migraphx_cloneable_hpp
+112/320 Test #259: header_src_targets_gpu_include_migraphx_gpu_gemm_hpp ......................   Passed    0.08 sec
+        Start 284: header_src_targets_gpu_include_migraphx_gpu_rnn_variable_seq_lens_hpp
+113/320 Test #119: header_src_include_migraphx_dead_code_elimination_hpp .....................   Passed    0.09 sec
+        Start 203: header_src_include_migraphx_run_loop_hpp
+114/320 Test #243: header_src_targets_gpu_include_migraphx_gpu_compile_gen_hpp ...............   Passed    0.09 sec
+        Start 157: header_src_include_migraphx_load_save_hpp
+115/320 Test #226: header_src_include_migraphx_tracer_hpp ....................................   Passed    0.09 sec
+        Start 186: header_src_include_migraphx_propagate_constant_hpp
+116/320 Test #139: header_src_include_migraphx_functional_hpp ................................   Passed    0.09 sec
+        Start 225: header_src_include_migraphx_tmp_dir_hpp
+117/320 Test  #98: header_src_include_migraphx_argument_hpp ..................................   Passed    0.09 sec
+        Start 219: header_src_include_migraphx_supported_segments_hpp
+118/320 Test #233: header_src_targets_ref_include_migraphx_ref_context_hpp ...................   Passed    0.08 sec
+        Start  95: header_src_include_migraphx_analyze_streams_hpp
+119/320 Test #236: header_src_targets_ref_include_migraphx_ref_target_hpp ....................   Passed    0.09 sec
+        Start 106: header_src_include_migraphx_check_context_hpp
+120/320 Test #280: header_src_targets_gpu_include_migraphx_gpu_prefix_scan_sum_hpp ...........   Passed    0.09 sec
+        Start 174: header_src_include_migraphx_optional_hpp
+121/320 Test #156: header_src_include_migraphx_literal_hpp ...................................   Passed    0.09 sec
+        Start 136: header_src_include_migraphx_file_buffer_hpp
+122/320 Test #277: header_src_targets_gpu_include_migraphx_gpu_pad_hpp .......................   Passed    0.09 sec
+        Start 272: header_src_targets_gpu_include_migraphx_gpu_name_hpp
+123/320 Test #254: header_src_targets_gpu_include_migraphx_gpu_device_name_hpp ...............   Passed    0.08 sec
+        Start 134: header_src_include_migraphx_execution_environment_hpp
+124/320 Test #118: header_src_include_migraphx_cpp_generator_hpp .............................   Passed    0.09 sec
+        Start 115: header_src_include_migraphx_context_hpp
+125/320 Test #265: header_src_targets_gpu_include_migraphx_gpu_logsoftmax_hpp ................   Passed    0.09 sec
+        Start 196: header_src_include_migraphx_register_target_hpp
+126/320 Test #167: header_src_include_migraphx_msgpack_hpp ...................................   Passed    0.08 sec
+        Start 285: header_src_targets_gpu_include_migraphx_gpu_rocblas_hpp
+127/320 Test #279: header_src_targets_gpu_include_migraphx_gpu_pooling_hpp ...................   Passed    0.09 sec
+        Start 170: header_src_include_migraphx_onnx_hpp
+128/320 Test #109: header_src_include_migraphx_cloneable_hpp .................................   Passed    0.09 sec
+        Start 137: header_src_include_migraphx_filesystem_hpp
+129/320 Test #186: header_src_include_migraphx_propagate_constant_hpp ........................   Passed    0.08 sec
+        Start 293: header_src_targets_gpu_include_migraphx_gpu_write_literals_hpp
+130/320 Test #203: header_src_include_migraphx_run_loop_hpp ..................................   Passed    0.09 sec
+        Start 163: header_src_include_migraphx_matcher_hpp
+131/320 Test #157: header_src_include_migraphx_load_save_hpp .................................   Passed    0.09 sec
+        Start  91: test_tf
+132/320 Test #284: header_src_targets_gpu_include_migraphx_gpu_rnn_variable_seq_lens_hpp .....   Passed    0.09 sec
+        Start 148: header_src_include_migraphx_instruction_hpp
+133/320 Test #225: header_src_include_migraphx_tmp_dir_hpp ...................................   Passed    0.09 sec
+        Start 105: header_src_include_migraphx_builtin_hpp
+134/320 Test #219: header_src_include_migraphx_supported_segments_hpp ........................   Passed    0.09 sec
+        Start 100: header_src_include_migraphx_assert_hpp
+135/320 Test #136: header_src_include_migraphx_file_buffer_hpp ...............................   Passed    0.08 sec
+        Start 135: header_src_include_migraphx_fallthrough_hpp
+136/320 Test #272: header_src_targets_gpu_include_migraphx_gpu_name_hpp ......................   Passed    0.08 sec
+        Start 125: header_src_include_migraphx_eliminate_common_subexpression_hpp
+137/320 Test  #95: header_src_include_migraphx_analyze_streams_hpp ...........................   Passed    0.09 sec
+        Start 287: header_src_targets_gpu_include_migraphx_gpu_schedule_model_hpp
+138/320 Test #106: header_src_include_migraphx_check_context_hpp .............................   Passed    0.09 sec
+        Start 121: header_src_include_migraphx_dom_info_hpp
+139/320 Test #174: header_src_include_migraphx_optional_hpp ..................................   Passed    0.09 sec
+        Start 288: header_src_targets_gpu_include_migraphx_gpu_sync_device_hpp
+140/320 Test  #69: test_sqlite ...............................................................   Passed    1.81 sec
+        Start 252: header_src_targets_gpu_include_migraphx_gpu_contiguous_hpp
+141/320 Test #196: header_src_include_migraphx_register_target_hpp ...........................   Passed    0.09 sec
+        Start 172: header_src_include_migraphx_operators_hpp
+142/320 Test #115: header_src_include_migraphx_context_hpp ...................................   Passed    0.09 sec
+        Start 107: header_src_include_migraphx_check_shapes_hpp
+143/320 Test #134: header_src_include_migraphx_execution_environment_hpp .....................   Passed    0.09 sec
+        Start 194: header_src_include_migraphx_reflect_hpp
+144/320 Test #285: header_src_targets_gpu_include_migraphx_gpu_rocblas_hpp ...................   Passed    0.09 sec
+        Start 146: header_src_include_migraphx_inline_module_hpp
+145/320 Test #170: header_src_include_migraphx_onnx_hpp ......................................   Passed    0.09 sec
+        Start 253: header_src_targets_gpu_include_migraphx_gpu_convolution_hpp
+146/320 Test #137: header_src_include_migraphx_filesystem_hpp ................................   Passed    0.09 sec
+        Start 195: header_src_include_migraphx_register_op_hpp
+147/320 Test #300: test_api_ref ..............................................................   Passed    1.86 sec
+        Start 193: header_src_include_migraphx_reduce_dims_hpp
+148/320 Test #293: header_src_targets_gpu_include_migraphx_gpu_write_literals_hpp ............   Passed    0.11 sec
+        Start 216: header_src_include_migraphx_streamutils_hpp
+149/320 Test #163: header_src_include_migraphx_matcher_hpp ...................................   Passed    0.11 sec
+        Start 269: header_src_targets_gpu_include_migraphx_gpu_miopen_hpp
+150/320 Test  #91: test_tf ...................................................................   Passed    0.11 sec
+        Start 102: header_src_include_migraphx_auto_any_cast_hpp
+151/320 Test #148: header_src_include_migraphx_instruction_hpp ...............................   Passed    0.11 sec
+        Start 290: header_src_targets_gpu_include_migraphx_gpu_time_op_hpp
+152/320 Test #105: header_src_include_migraphx_builtin_hpp ...................................   Passed    0.10 sec
+        Start 132: header_src_include_migraphx_erase_hpp
+153/320 Test #135: header_src_include_migraphx_fallthrough_hpp ...............................   Passed    0.09 sec
+        Start 245: header_src_targets_gpu_include_migraphx_gpu_compile_hip_code_object_hpp
+154/320 Test #125: header_src_include_migraphx_eliminate_common_subexpression_hpp ............   Passed    0.09 sec
+        Start 140: header_src_include_migraphx_fuse_pointwise_hpp
+155/320 Test #121: header_src_include_migraphx_dom_info_hpp ..................................   Passed    0.09 sec
+        Start 185: header_src_include_migraphx_promote_literals_hpp
+156/320 Test #252: header_src_targets_gpu_include_migraphx_gpu_contiguous_hpp ................   Passed    0.07 sec
+        Start 158: header_src_include_migraphx_make_op_hpp
+157/320 Test #100: header_src_include_migraphx_assert_hpp ....................................   Passed    0.10 sec
+        Start 237: header_src_targets_gpu_include_migraphx_gpu_abs_hpp
+158/320 Test #288: header_src_targets_gpu_include_migraphx_gpu_sync_device_hpp ...............   Passed    0.09 sec
+        Start 122: header_src_include_migraphx_dyn_output_hpp
+159/320 Test #287: header_src_targets_gpu_include_migraphx_gpu_schedule_model_hpp ............   Passed    0.10 sec
+        Start 114: header_src_include_migraphx_config_hpp
+160/320 Test #172: header_src_include_migraphx_operators_hpp .................................   Passed    0.09 sec
+        Start 166: header_src_include_migraphx_module_ref_hpp
+161/320 Test #194: header_src_include_migraphx_reflect_hpp ...................................   Passed    0.09 sec
+        Start 161: header_src_include_migraphx_manage_ptr_hpp
+162/320 Test #253: header_src_targets_gpu_include_migraphx_gpu_convolution_hpp ...............   Passed    0.08 sec
+        Start 142: header_src_include_migraphx_gemm_hpp
+163/320 Test #146: header_src_include_migraphx_inline_module_hpp .............................   Passed    0.09 sec
+        Start 217: header_src_include_migraphx_stringutils_hpp
+164/320 Test #107: header_src_include_migraphx_check_shapes_hpp ..............................   Passed    0.11 sec
+        Start 197: header_src_include_migraphx_replace_allocate_hpp
+165/320 Test #195: header_src_include_migraphx_register_op_hpp ...............................   Passed    0.12 sec
+        Start 291: header_src_targets_gpu_include_migraphx_gpu_topk_hpp
+166/320 Test  #48: test_reduce_dims ..........................................................   Passed    1.97 sec
+        Start 143: header_src_include_migraphx_generate_hpp
+167/320 Test #290: header_src_targets_gpu_include_migraphx_gpu_time_op_hpp ...................   Passed    0.08 sec
+        Start 128: header_src_include_migraphx_eliminate_data_type_hpp
+168/320 Test #193: header_src_include_migraphx_reduce_dims_hpp ...............................   Passed    0.11 sec
+        Start 181: header_src_include_migraphx_permutation_hpp
+169/320 Test #269: header_src_targets_gpu_include_migraphx_gpu_miopen_hpp ....................   Passed    0.09 sec
+        Start 180: header_src_include_migraphx_pass_manager_hpp
+170/320 Test #245: header_src_targets_gpu_include_migraphx_gpu_compile_hip_code_object_hpp ...   Passed    0.08 sec
+        Start 111: header_src_include_migraphx_compile_options_hpp
+171/320 Test #140: header_src_include_migraphx_fuse_pointwise_hpp ............................   Passed    0.09 sec
+        Start 191: header_src_include_migraphx_rank_hpp
+172/320 Test #237: header_src_targets_gpu_include_migraphx_gpu_abs_hpp .......................   Passed    0.09 sec
+        Start 149: header_src_include_migraphx_instruction_ref_hpp
+173/320 Test #216: header_src_include_migraphx_streamutils_hpp ...............................   Passed    0.10 sec
+        Start 211: header_src_include_migraphx_simplify_reshapes_hpp
+174/320 Test #185: header_src_include_migraphx_promote_literals_hpp ..........................   Passed    0.10 sec
+        Start 155: header_src_include_migraphx_lifetime_hpp
+175/320 Test #122: header_src_include_migraphx_dyn_output_hpp ................................   Passed    0.10 sec
+        Start 234: header_src_targets_ref_include_migraphx_ref_gemm_hpp
+176/320 Test #102: header_src_include_migraphx_auto_any_cast_hpp .............................   Passed    0.12 sec
+        Start 101: header_src_include_migraphx_assignment_options_hpp
+177/320 Test #114: header_src_include_migraphx_config_hpp ....................................   Passed    0.10 sec
+        Start 263: header_src_targets_gpu_include_migraphx_gpu_int8_gemm_pack_hpp
+178/320 Test #158: header_src_include_migraphx_make_op_hpp ...................................   Passed    0.11 sec
+        Start 147: header_src_include_migraphx_insert_pad_hpp
+179/320 Test #166: header_src_include_migraphx_module_ref_hpp ................................   Passed    0.10 sec
+        Start 162: header_src_include_migraphx_marker_hpp
+180/320 Test #217: header_src_include_migraphx_stringutils_hpp ...............................   Passed    0.09 sec
+        Start 247: header_src_targets_gpu_include_migraphx_gpu_compile_ops_hpp
+181/320 Test #142: header_src_include_migraphx_gemm_hpp ......................................   Passed    0.09 sec
+        Start 240: header_src_targets_gpu_include_migraphx_gpu_argmax_hpp
+182/320 Test #132: header_src_include_migraphx_erase_hpp .....................................   Passed    0.13 sec
+        Start 221: header_src_include_migraphx_target_assignments_hpp
+183/320 Test #161: header_src_include_migraphx_manage_ptr_hpp ................................   Passed    0.11 sec
+        Start 117: header_src_include_migraphx_convolution_hpp
+184/320 Test #197: header_src_include_migraphx_replace_allocate_hpp ..........................   Passed    0.09 sec
+        Start 188: header_src_include_migraphx_quantize_fp16_hpp
+185/320 Test #128: header_src_include_migraphx_eliminate_data_type_hpp .......................   Passed    0.09 sec
+        Start 123: header_src_include_migraphx_dynamic_loader_hpp
+186/320 Test #143: header_src_include_migraphx_generate_hpp ..................................   Passed    0.09 sec
+        Start 299: test_api_dynamic_shape
+187/320 Test #291: header_src_targets_gpu_include_migraphx_gpu_topk_hpp ......................   Passed    0.10 sec
+        Start 145: header_src_include_migraphx_hash_hpp
+188/320 Test #111: header_src_include_migraphx_compile_options_hpp ...........................   Passed    0.10 sec
+        Start  96: header_src_include_migraphx_any_ptr_hpp
+189/320 Test  #47: test_quantization .........................................................   Passed    2.07 sec
+        Start 159: header_src_include_migraphx_make_shared_array_hpp
+190/320 Test #180: header_src_include_migraphx_pass_manager_hpp ..............................   Passed    0.10 sec
+        Start 138: header_src_include_migraphx_float_equal_hpp
+191/320 Test #149: header_src_include_migraphx_instruction_ref_hpp ...........................   Passed    0.09 sec
+        Start 295: test_api_assign
+192/320 Test #191: header_src_include_migraphx_rank_hpp ......................................   Passed    0.10 sec
+        Start 238: header_src_targets_gpu_include_migraphx_gpu_allocation_model_hpp
+193/320 Test #181: header_src_include_migraphx_permutation_hpp ...............................   Passed    0.11 sec
+        Start 187: header_src_include_migraphx_quantization_hpp
+194/320 Test #155: header_src_include_migraphx_lifetime_hpp ..................................   Passed    0.10 sec
+        Start 150: header_src_include_migraphx_iota_iterator_hpp
+195/320 Test #234: header_src_targets_ref_include_migraphx_ref_gemm_hpp ......................   Passed    0.09 sec
+        Start  97: header_src_include_migraphx_apply_alpha_beta_hpp
+196/320 Test #263: header_src_targets_gpu_include_migraphx_gpu_int8_gemm_pack_hpp ............   Passed    0.09 sec
+        Start 189: header_src_include_migraphx_quantize_int8_hpp
+197/320 Test #147: header_src_include_migraphx_insert_pad_hpp ................................   Passed    0.09 sec
+        Start 294: test_api_array_base
+198/320 Test #162: header_src_include_migraphx_marker_hpp ....................................   Passed    0.09 sec
+        Start 222: header_src_include_migraphx_tensor_view_hpp
+199/320 Test #211: header_src_include_migraphx_simplify_reshapes_hpp .........................   Passed    0.11 sec
+        Start 177: header_src_include_migraphx_par_dfor_hpp
+200/320 Test #101: header_src_include_migraphx_assignment_options_hpp ........................   Passed    0.10 sec
+        Start 127: header_src_include_migraphx_eliminate_contiguous_hpp
+201/320 Test #221: header_src_include_migraphx_target_assignments_hpp ........................   Passed    0.09 sec
+        Start 301: test_api_save_load
+202/320 Test #117: header_src_include_migraphx_convolution_hpp ...............................   Passed    0.09 sec
+        Start 141: header_src_include_migraphx_fuse_reduce_hpp
+203/320 Test #240: header_src_targets_gpu_include_migraphx_gpu_argmax_hpp ....................   Passed    0.10 sec
+        Start 297: test_api_lookup
+204/320 Test #247: header_src_targets_gpu_include_migraphx_gpu_compile_ops_hpp ...............   Passed    0.12 sec
+        Start  99: header_src_include_migraphx_array_hpp
+205/320 Test #188: header_src_include_migraphx_quantize_fp16_hpp .............................   Passed    0.11 sec
+        Start 298: test_api_module_construct
+206/320 Test #299: test_api_dynamic_shape ....................................................   Passed    0.09 sec
+        Start 305: test_api_tf_parser
+207/320 Test #123: header_src_include_migraphx_dynamic_loader_hpp ............................   Passed    0.09 sec
+        Start 302: test_api_op
+208/320 Test #145: header_src_include_migraphx_hash_hpp ......................................   Passed    0.10 sec
+        Start  90: test_verify_onnx
+209/320 Test  #96: header_src_include_migraphx_any_ptr_hpp ...................................   Passed    0.09 sec
+        Start  50: test_ref_dot_op_test
+210/320 Test #159: header_src_include_migraphx_make_shared_array_hpp .........................   Passed    0.09 sec
+        Start  37: test_op_shape_test
+211/320 Test #295: test_api_assign ...........................................................   Passed    0.09 sec
+        Start  14: test_eliminate_contiguous_test
+212/320 Test #138: header_src_include_migraphx_float_equal_hpp ...............................   Passed    0.10 sec
+        Start  62: test_serialize_program
+213/320 Test #238: header_src_targets_gpu_include_migraphx_gpu_allocation_model_hpp ..........   Passed    0.09 sec
+        Start   6: test_const_eval_test
+214/320 Test #294: test_api_array_base .......................................................   Passed    0.08 sec
+        Start   3: test_argument_test
+215/320 Test  #97: header_src_include_migraphx_apply_alpha_beta_hpp ..........................   Passed    0.09 sec
+        Start   2: test_any_ptr
+216/320 Test #189: header_src_include_migraphx_quantize_int8_hpp .............................   Passed    0.09 sec
+        Start   5: test_check_shapes_test
+217/320 Test #177: header_src_include_migraphx_par_dfor_hpp ..................................   Passed    0.09 sec
+        Start  74: test_value_test
+218/320 Test #150: header_src_include_migraphx_iota_iterator_hpp .............................   Passed    0.11 sec
+        Start  39: test_operators
+219/320 Test #222: header_src_include_migraphx_tensor_view_hpp ...............................   Passed    0.10 sec
+        Start  38: test_operation
+220/320 Test #127: header_src_include_migraphx_eliminate_contiguous_hpp ......................   Passed    0.11 sec
+        Start  18: test_eval_test
+221/320 Test #301: test_api_save_load ........................................................   Passed    0.11 sec
+        Start  21: test_fuse_reduce
+222/320 Test #297: test_api_lookup ...........................................................   Passed    0.11 sec
+        Start  73: test_validate
+223/320 Test  #62: test_serialize_program ....................................................   Passed    0.05 sec
+        Start  23: test_inline_module_test
+224/320 Test   #6: test_const_eval_test ......................................................   Passed    0.05 sec
+        Start  88: test_onnx_rnn_test
+225/320 Test  #14: test_eliminate_contiguous_test ............................................   Passed    0.05 sec
+        Start  71: test_targets
+226/320 Test #298: test_api_module_construct .................................................   Passed    0.09 sec
+        Start  70: test_stringutils
+227/320 Test  #50: test_ref_dot_op_test ......................................................   Passed    0.06 sec
+        Start   7: test_convert_to_json
+228/320 Test #187: header_src_include_migraphx_quantization_hpp ..............................   Passed    0.14 sec
+        Start  31: test_marker
+229/320 Test #141: header_src_include_migraphx_fuse_reduce_hpp ...............................   Passed    0.12 sec
+        Start  32: test_matcher
+230/320 Test  #99: header_src_include_migraphx_array_hpp .....................................   Passed    0.10 sec
+        Start  56: test_rewrite_gelu_test
+231/320 Test  #90: test_verify_onnx ..........................................................***Failed    0.07 sec
+[   RUN    ] averagepool_notset_test
+[ COMPLETE ] averagepool_notset_test
+[   RUN    ] averagepool_nt_cip_test
+[ COMPLETE ] averagepool_nt_cip_test
+[   RUN    ] batch_norm_flat_test
+[ COMPLETE ] batch_norm_flat_test
+[   RUN    ] batch_norm_rank_2_test
+[ COMPLETE ] batch_norm_rank_2_test
+[   RUN    ] batch_norm_1d_test
+[ COMPLETE ] batch_norm_1d_test
+[   RUN    ] batch_norm_2d_test
+[ COMPLETE ] batch_norm_2d_test
+[   RUN    ] batch_norm_3d_test
+[ COMPLETE ] batch_norm_3d_test
+[   RUN    ] celu_verify_test
+[ COMPLETE ] celu_verify_test
+[   RUN    ] clip_args_type_mismatch
+[ COMPLETE ] clip_args_type_mismatch
+[   RUN    ] depthtospace_simple_test
+[ COMPLETE ] depthtospace_simple_test
+[   RUN    ] spacetodepth_simple_test
+[ COMPLETE ] spacetodepth_simple_test
+[   RUN    ] spacetodepth_depthtospace_test
+[ COMPLETE ] spacetodepth_depthtospace_test
+[   RUN    ] eyelike_verify_test
+[ COMPLETE ] eyelike_verify_test
+[   RUN    ] eyelike_verify_negk_test
+[ COMPLETE ] eyelike_verify_negk_test
+[   RUN    ] gather_elements
+[ COMPLETE ] gather_elements
+[   RUN    ] gemm_test
+[ COMPLETE ] gemm_test
+[   RUN    ] gemm_half_test
+[ COMPLETE ] gemm_half_test
+[   RUN    ] greaterorequal_test
+[ COMPLETE ] greaterorequal_test
+[   RUN    ] hardsigmoid_verify_test
+[ COMPLETE ] hardsigmoid_verify_test
+[   RUN    ] if_else_test
+void if_else_test()
+/code/AMDMIGraphX/test/onnx/verify_onnx.cpp:605:
+    FAILED: migraphx::verify::verify_range(result_vector, gold) [ 0 ]
+[  FAILED  ] if_else_test: Test failure
+[   RUN    ] if_else_test_inlined
+void if_else_test_inlined()
+/code/AMDMIGraphX/test/onnx/verify_onnx.cpp:624:
+    FAILED: migraphx::verify::verify_range(result_vector, gold) [ 0 ]
+[  FAILED  ] if_else_test_inlined: Test failure
+[   RUN    ] if_then_test
+[ COMPLETE ] if_then_test
+[   RUN    ] if_then_test_inlined
+[ COMPLETE ] if_then_test_inlined
+[   RUN    ] if_literal_test
+[ COMPLETE ] if_literal_test
+[   RUN    ] if_then_else_multi_output_shapes_inlined_test
+[ COMPLETE ] if_then_else_multi_output_shapes_inlined_test
+[   RUN    ] if_then_else_multi_output_shapes_test
+[ COMPLETE ] if_then_else_multi_output_shapes_test
+[   RUN    ] if_pl_test
+[ COMPLETE ] if_pl_test
+[   RUN    ] if_tuple_test
+[ COMPLETE ] if_tuple_test
+[   RUN    ] instance_norm_test
+[ COMPLETE ] instance_norm_test
+[   RUN    ] instance_norm_dyn_batch_test
+[ COMPLETE ] instance_norm_dyn_batch_test
+[   RUN    ] instance_norm_3d_test
+[ COMPLETE ] instance_norm_3d_test
+[   RUN    ] lessorequal_test
+[ COMPLETE ] lessorequal_test
+[   RUN    ] lpnormalization_1norm
+[ COMPLETE ] lpnormalization_1norm
+[   RUN    ] lpnormalization_2norm
+[ COMPLETE ] lpnormalization_2norm
+[   RUN    ] mean_broadcast_test
+[ COMPLETE ] mean_broadcast_test
+[   RUN    ] mean_test
+[ COMPLETE ] mean_test
+[   RUN    ] mean_integral_test
+[ COMPLETE ] mean_integral_test
+[   RUN    ] mod_test
+[ COMPLETE ] mod_test
+[   RUN    ] mod_test_different_types
+[ COMPLETE ] mod_test_different_types
+[   RUN    ] mod_test_fmod
+[ COMPLETE ] mod_test_fmod
+[   RUN    ] mod_test_fmod_different_types
+[ COMPLETE ] mod_test_fmod_different_types
+[   RUN    ] nonzero_test
+[ COMPLETE ] nonzero_test
+[   RUN    ] resize_downsample_f_test
+[ COMPLETE ] resize_downsample_f_test
+[   RUN    ] resize_upsample_linear_ac_test
+[ COMPLETE ] resize_upsample_linear_ac_test
+[   RUN    ] resize_upsample_linear_test
+[ COMPLETE ] resize_upsample_linear_test
+[   RUN    ] resize_upsample_pf_test
+[ COMPLETE ] resize_upsample_pf_test
+[   RUN    ] reversesequence_4D_verify_test
+[ COMPLETE ] reversesequence_4D_verify_test
+[   RUN    ] reversesequence_batch_verify_test
+[ COMPLETE ] reversesequence_batch_verify_test
+[   RUN    ] reversesequence_time_verify_test
+[ COMPLETE ] reversesequence_time_verify_test
+[   RUN    ] selu_test
+[ COMPLETE ] selu_test
+[   RUN    ] size_verify_test
+[ COMPLETE ] size_verify_test
+[   RUN    ] slice_test
+[ COMPLETE ] slice_test
+[   RUN    ] slice_5arg_test
+[ COMPLETE ] slice_5arg_test
+[   RUN    ] slice_reverse_test
+[ COMPLETE ] slice_reverse_test
+[   RUN    ] slice_step_test
+[ COMPLETE ] slice_step_test
+[   RUN    ] softplus_test
+[ COMPLETE ] softplus_test
+[   RUN    ] softsign_test
+[ COMPLETE ] softsign_test
+[   RUN    ] upsample_test
+[ COMPLETE ] upsample_test
+[   RUN    ] where_test
+[ COMPLETE ] where_test
+[   RUN    ] trilu_test
+[ COMPLETE ] trilu_test
+[   RUN    ] trilu_batch_diff_k_test
+[ COMPLETE ] trilu_batch_diff_k_test
+[   RUN    ] trilu_lower_test
+[ COMPLETE ] trilu_lower_test
+[   RUN    ] trilu_out_k_test
+[ COMPLETE ] trilu_out_k_test
+[   RUN    ] trilu_row_one_test
+[ COMPLETE ] trilu_row_one_test
+[==========] 64 tests ran
+[  FAILED  ] 2 tests failed
+[  FAILED  ] if_else_test
+[  FAILED  ] if_else_test_inlined
+
+        Start  15: test_eliminate_data_type_test
+232/320 Test  #89: test_onnx_test ............................................................***Failed    2.22 sec
+[   RUN    ] acos_test
+[ COMPLETE ] acos_test
+[   RUN    ] acosh_test
+[ COMPLETE ] acosh_test
+[   RUN    ] add_bcast_test
+[ COMPLETE ] add_bcast_test
+[   RUN    ] add_fp16_test
+void add_fp16_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:154:
+    FAILED: p == prog [ module: "main"
+@0 = @literal{2.5} -> half_type, {1}, {1}, target_id=0
+@1 = @literal{1.5} -> half_type, {1}, {1}, target_id=0
+@2 = add(@1,@0) -> half_type, {1}, {1}, target_id=0
+
+ == module: "main"
+@0 = @literal{16640} -> half_type, {1}, {1}, target_id=0
+@1 = @literal{15872} -> half_type, {1}, {1}, target_id=0
+@2 = add(@1,@0) -> half_type, {1}, {1}, target_id=0
+
+ ]
+[  FAILED  ] add_fp16_test: Test failure
+[   RUN    ] add_scalar_test
+[ COMPLETE ] add_scalar_test
+[   RUN    ] argmax_test
+[ COMPLETE ] argmax_test
+[   RUN    ] argmax_dyn_test
+[ COMPLETE ] argmax_dyn_test
+[   RUN    ] argmin_test
+[ COMPLETE ] argmin_test
+[   RUN    ] asin_test
+[ COMPLETE ] asin_test
+[   RUN    ] asinh_test
+[ COMPLETE ] asinh_test
+[   RUN    ] atan_test
+[ COMPLETE ] atan_test
+[   RUN    ] atanh_test
+[ COMPLETE ] atanh_test
+[   RUN    ] averagepool_1d_test
+[ COMPLETE ] averagepool_1d_test
+[   RUN    ] averagepool_3d_test
+[ COMPLETE ] averagepool_3d_test
+[   RUN    ] averagepool_dyn_test
+[ COMPLETE ] averagepool_dyn_test
+[   RUN    ] averagepool_dyn_autopad_error_test
+[ COMPLETE ] averagepool_dyn_autopad_error_test
+[   RUN    ] averagepool_dyn_asym_padding_error_test
+[ COMPLETE ] averagepool_dyn_asym_padding_error_test
+[   RUN    ] averagepool_dyn_cip_error_test
+[ COMPLETE ] averagepool_dyn_cip_error_test
+[   RUN    ] averagepool_notset_test
+[ COMPLETE ] averagepool_notset_test
+[   RUN    ] averagepool_nt_cip_test
+[ COMPLETE ] averagepool_nt_cip_test
+[   RUN    ] averagepool_same_lower_test
+[ COMPLETE ] averagepool_same_lower_test
+[   RUN    ] averagepool_sl_cip_test
+[ COMPLETE ] averagepool_sl_cip_test
+[   RUN    ] averagepool_same_upper_test
+[ COMPLETE ] averagepool_same_upper_test
+[   RUN    ] batch_norm_flat_test
+[ COMPLETE ] batch_norm_flat_test
+[   RUN    ] batch_norm_rank_2_test
+[ COMPLETE ] batch_norm_rank_2_test
+[   RUN    ] batch_norm_1d_test
+[ COMPLETE ] batch_norm_1d_test
+[   RUN    ] batch_norm_2d_test
+[ COMPLETE ] batch_norm_2d_test
+[   RUN    ] batch_norm_3d_test
+[ COMPLETE ] batch_norm_3d_test
+[   RUN    ] batch_norm_invalid_rank
+[ COMPLETE ] batch_norm_invalid_rank
+[   RUN    ] batch_norm_invalid_bias_rank
+[ COMPLETE ] batch_norm_invalid_bias_rank
+[   RUN    ] binary_dyn_brcst_prelu_test
+[ COMPLETE ] binary_dyn_brcst_prelu_test
+[   RUN    ] binary_dyn_brcst_add_test
+[ COMPLETE ] binary_dyn_brcst_add_test
+[   RUN    ] binary_dyn_brcst_attr_error_test
+[ COMPLETE ] binary_dyn_brcst_attr_error_test
+[   RUN    ] binary_dyn_brcst_mul_test
+[ COMPLETE ] binary_dyn_brcst_mul_test
+[   RUN    ] cast_test
+[ COMPLETE ] cast_test
+[   RUN    ] ceil_test
+[ COMPLETE ] ceil_test
+[   RUN    ] celu_alpha_test
+[ COMPLETE ] celu_alpha_test
+[   RUN    ] celu_default_test
+[ COMPLETE ] celu_default_test
+[   RUN    ] celu_wrong_type_test
+[ COMPLETE ] celu_wrong_type_test
+[   RUN    ] celu_zero_alpha_test
+[ COMPLETE ] celu_zero_alpha_test
+[   RUN    ] clip_test
+[ COMPLETE ] clip_test
+[   RUN    ] clip_test_op11_max_only
+[ COMPLETE ] clip_test_op11_max_only
+[   RUN    ] clip_test_op11
+[ COMPLETE ] clip_test_op11
+[   RUN    ] clip_test_op11_min_only
+[ COMPLETE ] clip_test_op11_min_only
+[   RUN    ] clip_test_op11_no_args
+[ COMPLETE ] clip_test_op11_no_args
+[   RUN    ] clip_test_op11_no_args1
+[ COMPLETE ] clip_test_op11_no_args1
+[   RUN    ] clip_test_args_type_mismatch
+[ COMPLETE ] clip_test_args_type_mismatch
+[   RUN    ] clip_dyn_min_max_test
+[ COMPLETE ] clip_dyn_min_max_test
+[   RUN    ] clip_dyn_min_only_test
+[ COMPLETE ] clip_dyn_min_only_test
+[   RUN    ] concat_test
+[ COMPLETE ] concat_test
+[   RUN    ] concat_dyn_test
+[ COMPLETE ] concat_dyn_test
+[   RUN    ] constant_test
+[ COMPLETE ] constant_test
+[   RUN    ] constant_fill_test
+[ COMPLETE ] constant_fill_test
+[   RUN    ] constant_fill_input_as_shape_test
+[ COMPLETE ] constant_fill_input_as_shape_test
+[   RUN    ] constant_scalar_test
+[ COMPLETE ] constant_scalar_test
+[   RUN    ] constant_empty_scalar_int64_test
+[ COMPLETE ] constant_empty_scalar_int64_test
+[   RUN    ] constant_one_val_int64_test
+[ COMPLETE ] constant_one_val_int64_test
+[   RUN    ] const_of_shape_empty_input_test
+[ COMPLETE ] const_of_shape_empty_input_test
+[   RUN    ] const_of_shape_float_test
+[ COMPLETE ] const_of_shape_float_test
+[   RUN    ] const_of_shape_int64_test
+[ COMPLETE ] const_of_shape_int64_test
+[   RUN    ] const_of_shape_no_value_attr_test
+[ COMPLETE ] const_of_shape_no_value_attr_test
+[   RUN    ] conv_autopad_fail_test
+[ COMPLETE ] conv_autopad_fail_test
+[   RUN    ] conv_1d_test
+[ COMPLETE ] conv_1d_test
+[   RUN    ] conv_3d_test
+[ COMPLETE ] conv_3d_test
+[   RUN    ] conv_attr_fail_test
+[ COMPLETE ] conv_attr_fail_test
+[   RUN    ] conv_autopad_same_test
+[ COMPLETE ] conv_autopad_same_test
+[   RUN    ] conv_bias_test
+[ COMPLETE ] conv_bias_test
+[   RUN    ] conv_bn_relu_maxpool_test
+[ COMPLETE ] conv_bn_relu_maxpool_test
+[   RUN    ] conv_dynamic_batch_test
+[ COMPLETE ] conv_dynamic_batch_test
+[   RUN    ] conv_dynamic_bias_test
+[ COMPLETE ] conv_dynamic_bias_test
+[   RUN    ] conv_dynamic_img_test
+[ COMPLETE ] conv_dynamic_img_test
+[   RUN    ] conv_dynamic_weights_test
+[ COMPLETE ] conv_dynamic_weights_test
+[   RUN    ] conv_dynamic_img_and_weights_test
+[ COMPLETE ] conv_dynamic_img_and_weights_test
+[   RUN    ] conv_dynamic_batch_same_upper
+[ COMPLETE ] conv_dynamic_batch_same_upper
+[   RUN    ] conv_dynamic_img_same_upper
+[ COMPLETE ] conv_dynamic_img_same_upper
+[   RUN    ] conv_dynamic_kernel_same_lower
+[ COMPLETE ] conv_dynamic_kernel_same_lower
+[   RUN    ] conv_relu_maxpool_test
+[ COMPLETE ] conv_relu_maxpool_test
+[   RUN    ] conv_relu_maxpool_x2_test
+[ COMPLETE ] conv_relu_maxpool_x2_test
+[   RUN    ] convinteger_bias_test
+[ COMPLETE ] convinteger_bias_test
+[   RUN    ] cos_test
+[ COMPLETE ] cos_test
+[   RUN    ] cosh_test
+[ COMPLETE ] cosh_test
+[   RUN    ] conv_transpose_test
+[ COMPLETE ] conv_transpose_test
+[   RUN    ] conv_transpose_bias_test
+[ COMPLETE ] conv_transpose_bias_test
+[   RUN    ] conv_transpose_input_pads_strides_test
+[ COMPLETE ] conv_transpose_input_pads_strides_test
+[   RUN    ] conv_transpose_input_pads_asymm_test
+[ COMPLETE ] conv_transpose_input_pads_asymm_test
+[   RUN    ] conv_transpose_input_pads_asymm_1d_test
+[ COMPLETE ] conv_transpose_input_pads_asymm_1d_test
+[   RUN    ] conv_transpose_output_padding_test
+[ COMPLETE ] conv_transpose_output_padding_test
+[   RUN    ] conv_transpose_output_padding_3d_test
+[ COMPLETE ] conv_transpose_output_padding_3d_test
+[   RUN    ] conv_transpose_output_shape_test
+[ COMPLETE ] conv_transpose_output_shape_test
+[   RUN    ] conv_transpose_output_shape_3d_test
+[ COMPLETE ] conv_transpose_output_shape_3d_test
+[   RUN    ] conv_transpose_auto_pad_error
+[ COMPLETE ] conv_transpose_auto_pad_error
+[   RUN    ] conv_transpose_dyn_asym_padding_error
+[ COMPLETE ] conv_transpose_dyn_asym_padding_error
+[   RUN    ] conv_transpose_dyn_output_shape_error
+[ COMPLETE ] conv_transpose_dyn_output_shape_error
+[   RUN    ] conv_transpose_dyn_batch_test
+[ COMPLETE ] conv_transpose_dyn_batch_test
+[   RUN    ] conv_transpose_dyn_img_test
+[ COMPLETE ] conv_transpose_dyn_img_test
+[   RUN    ] depthtospace_test
+[ COMPLETE ] depthtospace_test
+[   RUN    ] depthtospace_crd_test
+[ COMPLETE ] depthtospace_crd_test
+[   RUN    ] depthtospace_simple_test
+[ COMPLETE ] depthtospace_simple_test
+[   RUN    ] spacetodepth_test
+[ COMPLETE ] spacetodepth_test
+[   RUN    ] spacetodepth_simple_test
+[ COMPLETE ] spacetodepth_simple_test
+[   RUN    ] spacetodepth_invalid_blocksize
+[ COMPLETE ] spacetodepth_invalid_blocksize
+[   RUN    ] spacetodepth_nondivisibility_test
+[ COMPLETE ] spacetodepth_nondivisibility_test
+[   RUN    ] dequantizelinear_test
+[ COMPLETE ] dequantizelinear_test
+[   RUN    ] dequantizelinear_zero_point_test
+[ COMPLETE ] dequantizelinear_zero_point_test
+[   RUN    ] dequantizelinear_axis_test
+[ COMPLETE ] dequantizelinear_axis_test
+[   RUN    ] dequantizelinear_neg_axis_test
+[ COMPLETE ] dequantizelinear_neg_axis_test
+[   RUN    ] dropout_test
+[ COMPLETE ] dropout_test
+[   RUN    ] elu_test
+[ COMPLETE ] elu_test
+[   RUN    ] embedding_bag_test
+[ COMPLETE ] embedding_bag_test
+[   RUN    ] embedding_bag_offset_test
+[ COMPLETE ] embedding_bag_offset_test
+[   RUN    ] equal_test
+[ COMPLETE ] equal_test
+[   RUN    ] equal_bool_test
+[ COMPLETE ] equal_bool_test
+[   RUN    ] erf_test
+[ COMPLETE ] erf_test
+[   RUN    ] exp_test
+[ COMPLETE ] exp_test
+[   RUN    ] expand_test
+[ COMPLETE ] expand_test
+[   RUN    ] external_constant_test
+[ COMPLETE ] external_constant_test
+[   RUN    ] external_data_test
+[ COMPLETE ] external_data_test
+[   RUN    ] external_data_diff_path_test
+[ COMPLETE ] external_data_diff_path_test
+[   RUN    ] eyelike_default_test
+[ COMPLETE ] eyelike_default_test
+[   RUN    ] eyelike_double_test
+[ COMPLETE ] eyelike_double_test
+[   RUN    ] eyelike_half_test
+[ COMPLETE ] eyelike_half_test
+[   RUN    ] eyelike_k_test
+[ COMPLETE ] eyelike_k_test
+[   RUN    ] eyelike_k_outofbounds_neg_test
+[ COMPLETE ] eyelike_k_outofbounds_neg_test
+[   RUN    ] eyelike_k_outofbounds_pos_test
+[ COMPLETE ] eyelike_k_outofbounds_pos_test
+[   RUN    ] eyelike_not_rank2_test
+[ COMPLETE ] eyelike_not_rank2_test
+[   RUN    ] eyelike_set_dtype_test
+[ COMPLETE ] eyelike_set_dtype_test
+[   RUN    ] flatten_test
+[ COMPLETE ] flatten_test
+[   RUN    ] flatten_nonstd_test
+[ COMPLETE ] flatten_nonstd_test
+[   RUN    ] flatten_dyn_test
+[ COMPLETE ] flatten_dyn_test
+[   RUN    ] floor_test
+[ COMPLETE ] floor_test
+[   RUN    ] gather_test
+void gather_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2144:
+    FAILED: p == prog [ module: "main"
+indices = @param:indices -> int32_type, {2, 3}, {3, 1}, target_id=0
+data = @param:data -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@2 = gather[axis=1](data,indices) -> float_type, {3, 2, 3, 5, 6}, {180, 90, 30, 6, 1}, target_id=0
+
+ == module: "main"
+indices = @param:indices -> int32_type, {2, 3, 4, 5}, {60, 20, 5, 1}, target_id=0
+data = @param:data -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@2 = gather[axis=1](data,indices) -> float_type, {3, 2, 3, 4, 5, 5, 6}, {3600, 1800, 600, 150, 30, 6, 1}, target_id=0
+
+ ]
+[  FAILED  ] gather_test: Test failure
+[   RUN    ] gather_scalar_test
+[ COMPLETE ] gather_scalar_test
+[   RUN    ] gather_dyn_test
+[ COMPLETE ] gather_dyn_test
+[   RUN    ] gather_elements_axis0_test
+[ COMPLETE ] gather_elements_axis0_test
+[   RUN    ] gather_elements_axis1_test
+[ COMPLETE ] gather_elements_axis1_test
+[   RUN    ] gathernd_test
+[ COMPLETE ] gathernd_test
+[   RUN    ] gathernd_dyn_test
+[ COMPLETE ] gathernd_dyn_test
+[   RUN    ] gathernd_batch_dims_test
+[ COMPLETE ] gathernd_batch_dims_test
+[   RUN    ] gemm_test
+[ COMPLETE ] gemm_test
+[   RUN    ] gemm_no_C_test
+[ COMPLETE ] gemm_no_C_test
+[   RUN    ] gemm_brcst_C_test
+[ COMPLETE ] gemm_brcst_C_test
+[   RUN    ] gemm_half_test
+[ COMPLETE ] gemm_half_test
+[   RUN    ] gemm_dyn_inner_test
+[ COMPLETE ] gemm_dyn_inner_test
+[   RUN    ] gemm_dyn_outer_test
+[ COMPLETE ] gemm_dyn_outer_test
+[   RUN    ] gemm_dyn_bias_test
+[ COMPLETE ] gemm_dyn_bias_test
+[   RUN    ] gemm_rank_error
+[ COMPLETE ] gemm_rank_error
+[   RUN    ] globalavgpool_test
+[ COMPLETE ] globalavgpool_test
+[   RUN    ] globalavgpool_dyn_test
+[ COMPLETE ] globalavgpool_dyn_test
+[   RUN    ] globallppool_test
+[ COMPLETE ] globallppool_test
+[   RUN    ] globallppool_dyn_test
+[ COMPLETE ] globallppool_dyn_test
+[   RUN    ] globalmaxpool_test
+[ COMPLETE ] globalmaxpool_test
+[   RUN    ] globalmaxpool_dyn_test
+[ COMPLETE ] globalmaxpool_dyn_test
+[   RUN    ] greater_test
+[ COMPLETE ] greater_test
+[   RUN    ] greater_bool_test
+[ COMPLETE ] greater_bool_test
+[   RUN    ] greaterorequal_test
+[ COMPLETE ] greaterorequal_test
+[   RUN    ] group_conv_test
+[ COMPLETE ] group_conv_test
+[   RUN    ] hardsigmoid_default_test
+[ COMPLETE ] hardsigmoid_default_test
+[   RUN    ] hardsigmoid_double_test
+[ COMPLETE ] hardsigmoid_double_test
+[   RUN    ] hardsigmoid_half_test
+[ COMPLETE ] hardsigmoid_half_test
+[   RUN    ] hardswish_test
+[ COMPLETE ] hardswish_test
+[   RUN    ] if_else_test
+void if_else_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2805:
+    FAILED: p == prog [ module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1.3865, -0.494756, -0.283504, 0.200491, -0.490031, 1.32388} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3}, {3, 1}, target_id=0
+@7 = @return(@6), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_if:@1 = @return(If_5_if:@0), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_else:@1 = @return(If_5_else:@0), target_id=0
+
+ == module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{-0.589006, -1.73718, -0.101094, 0.138365, -0.895224, -1.87671} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3}, {3, 1}, target_id=0
+@7 = @return(@6), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_if:@1 = @return(If_5_if:@0), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_else:@1 = @return(If_5_else:@0), target_id=0
+
+ ]
+[  FAILED  ] if_else_test: Test failure
+[   RUN    ] if_else_test_inlined
+void if_else_test_inlined()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2830:
+    FAILED: p == prog [ module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@2 = @literal{0.811412, -0.949771, -0.169276, 0.36552, -0.14801, 2.07061} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{0} -> bool_type, {1}, {1}, target_id=0
+@5 = mul(y,@2) -> float_type, {2, 3}, {3, 1}, target_id=0
+@6 = @return(@5), target_id=0
+
+ == module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@2 = @literal{0.220931, 1.09414, 0.248499, -0.0890805, 0.242134, 1.47316} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{0} -> bool_type, {1}, {1}, target_id=0
+@5 = mul(y,@2) -> float_type, {2, 3}, {3, 1}, target_id=0
+@6 = @return(@5), target_id=0
+
+ ]
+[  FAILED  ] if_else_test_inlined: Test failure
+[   RUN    ] if_literal_test
+[ COMPLETE ] if_literal_test
+[   RUN    ] if_param_excp_test
+[ COMPLETE ] if_param_excp_test
+[   RUN    ] if_param_excp1_test
+[ COMPLETE ] if_param_excp1_test
+[   RUN    ] if_param_test
+void if_param_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2899:
+    FAILED: p == prog [ module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+cond = @param:cond -> bool_type, {1}, {0}, target_id=0
+@3 = if(cond), [If_3_if, If_3_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@4 = get_tuple_elem[index=0](@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = @return(@4), target_id=0
+
+module: "If_3_if"
+If_3_if:@0 = @literal{0.384804, -1.77948, -0.453775, 0.477438, -1.06333, -1.12893} -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_if:@1 = add(x,If_3_if:@0) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_if:@2 = @return(If_3_if:@1), target_id=0
+
+module: "If_3_else"
+If_3_else:@0 = @literal{-0.258047, 0.360394, 0.536804, -0.577762, 1.0217, 1.02442} -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_else:@1 = mul(y,If_3_else:@0) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_else:@2 = @return(If_3_else:@1), target_id=0
+
+ == module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+cond = @param:cond -> bool_type, {1}, {0}, target_id=0
+@3 = if(cond), [If_3_if, If_3_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@4 = get_tuple_elem[index=0](@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = @return(@4), target_id=0
+
+module: "If_3_if"
+If_3_if:@0 = @literal{1.37987, -0.416534, 0.616102, -0.484412, -1.40419, -0.223273} -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_if:@1 = add(x,If_3_if:@0) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_if:@2 = @return(If_3_if:@1), target_id=0
+
+module: "If_3_else"
+If_3_else:@0 = @literal{-1.1046, -1.7259, 0.289361, 0.235536, -1.00371, 0.885183} -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_else:@1 = mul(y,If_3_else:@0) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_3_else:@2 = @return(If_3_else:@1), target_id=0
+
+ ]
+[  FAILED  ] if_param_test: Test failure
+[   RUN    ] if_then_else_multi_output_shapes_inlined_test
+void if_then_else_multi_output_shapes_inlined_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2927:
+    FAILED: p == prog [ module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@2 = @literal{-1.01837, -0.305541, -0.254105, 0.892955, 1.38714, -0.584205} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@4 = @literal{1} -> bool_type, {1}, {1}, target_id=0
+@5 = add(x,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@6 = add(x,x) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@7 = @return(@5,@6), target_id=0
+
+ == module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@2 = @literal{1.596, -1.26358, -0.766854, 0.0902328, 0.755263, -1.37633} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@4 = @literal{1} -> bool_type, {1}, {1}, target_id=0
+@5 = add(x,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@6 = add(x,x) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@7 = @return(@5,@6), target_id=0
+
+ ]
+[  FAILED  ] if_then_else_multi_output_shapes_inlined_test: Test failure
+[   RUN    ] if_then_else_multi_output_shapes_test
+void if_then_else_multi_output_shapes_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:2963:
+    FAILED: p == prog [ module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+x = @param:x -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@3 = @literal{-0.753997, 0.707831, -0.865795, 2.49574, 0.464937, -0.168745} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3, 1}, {3, 1, 1}, float_type, {2, 3, 1}, {3, 1, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@7 = get_tuple_elem[index=1](@5) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@8 = @return(@6,@7), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_if:@1 = add(x,x) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_if:@2 = @return(If_5_if:@0,If_5_if:@1), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_else:@1 = sub(y,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_else:@2 = @return(If_5_else:@0,If_5_else:@1), target_id=0
+
+ == module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+x = @param:x -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@3 = @literal{0.329673, 0.839686, -0.946101, -1.14129, 0.369777, 2.32962} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3, 1}, {3, 1, 1}, float_type, {2, 3, 1}, {3, 1, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@7 = get_tuple_elem[index=1](@5) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+@8 = @return(@6,@7), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_if:@1 = add(x,x) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_if:@2 = @return(If_5_if:@0,If_5_if:@1), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_else:@1 = sub(y,@3) -> float_type, {2, 3, 1}, {3, 1, 1}, target_id=0
+If_5_else:@2 = @return(If_5_else:@0,If_5_else:@1), target_id=0
+
+ ]
+[  FAILED  ] if_then_else_multi_output_shapes_test: Test failure
+[   RUN    ] if_pl_test
+[ COMPLETE ] if_pl_test
+[   RUN    ] if_then_test
+void if_then_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:3030:
+    FAILED: p == prog [ module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{-0.266913, -0.180328, -0.124268, -1.23768, 0.312334, 1.18475} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3}, {3, 1}, target_id=0
+@7 = @return(@6), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_if:@1 = @return(If_5_if:@0), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_else:@1 = @return(If_5_else:@0), target_id=0
+
+ == module: "main"
+cond = @param:cond -> bool_type, {1}, {1}, target_id=0
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1.38157, 0.28081, 1.89062, -1.21693, 0.0687757, -1.75013} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@5 = if(cond), [If_5_if, If_5_else] -> [float_type, {2, 3}, {3, 1}], target_id=0
+@6 = get_tuple_elem[index=0](@5) -> float_type, {2, 3}, {3, 1}, target_id=0
+@7 = @return(@6), target_id=0
+
+module: "If_5_if"
+If_5_if:@0 = add(x,@4) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_if:@1 = @return(If_5_if:@0), target_id=0
+
+module: "If_5_else"
+If_5_else:@0 = mul(y,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+If_5_else:@1 = @return(If_5_else:@0), target_id=0
+
+ ]
+[  FAILED  ] if_then_test: Test failure
+[   RUN    ] if_then_test_inlined
+void if_then_test_inlined()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:3056:
+    FAILED: p == prog [ module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@2 = @literal{-1.26487, -2.42279, 0.990835, 1.63072, 0.812238, -0.174946} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1} -> bool_type, {1}, {1}, target_id=0
+@5 = add(x,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+@6 = @return(@5), target_id=0
+
+ == module: "main"
+y = @param:y -> float_type, {2, 3}, {3, 1}, target_id=0
+x = @param:x -> float_type, {2, 3}, {3, 1}, target_id=0
+@2 = @literal{-0.589808, 0.24017, -0.517505, -0.292051, 1.14667, -0.989418} -> float_type, {2, 3}, {3, 1}, target_id=0
+@3 = @literal{1, 1, 1, 1, 1, 1} -> float_type, {2, 3}, {3, 1}, target_id=0
+@4 = @literal{1} -> bool_type, {1}, {1}, target_id=0
+@5 = add(x,@3) -> float_type, {2, 3}, {3, 1}, target_id=0
+@6 = @return(@5), target_id=0
+
+ ]
+[  FAILED  ] if_then_test_inlined: Test failure
+[   RUN    ] if_tuple_test
+[ COMPLETE ] if_tuple_test
+[   RUN    ] isnan_float_test
+[ COMPLETE ] isnan_float_test
+[   RUN    ] isnan_half_test
+[ COMPLETE ] isnan_half_test
+[   RUN    ] imagescaler_test
+[ COMPLETE ] imagescaler_test
+[   RUN    ] imagescaler_half_test
+[ COMPLETE ] imagescaler_half_test
+[   RUN    ] implicit_add_bcast_test
+[ COMPLETE ] implicit_add_bcast_test
+[   RUN    ] implicit_add_bcast_user_input_shape_test
+[ COMPLETE ] implicit_add_bcast_user_input_shape_test
+[   RUN    ] implicit_pow_bcast_test
+[ COMPLETE ] implicit_pow_bcast_test
+[   RUN    ] implicit_sub_bcast_test
+[ COMPLETE ] implicit_sub_bcast_test
+[   RUN    ] initializer_not_an_input
+[ COMPLETE ] initializer_not_an_input
+[   RUN    ] instance_norm_test
+[ COMPLETE ] instance_norm_test
+[   RUN    ] instance_norm_dyn_batch_test
+[ COMPLETE ] instance_norm_dyn_batch_test
+[   RUN    ] instance_norm_half_test
+[ COMPLETE ] instance_norm_half_test
+[   RUN    ] instance_norm_dyn_batch_half_test
+[ COMPLETE ] instance_norm_dyn_batch_half_test
+[   RUN    ] instance_norm_type_mismatch_test
+[ COMPLETE ] instance_norm_type_mismatch_test
+[   RUN    ] instance_norm_invalid_type_test
+[ COMPLETE ] instance_norm_invalid_type_test
+[   RUN    ] instance_norm_nonbroadcastable_test
+[ COMPLETE ] instance_norm_nonbroadcastable_test
+[   RUN    ] leaky_relu_test
+[ COMPLETE ] leaky_relu_test
+[   RUN    ] less_test
+[ COMPLETE ] less_test
+[   RUN    ] less_bool_test
+[ COMPLETE ] less_bool_test
+[   RUN    ] lessorequal_test
+[ COMPLETE ] lessorequal_test
+[   RUN    ] log_test
+[ COMPLETE ] log_test
+[   RUN    ] logical_and_bcast_test
+[ COMPLETE ] logical_and_bcast_test
+[   RUN    ] logical_or_test
+[ COMPLETE ] logical_or_test
+[   RUN    ] logical_xor_bcast_test
+[ COMPLETE ] logical_xor_bcast_test
+[   RUN    ] logsoftmax_test
+[ COMPLETE ] logsoftmax_test
+[   RUN    ] logsoftmax_nonstd_input_test
+[ COMPLETE ] logsoftmax_nonstd_input_test
+[   RUN    ] loop_default_test
+[ COMPLETE ] loop_default_test
+[   RUN    ] loop_test
+[ COMPLETE ] loop_test
+[   RUN    ] lpnormalization_default_test
+[ COMPLETE ] lpnormalization_default_test
+[   RUN    ] lpnormalization_axis_error_test
+[ COMPLETE ] lpnormalization_axis_error_test
+[   RUN    ] lpnormalization_p_error_test
+[ COMPLETE ] lpnormalization_p_error_test
+[   RUN    ] lppool_l1_test
+[ COMPLETE ] lppool_l1_test
+[   RUN    ] lppool_l2_test
+[ COMPLETE ] lppool_l2_test
+[   RUN    ] lrn_test
+[ COMPLETE ] lrn_test
+[   RUN    ] matmul_bmbm_test
+[ COMPLETE ] matmul_bmbm_test
+[   RUN    ] matmul_bmv_test
+[ COMPLETE ] matmul_bmv_test
+[   RUN    ] matmul_mv_test
+[ COMPLETE ] matmul_mv_test
+[   RUN    ] matmul_vbm_test
+[ COMPLETE ] matmul_vbm_test
+[   RUN    ] matmul_vm_test
+[ COMPLETE ] matmul_vm_test
+[   RUN    ] matmul_vv_test
+[ COMPLETE ] matmul_vv_test
+[   RUN    ] matmul_dyn_mm_test
+[ COMPLETE ] matmul_dyn_mm_test
+[   RUN    ] matmul_dyn_mv_test
+[ COMPLETE ] matmul_dyn_mv_test
+[   RUN    ] matmul_dyn_vm_test
+[ COMPLETE ] matmul_dyn_vm_test
+[   RUN    ] matmul_dyn_vv_test
+[ COMPLETE ] matmul_dyn_vv_test
+[   RUN    ] matmul_dyn_broadcast_error
+[ COMPLETE ] matmul_dyn_broadcast_error
+[   RUN    ] matmulinteger_test
+[ COMPLETE ] matmulinteger_test
+[   RUN    ] matmulinteger_dyn_error
+[ COMPLETE ] matmulinteger_dyn_error
+[   RUN    ] max_test
+[ COMPLETE ] max_test
+[   RUN    ] maxpool_notset_test
+[ COMPLETE ] maxpool_notset_test
+[   RUN    ] maxpool_same_upper_test
+[ COMPLETE ] maxpool_same_upper_test
+[   RUN    ] mean_invalid_broadcast_test
+[ COMPLETE ] mean_invalid_broadcast_test
+[   RUN    ] mean_single_input_test
+[ COMPLETE ] mean_single_input_test
+[   RUN    ] mean_test
+[ COMPLETE ] mean_test
+[   RUN    ] mean_integral_test
+[ COMPLETE ] mean_integral_test
+[   RUN    ] min_test
+[ COMPLETE ] min_test
+[   RUN    ] mod_test
+[ COMPLETE ] mod_test
+[   RUN    ] mod_test_half
+[ COMPLETE ] mod_test_half
+[   RUN    ] mod_test_different_dtypes
+[ COMPLETE ] mod_test_different_dtypes
+[   RUN    ] mod_test_fmod
+[ COMPLETE ] mod_test_fmod
+[   RUN    ] mod_test_fmod_half
+[ COMPLETE ] mod_test_fmod_half
+[   RUN    ] mod_test_fmod_different_dtypes
+[ COMPLETE ] mod_test_fmod_different_dtypes
+[   RUN    ] multinomial_test
+[ COMPLETE ] multinomial_test
+[   RUN    ] multinomial_dtype_error_test
+[ COMPLETE ] multinomial_dtype_error_test
+[   RUN    ] multinomial_generated_seed_test
+[ COMPLETE ] multinomial_generated_seed_test
+[   RUN    ] multinomial_int64_test
+[ COMPLETE ] multinomial_int64_test
+[   RUN    ] no_pad_test
+[ COMPLETE ] no_pad_test
+[   RUN    ] neg_test
+[ COMPLETE ] neg_test
+[   RUN    ] neg_dynamic_test
+[ COMPLETE ] neg_dynamic_test
+[   RUN    ] nms_test
+[ COMPLETE ] nms_test
+[   RUN    ] nms_dynamic_batch_test
+[ COMPLETE ] nms_dynamic_batch_test
+[   RUN    ] nms_dynamic_boxes_test
+[ COMPLETE ] nms_dynamic_boxes_test
+[   RUN    ] nms_dynamic_classes_test
+[ COMPLETE ] nms_dynamic_classes_test
+[   RUN    ] nms_overwrite_use_dyn_output_test
+[ COMPLETE ] nms_overwrite_use_dyn_output_test
+[   RUN    ] nonzero_dynamic_test
+[ COMPLETE ] nonzero_dynamic_test
+[   RUN    ] nonzero_test
+[ COMPLETE ] nonzero_test
+[   RUN    ] nonzero_int_test
+[ COMPLETE ] nonzero_int_test
+[   RUN    ] not_test
+[ COMPLETE ] not_test
+[   RUN    ] not_bool_test
+[ COMPLETE ] not_bool_test
+[   RUN    ] onehot_test
+[ COMPLETE ] onehot_test
+[   RUN    ] pad_test
+[ COMPLETE ] pad_test
+[   RUN    ] pad_3arg_test
+[ COMPLETE ] pad_3arg_test
+[   RUN    ] pad_attr_dyn_test
+[ COMPLETE ] pad_attr_dyn_test
+[   RUN    ] pad_cnst_dyn_test
+[ COMPLETE ] pad_cnst_dyn_test
+[   RUN    ] pad_dyn_reflect_error
+[ COMPLETE ] pad_dyn_reflect_error
+[   RUN    ] pad_reflect_test
+[ COMPLETE ] pad_reflect_test
+[   RUN    ] pad_reflect_multiaxis_test
+[ COMPLETE ] pad_reflect_multiaxis_test
+[   RUN    ] pow_test
+[ COMPLETE ] pow_test
+[   RUN    ] pow_fp32_i64_test
+[ COMPLETE ] pow_fp32_i64_test
+[   RUN    ] pow_i64_fp32_test
+[ COMPLETE ] pow_i64_fp32_test
+[   RUN    ] prefix_scan_sum
+[ COMPLETE ] prefix_scan_sum
+[   RUN    ] prelu_brcst_test
+[ COMPLETE ] prelu_brcst_test
+[   RUN    ] quantizelinear_test
+[ COMPLETE ] quantizelinear_test
+[   RUN    ] quantizelinear_int32_test
+[ COMPLETE ] quantizelinear_int32_test
+[   RUN    ] quantizelinear_zero_point_test
+[ COMPLETE ] quantizelinear_zero_point_test
+[   RUN    ] quantizelinear_axis_test
+[ COMPLETE ] quantizelinear_axis_test
+[   RUN    ] quantizelinear_neg_axis_test
+[ COMPLETE ] quantizelinear_neg_axis_test
+[   RUN    ] randomnormal_test
+[ COMPLETE ] randomnormal_test
+[   RUN    ] randomnormal_dtype_error_test
+[ COMPLETE ] randomnormal_dtype_error_test
+[   RUN    ] randomnormal_generated_seed_test
+[ COMPLETE ] randomnormal_generated_seed_test
+[   RUN    ] randomnormal_shape_error_test
+[ COMPLETE ] randomnormal_shape_error_test
+[   RUN    ] randomnormallike_test
+[ COMPLETE ] randomnormallike_test
+[   RUN    ] randomnormallike_type_error_test
+[ COMPLETE ] randomnormallike_type_error_test
+[   RUN    ] randomuniform_test
+[ COMPLETE ] randomuniform_test
+[   RUN    ] randomuniform_dtype_error_test
+[ COMPLETE ] randomuniform_dtype_error_test
+[   RUN    ] randomuniform_generated_seed_test
+[ COMPLETE ] randomuniform_generated_seed_test
+[   RUN    ] randomuniform_shape_error_test
+[ COMPLETE ] randomuniform_shape_error_test
+[   RUN    ] randomuniformlike_test
+[ COMPLETE ] randomuniformlike_test
+[   RUN    ] randomuniformlike_type_error_test
+[ COMPLETE ] randomuniformlike_type_error_test
+[   RUN    ] range_test
+[ COMPLETE ] range_test
+[   RUN    ] range_float_test
+[ COMPLETE ] range_float_test
+[   RUN    ] recip_test
+[ COMPLETE ] recip_test
+[   RUN    ] reducel1_test
+[ COMPLETE ] reducel1_test
+[   RUN    ] reducel1_dyn_test
+[ COMPLETE ] reducel1_dyn_test
+[   RUN    ] reducel2_test
+[ COMPLETE ] reducel2_test
+[   RUN    ] reduce_log_sum_test
+[ COMPLETE ] reduce_log_sum_test
+[   RUN    ] reduce_log_sum_exp_test
+[ COMPLETE ] reduce_log_sum_exp_test
+[   RUN    ] reducemax_test
+void reducemax_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:5137:
+    FAILED: p == prog [ module: "main"
+x = @param:x -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@1 = reduce_max[axes={2}](x) -> float_type, {3, 4, 1, 6}, {24, 6, 6, 1}, target_id=0
+
+ == module: "main"
+x = @param:x -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@1 = reduce_max[axes={2}](x) -> float_type, {3, 4, 1, 6}, {24, 6, 6, 1}, target_id=0
+@2 = squeeze[axes={2}](@1) -> float_type, {3, 4, 6}, {24, 6, 1}, target_id=0
+
+ ]
+[  FAILED  ] reducemax_test: Test failure
+[   RUN    ] reducemax_dyn_test
+[ COMPLETE ] reducemax_dyn_test
+[   RUN    ] reducemean_test
+[ COMPLETE ] reducemean_test
+[   RUN    ] reducemean_keepdims_test
+[ COMPLETE ] reducemean_keepdims_test
+[   RUN    ] reducemin_test
+void reducemin_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:5190:
+    FAILED: p == prog [ module: "main"
+x = @param:x -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@1 = reduce_min[axes={2, 3}](x) -> float_type, {3, 4, 1, 1}, {4, 1, 1, 1}, target_id=0
+@2 = squeeze[axes={2, 3}](@1) -> float_type, {3, 4}, {4, 1}, target_id=0
+
+ == module: "main"
+x = @param:x -> float_type, {3, 4, 5, 6}, {120, 30, 6, 1}, target_id=0
+@1 = reduce_min[axes={1, 3}](x) -> float_type, {3, 1, 5, 1}, {5, 5, 1, 1}, target_id=0
+
+ ]
+[  FAILED  ] reducemin_test: Test failure
+[   RUN    ] reduceprod_test
+[ COMPLETE ] reduceprod_test
+[   RUN    ] reducesum_test
+[ COMPLETE ] reducesum_test
+[   RUN    ] reducesum_empty_axes_test
+[ COMPLETE ] reducesum_empty_axes_test
+[   RUN    ] reducesum_noop_test
+[ COMPLETE ] reducesum_noop_test
+[   RUN    ] reducesum_multiaxis_test
+[ COMPLETE ] reducesum_multiaxis_test
+[   RUN    ] reducesum_keepdims_test
+[ COMPLETE ] reducesum_keepdims_test
+[   RUN    ] reducesum_square_test
+[ COMPLETE ] reducesum_square_test
+[   RUN    ] reshape_test
+[ COMPLETE ] reshape_test
+[   RUN    ] reshape_non_standard_test
+[ COMPLETE ] reshape_non_standard_test
+[   RUN    ] resize_downsample_c_test
+[ COMPLETE ] resize_downsample_c_test
+[   RUN    ] resize_downsample_f_test
+[ COMPLETE ] resize_downsample_f_test
+[   RUN    ] resize_downsample_linear_test
+[ COMPLETE ] resize_downsample_linear_test
+[   RUN    ] resize_outsize_test
+[ COMPLETE ] resize_outsize_test
+[   RUN    ] resize_nonstd_input_test
+[ COMPLETE ] resize_nonstd_input_test
+[   RUN    ] resize_upsample_linear_ac_test
+[ COMPLETE ] resize_upsample_linear_ac_test
+[   RUN    ] resize_upsample_linear_test
+[ COMPLETE ] resize_upsample_linear_test
+[   RUN    ] resize_upsample_pc_test
+[ COMPLETE ] resize_upsample_pc_test
+[   RUN    ] resize_upsample_pf_test
+[ COMPLETE ] resize_upsample_pf_test
+[   RUN    ] reversesequence_batch_test
+[ COMPLETE ] reversesequence_batch_test
+[   RUN    ] reversesequence_batch_axis_err_test
+[ COMPLETE ] reversesequence_batch_axis_err_test
+[   RUN    ] reversesequence_rank_err_test
+[ COMPLETE ] reversesequence_rank_err_test
+[   RUN    ] reversesequence_sequence_lens_shape_err_test
+[ COMPLETE ] reversesequence_sequence_lens_shape_err_test
+[   RUN    ] reversesequence_same_axis_err_test
+[ COMPLETE ] reversesequence_same_axis_err_test
+[   RUN    ] reversesequence_time_axis_err_test
+[ COMPLETE ] reversesequence_time_axis_err_test
+[   RUN    ] reversesequence_time_test
+[ COMPLETE ] reversesequence_time_test
+[   RUN    ] roialign_default_test
+[ COMPLETE ] roialign_default_test
+[   RUN    ] roialign_test
+[ COMPLETE ] roialign_test
+[   RUN    ] round_test
+[ COMPLETE ] round_test
+[   RUN    ] scatter_add_test
+[ COMPLETE ] scatter_add_test
+[   RUN    ] scatter_mul_test
+[ COMPLETE ] scatter_mul_test
+[   RUN    ] scatter_none_test
+[ COMPLETE ] scatter_none_test
+[   RUN    ] scatternd_test
+[ COMPLETE ] scatternd_test
+[   RUN    ] scatternd_dyn_test
+[ COMPLETE ] scatternd_dyn_test
+[   RUN    ] scatternd_add_test
+[ COMPLETE ] scatternd_add_test
+[   RUN    ] scatternd_mul_test
+[ COMPLETE ] scatternd_mul_test
+[   RUN    ] selu_test
+[ COMPLETE ] selu_test
+[   RUN    ] shape_test
+[ COMPLETE ] shape_test
+[   RUN    ] shape_dyn_test0
+[ COMPLETE ] shape_dyn_test0
+[   RUN    ] shape_dyn_test1
+[ COMPLETE ] shape_dyn_test1
+[   RUN    ] shape_dyn_test2
+[ COMPLETE ] shape_dyn_test2
+[   RUN    ] shape_dyn_test3
+[ COMPLETE ] shape_dyn_test3
+[   RUN    ] shape_end_oob_test
+[ COMPLETE ] shape_end_oob_test
+[   RUN    ] shape_start_oob_test
+[ COMPLETE ] shape_start_oob_test
+[   RUN    ] shape_end_less_start_error
+[ COMPLETE ] shape_end_less_start_error
+[   RUN    ] shape_gather_test
+[ COMPLETE ] shape_gather_test
+[   RUN    ] sign_test
+[ COMPLETE ] sign_test
+[   RUN    ] sin_test
+[ COMPLETE ] sin_test
+[   RUN    ] sinh_test
+[ COMPLETE ] sinh_test
+[   RUN    ] sinh_dynamic_test
+[ COMPLETE ] sinh_dynamic_test
+[   RUN    ] size_float_test
+[ COMPLETE ] size_float_test
+[   RUN    ] size_half_test
+[ COMPLETE ] size_half_test
+[   RUN    ] size_int_test
+[ COMPLETE ] size_int_test
+[   RUN    ] slice_test
+[ COMPLETE ] slice_test
+[   RUN    ] slice_constant_test
+[ COMPLETE ] slice_constant_test
+[   RUN    ] slice_dyn_test
+[ COMPLETE ] slice_dyn_test
+[   RUN    ] slice_step_dyn_test
+[ COMPLETE ] slice_step_dyn_test
+[   RUN    ] slice_reverse_dyn_test
+[ COMPLETE ] slice_reverse_dyn_test
+[   RUN    ] slice_3arg_test
+[ COMPLETE ] slice_3arg_test
+[   RUN    ] slice_5arg_test
+[ COMPLETE ] slice_5arg_test
+[   RUN    ] slice_5arg_reverse_test
+[ COMPLETE ] slice_5arg_reverse_test
+[   RUN    ] slice_5arg_step_test
+[ COMPLETE ] slice_5arg_step_test
+[   RUN    ] slice_max_end_test
+[ COMPLETE ] slice_max_end_test
+[   RUN    ] slice_var_input_static0
+[ COMPLETE ] slice_var_input_static0
+[   RUN    ] slice_var_input_static1
+[ COMPLETE ] slice_var_input_static1
+[   RUN    ] slice_var_input_dyn0
+[ COMPLETE ] slice_var_input_dyn0
+[   RUN    ] slice_var_input_dyn1
+[ COMPLETE ] slice_var_input_dyn1
+[   RUN    ] slice_var_input_steps_error
+[ COMPLETE ] slice_var_input_steps_error
+[   RUN    ] softmax_test
+void softmax_test()
+/code/AMDMIGraphX/test/onnx/onnx_test.cpp:6518:
+    FAILED: p == prog [ module: "main"
+0 = @param:0 -> float_type, {1, 3}, {3, 1}, target_id=0
+@1 = softmax[axis=1](0) -> float_type, {1, 3}, {3, 1}, target_id=0
+
+ == module: "main"
+0 = @param:0 -> float_type, {1, 3}, {3, 1}, target_id=0
+@1 = softmax[axis=-1](0) -> float_type, {1, 3}, {3, 1}, target_id=0
+
+ ]
+[  FAILED  ] softmax_test: Test failure
+[   RUN    ] softmax_nonstd_input_test
+[ COMPLETE ] softmax_nonstd_input_test
+[   RUN    ] softmax_dyn_test
+[ COMPLETE ] softmax_dyn_test
+[   RUN    ] softplus_test
+[ COMPLETE ] softplus_test
+[   RUN    ] softplus_nd_test
+[ COMPLETE ] softplus_nd_test
+[   RUN    ] softsign_test
+[ COMPLETE ] softsign_test
+[   RUN    ] softsign_nd_test
+[ COMPLETE ] softsign_nd_test
+[   RUN    ] split_minus_axis_test
+[ COMPLETE ] split_minus_axis_test
+[   RUN    ] split_test
+[ COMPLETE ] split_test
+[   RUN    ] split_test_no_attribute
+[ COMPLETE ] split_test_no_attribute
+[   RUN    ] split_test_default
+[ COMPLETE ] split_test_default
+[   RUN    ] split_test_no_attribute_invalid_split
+[ COMPLETE ] split_test_no_attribute_invalid_split
+[   RUN    ] split_test_invalid_split
+[ COMPLETE ] split_test_invalid_split
+[   RUN    ] split_test_no_attribute_invalid_input_split
+[ COMPLETE ] split_test_no_attribute_invalid_input_split
+[   RUN    ] sqrt_test
+[ COMPLETE ] sqrt_test
+[   RUN    ] squeeze_unsqueeze_test
+[ COMPLETE ] squeeze_unsqueeze_test
+[   RUN    ] squeeze_unsqueeze_dyn_test
+[ COMPLETE ] squeeze_unsqueeze_dyn_test
+[   RUN    ] squeeze_axes_input_test
+[ COMPLETE ] squeeze_axes_input_test
+[   RUN    ] squeeze_empty_axes_test
+[ COMPLETE ] squeeze_empty_axes_test
+[   RUN    ] sub_bcast_test
+[ COMPLETE ] sub_bcast_test
+[   RUN    ] sub_scalar_test
+[ COMPLETE ] sub_scalar_test
+[   RUN    ] sum_int_test
+[ COMPLETE ] sum_int_test
+[   RUN    ] sum_test
+[ COMPLETE ] sum_test
+[   RUN    ] sum_type_test
+[ COMPLETE ] sum_type_test
+[   RUN    ] tan_test
+[ COMPLETE ] tan_test
+[   RUN    ] tanh_test
+[ COMPLETE ] tanh_test
+[   RUN    ] thresholdedrelu_default_test
+[ COMPLETE ] thresholdedrelu_default_test
+[   RUN    ] thresholdedrelu_test
+[ COMPLETE ] thresholdedrelu_test
+[   RUN    ] thresholdedrelu_int_test
+[ COMPLETE ] thresholdedrelu_int_test
+[   RUN    ] tile_test
+[ COMPLETE ] tile_test
+[   RUN    ] tile_test_3x2
+[ COMPLETE ] tile_test_3x2
+[   RUN    ] transpose_default_perm_test
+[ COMPLETE ] transpose_default_perm_test
+[   RUN    ] transpose_invalid_perm_test
+[ COMPLETE ] transpose_invalid_perm_test
+[   RUN    ] transpose_test
+[ COMPLETE ] transpose_test
+[   RUN    ] transpose_dyn_test
+[ COMPLETE ] transpose_dyn_test
+[   RUN    ] topk_attrk_test
+[ COMPLETE ] topk_attrk_test
+[   RUN    ] topk_neg_axis_test
+[ COMPLETE ] topk_neg_axis_test
+[   RUN    ] topk_test
+[ COMPLETE ] topk_test
+[   RUN    ] transpose_gather_test
+[ COMPLETE ] transpose_gather_test
+[   RUN    ] trilu_neg_k_test
+[ COMPLETE ] trilu_neg_k_test
+[   RUN    ] undefined_test
+[ COMPLETE ] undefined_test
+[   RUN    ] unknown_test
+[ COMPLETE ] unknown_test
+[   RUN    ] unknown_aten_test
+[ COMPLETE ] unknown_aten_test
+[   RUN    ] unknown_test_throw
+[ COMPLETE ] unknown_test_throw
+[   RUN    ] upsample_linear_test
+[ COMPLETE ] upsample_linear_test
+[   RUN    ] upsample_test
+[ COMPLETE ] upsample_test
+[   RUN    ] unknown_test_throw_print_error
+module: "main"
+1 = @param:1 -> float_type, {3, 4}, {4, 1}, target_id=0
+0 = @param:0 -> float_type, {2, 3, 4, 5}, {60, 20, 5, 1}, target_id=0
+
+
+[ COMPLETE ] unknown_test_throw_print_error
+[   RUN    ] variable_batch_test
+[ COMPLETE ] variable_batch_test
+[   RUN    ] variable_batch_user_input_test1
+[ COMPLETE ] variable_batch_user_input_test1
+[   RUN    ] variable_batch_user_input_test2
+[ COMPLETE ] variable_batch_user_input_test2
+[   RUN    ] variable_batch_user_input_test3
+[ COMPLETE ] variable_batch_user_input_test3
+[   RUN    ] variable_batch_user_input_test4
+[ COMPLETE ] variable_batch_user_input_test4
+[   RUN    ] variable_batch_user_input_test5
+[ COMPLETE ] variable_batch_user_input_test5
+[   RUN    ] variable_batch_user_input_test6
+[ COMPLETE ] variable_batch_user_input_test6
+[   RUN    ] variable_batch_user_input_test7
+[ COMPLETE ] variable_batch_user_input_test7
+[   RUN    ] variable_batch_leq_zero_test
+[ COMPLETE ] variable_batch_leq_zero_test
+[   RUN    ] where_test
+[ COMPLETE ] where_test
+[   RUN    ] where_dyn_test
+[ COMPLETE ] where_dyn_test
+[   RUN    ] where_mixed_test
+[ COMPLETE ] where_mixed_test
+[==========] 419 tests ran
+[  FAILED  ] 12 tests failed
+[  FAILED  ] add_fp16_test
+[  FAILED  ] gather_test
+[  FAILED  ] if_else_test
+[  FAILED  ] if_else_test_inlined
+[  FAILED  ] if_param_test
+[  FAILED  ] if_then_else_multi_output_shapes_inlined_test
+[  FAILED  ] if_then_else_multi_output_shapes_test
+[  FAILED  ] if_then_test
+[  FAILED  ] if_then_test_inlined
+[  FAILED  ] reducemax_test
+[  FAILED  ] reducemin_test
+[  FAILED  ] softmax_test
+
+        Start  24: test_insert_pad_test
+233/320 Test   #3: test_argument_test ........................................................   Passed    0.05 sec
+        Start  17: test_eliminate_pad_test
+234/320 Test   #2: test_any_ptr ..............................................................   Passed    0.05 sec
+        Start   1: test_analyze_streams
+235/320 Test   #5: test_check_shapes_test ....................................................   Passed    0.05 sec
+        Start  16: test_eliminate_identity_test
+236/320 Test  #74: test_value_test ...........................................................   Passed    0.05 sec
+        Start  60: test_run_on_target_test
+237/320 Test #305: test_api_tf_parser ........................................................   Passed    0.09 sec
+        Start  64: test_shape_test
+238/320 Test  #37: test_op_shape_test ........................................................   Passed    0.07 sec
+        Start  25: test_instruction
+239/320 Test  #39: test_operators ............................................................   Passed    0.04 sec
+        Start  20: test_fuse_pointwise
+240/320 Test  #23: test_inline_module_test ...................................................   Passed    0.02 sec
+        Start  22: test_generate
+241/320 Test  #21: test_fuse_reduce ..........................................................   Passed    0.03 sec
+        Start  29: test_literal_test
+242/320 Test   #7: test_convert_to_json ......................................................   Passed    0.02 sec
+        Start  30: test_main
+243/320 Test  #31: test_marker ...............................................................   Passed    0.02 sec
+        Start  19: test_float_equal
+244/320 Test  #32: test_matcher ..............................................................   Passed    0.02 sec
+        Start  27: test_json_test
+245/320 Test  #15: test_eliminate_data_type_test .............................................   Passed    0.02 sec
+        Start  42: test_perf_report
+246/320 Test  #38: test_operation ............................................................   Passed    0.05 sec
+        Start  36: test_normalize_ops_test
+247/320 Test  #73: test_validate .............................................................   Passed    0.04 sec
+        Start   9: test_dom
+248/320 Test  #18: test_eval_test ............................................................   Passed    0.04 sec
+        Start  35: test_msgpack
+249/320 Test  #88: test_onnx_rnn_test ........................................................   Passed    0.04 sec
+        Start  12: test_eliminate_common_subexpression_test
+250/320 Test  #26: test_jit ..................................................................   Passed    2.25 sec
+        Start   8: test_dead_code_elimination_test
+251/320 Test  #24: test_insert_pad_test ......................................................   Passed    0.03 sec
+        Start  34: test_module_test
+252/320 Test  #17: test_eliminate_pad_test ...................................................   Passed    0.03 sec
+        Start  10: test_dot_apply_alpha_beta_test
+253/320 Test  #56: test_rewrite_gelu_test ....................................................   Passed    0.03 sec
+        Start  46: test_propagate_constant_test
+254/320 Test  #71: test_targets ..............................................................   Passed    0.04 sec
+        Start   4: test_auto_contiguous_test
+255/320 Test  #70: test_stringutils ..........................................................   Passed    0.04 sec
+        Start  41: test_pad_calc_test
+256/320 Test  #16: test_eliminate_identity_test ..............................................   Passed    0.03 sec
+        Start  28: test_layout_nhwc
+257/320 Test #302: test_api_op ...............................................................   Passed    0.11 sec
+        Start  13: test_eliminate_concat_test
+258/320 Test   #1: test_analyze_streams ......................................................   Passed    0.03 sec
+        Start  11: test_eliminate_allocation_test
+259/320 Test  #25: test_instruction ..........................................................   Passed    0.03 sec
+        Start  45: test_promote_literals_test
+260/320 Test  #22: test_generate .............................................................   Passed    0.02 sec
+        Start  51: test_ref_loop_test
+261/320 Test  #19: test_float_equal ..........................................................   Passed    0.02 sec
+        Start  52: test_ref_ops_nonstd_shape_test
+262/320 Test  #20: test_fuse_pointwise .......................................................   Passed    0.03 sec
+        Start  40: test_output_alias
+263/320 Test  #30: test_main .................................................................   Passed    0.03 sec
+        Start  44: test_program_test
+264/320 Test  #27: test_json_test ............................................................   Passed    0.03 sec
+        Start  61: test_schedule_test
+265/320 Test  #42: test_perf_report ..........................................................   Passed    0.02 sec
+        Start  58: test_rewrite_quantization_test
+266/320 Test   #9: test_dom ..................................................................   Passed    0.02 sec
+        Start  57: test_rewrite_pooling_test
+267/320 Test  #60: test_run_on_target_test ...................................................   Passed    0.04 sec
+        Start  55: test_replace_allocate
+268/320 Test  #36: test_normalize_ops_test ...................................................   Passed    0.03 sec
+        Start  49: test_ref_dev_examples
+269/320 Test  #35: test_msgpack ..............................................................   Passed    0.03 sec
+        Start  43: test_print_graph_test
+270/320 Test  #64: test_shape_test ...........................................................   Passed    0.04 sec
+        Start  59: test_run_loop_test
+271/320 Test  #29: test_literal_test .........................................................   Passed    0.04 sec
+        Start  63: test_serialize_test
+272/320 Test  #12: test_eliminate_common_subexpression_test ..................................   Passed    0.03 sec
+        Start  68: test_split_single_dyn_dim_test
+273/320 Test   #8: test_dead_code_elimination_test ...........................................   Passed    0.03 sec
+        Start 303: test_api_c_op
+274/320 Test  #34: test_module_test ..........................................................   Passed    0.03 sec
+        Start  72: test_type_name
+275/320 Test  #10: test_dot_apply_alpha_beta_test ............................................   Passed    0.03 sec
+276/320 Test  #46: test_propagate_constant_test ..............................................   Passed    0.03 sec
+277/320 Test   #4: test_auto_contiguous_test .................................................   Passed    0.03 sec
+278/320 Test  #11: test_eliminate_allocation_test ............................................   Passed    0.02 sec
+279/320 Test  #41: test_pad_calc_test ........................................................   Passed    0.03 sec
+280/320 Test  #28: test_layout_nhwc ..........................................................   Passed    0.02 sec
+281/320 Test  #13: test_eliminate_concat_test ................................................   Passed    0.02 sec
+282/320 Test  #51: test_ref_loop_test ........................................................   Passed    0.02 sec
+283/320 Test  #45: test_promote_literals_test ................................................   Passed    0.02 sec
+284/320 Test  #40: test_output_alias .........................................................   Passed    0.02 sec
+285/320 Test  #61: test_schedule_test ........................................................   Passed    0.02 sec
+286/320 Test  #44: test_program_test .........................................................   Passed    0.02 sec
+287/320 Test  #52: test_ref_ops_nonstd_shape_test ............................................   Passed    0.02 sec
+288/320 Test  #55: test_replace_allocate .....................................................   Passed    0.02 sec
+289/320 Test  #57: test_rewrite_pooling_test .................................................   Passed    0.02 sec
+290/320 Test  #58: test_rewrite_quantization_test ............................................   Passed    0.02 sec
+291/320 Test  #43: test_print_graph_test .....................................................   Passed    0.02 sec
+292/320 Test  #49: test_ref_dev_examples .....................................................   Passed    0.02 sec
+293/320 Test  #59: test_run_loop_test ........................................................   Passed    0.02 sec
+294/320 Test #303: test_api_c_op .............................................................   Passed    0.02 sec
+295/320 Test  #63: test_serialize_test .......................................................   Passed    0.02 sec
+296/320 Test  #72: test_type_name ............................................................   Passed    0.02 sec
+297/320 Test  #68: test_split_single_dyn_dim_test ............................................   Passed    0.02 sec
+298/320 Test #316: test_py_3.8_gpu_offload ...................................................   Passed    2.69 sec
+299/320 Test #318: test_py_3.8_array .........................................................   Passed    2.69 sec
+300/320 Test #320: test_py_3.8_gpu_async .....................................................   Passed    2.71 sec
+301/320 Test  #65: test_simplify_algebra_test ................................................   Passed    3.16 sec
+302/320 Test #307: test_api_custom_op_gpu ....................................................   Passed    3.40 sec
+303/320 Test #306: test_api_gpu ..............................................................   Passed    6.45 sec
+304/320 Test #317: test_py_3.8_gpu ...........................................................   Passed    6.55 sec
+305/320 Test #308: test_verify_general .......................................................   Passed  213.95 sec
+        Start 309: test_verify_rnn
+306/320 Test #309: test_verify_rnn ...........................................................   Passed   76.05 sec
+        Start  75: test_gpu_adjust_allocation
+307/320 Test  #75: test_gpu_adjust_allocation ................................................   Passed    0.14 sec
+        Start  76: test_gpu_codegen_literal
+308/320 Test  #76: test_gpu_codegen_literal ..................................................   Passed    0.87 sec
+        Start  77: test_gpu_context_serialize
+309/320 Test  #77: test_gpu_context_serialize ................................................   Passed    0.39 sec
+        Start  78: test_gpu_fuse_mlir
+310/320 Test  #78: test_gpu_fuse_mlir ........................................................   Passed    0.07 sec
+        Start  79: test_gpu_hip
+311/320 Test  #79: test_gpu_hip ..............................................................   Passed    0.37 sec
+        Start  80: test_gpu_jit
+312/320 Test  #80: test_gpu_jit ..............................................................   Passed   59.99 sec
+        Start  81: test_gpu_literal
+313/320 Test  #81: test_gpu_literal ..........................................................   Passed    0.39 sec
+        Start  82: test_gpu_manage_host_buffer
+314/320 Test  #82: test_gpu_manage_host_buffer ...............................................   Passed    0.90 sec
+        Start  83: test_gpu_mlir
+315/320 Test  #83: test_gpu_mlir .............................................................   Passed    0.07 sec
+        Start  84: test_gpu_pack_args
+316/320 Test  #84: test_gpu_pack_args ........................................................   Passed    0.07 sec
+        Start  85: test_gpu_pack_int8_args
+317/320 Test  #85: test_gpu_pack_int8_args ...................................................   Passed    0.14 sec
+        Start  86: test_gpu_quantization
+318/320 Test  #86: test_gpu_quantization .....................................................   Passed    1.46 sec
+        Start  87: test_gpu_stream_sync
+319/320 Test  #87: test_gpu_stream_sync ......................................................   Passed    1.57 sec
+320/320 Test #319: test_py_3.8_backend .......................................................   Passed  378.80 sec
+
+99% tests passed, 2 tests failed out of 320
+
+Total Test time (real) = 378.83 sec
+
+The following tests FAILED:
+	 89 - test_onnx_test (Failed)
+	 90 - test_verify_onnx (Failed)
+Errors while running CTest
+make[3]: *** [test/CMakeFiles/check.dir/build.make:70: test/CMakeFiles/check] Error 8
+make[2]: *** [CMakeFiles/Makefile2:17082: test/CMakeFiles/check.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:17089: test/CMakeFiles/check.dir/rule] Error 2
+make: *** [Makefile:6830: check] Error 2
