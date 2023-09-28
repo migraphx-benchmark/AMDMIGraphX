@@ -581,6 +581,16 @@ def cast_test():
 
     return ([node], [x], [y])
 
+@onnx_test()
+def castlike_test():
+    input = helper.make_tensor_value_info('0', TensorProto.FLOAT16, [10])
+    target_type = helper.make_tensor_value_info('1', TensorProto.FLOAT, [10])
+    output = helper.make_tensor_value_info('out', TensorProto.FLOAT, [10])
+
+    node = onnx.helper.make_node('CastLike', inputs=['0', '1'], outputs=['out'])
+
+    return ([node], [input, target_type], [output])
+
 
 @onnx_test()
 def ceil_test():
