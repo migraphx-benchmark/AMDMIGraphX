@@ -48,6 +48,8 @@ struct parse_mod : op_parser<parse_mod>
             }
         }
 
+        auto dividend_shape = args[0]->get_shape().type();
+        auto divisor_shape = args[1]->get_shape().type();
         if(contains(info.attributes, "fmod"))
         {
             if(parser.parse_value(info.attributes.at("fmod")).at<int>() == 1)
@@ -55,7 +57,22 @@ struct parse_mod : op_parser<parse_mod>
                 mod = "fmod";
             }
         }
-        return info.add_common_op(mod, args[0], args[1]);
+
+        auto is_int8_or_int32_shape = [](shape::type_t dtype) { return dtype == shape::int8_type or dtype == shape::int32_type; };
+        if(is_int8_or_int32_shape(dividend_shape) or is_int8_or_int32_shape(divisor_shape))
+        {
+            auto dividend = info.add_instruction(
+                make_op("convert", {{"target_type", shape::int64_type}}), args[0]);
+            auto divisor = info.add_instruction(
+                make_op("convert", {{"target_type", shape::int64_type}}), args[1]);
+            auto result = info.add_common_op(mod, dividend, divisor);
+            return info.add_instruction(make_op("convert", {{"target_type", dividend_shape}}),
+                                        result);
+        }
+        else
+        {
+            return info.add_common_op(mod, args[0], args[1]);
+        }
     }
 };
 
