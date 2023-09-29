@@ -157,6 +157,54 @@ TEST_CASE(slice_var_inputs_static2)
     EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
 }
 
+TEST_CASE(slice_var_inputs_static3)
+{
+    // same logic as "test_slice_default_axes" for python onnx
+    migraphx::program p;
+    auto* mm = p.get_main_module();
+    std::vector<float> data(20 * 10 * 5);
+    std::iota(data.begin(), data.end(), 0);
+    migraphx::shape s0{migraphx::shape::float_type, {20, 10, 5}};
+    auto input = mm->add_parameter("input", s0);
+    // auto l0 = mm->add_literal(migraphx::literal{s0, data});
+    migraphx::shape s1{migraphx::shape::int64_type, {3}};
+    auto starts = mm->add_parameter("starts", s1);
+    auto ends   = mm->add_parameter("ends", s1);
+    mm->add_instruction(migraphx::make_op("slice", {{"axes", {0, 1, 2}}}), input, starts, ends);
+    // mm->add_instruction(migraphx::make_op("slice", {{"axes", {0, 1, 2}}}), l0, starts, ends);
+
+    std::cerr << "Original program:\n" << p << "\n";
+
+    // Works with "ref"
+    p.compile(migraphx::make_target("gpu"));
+
+    std::cerr << "Compiled program:\n" << p << "\n";
+
+    migraphx::parameter_map params;
+    std::vector<int64_t> start_data = {0, 0, 3};
+    std::vector<int64_t> end_data   = {20, 10, 4};
+    params["input"]                 = migraphx::argument(s0, data.data());
+    params["starts"]                = migraphx::argument(s1, start_data.data());
+    params["ends"]                  = migraphx::argument(s1, end_data.data());
+    auto result                     = p.eval(params).back();
+    std::vector<float> gold         = {
+        3,   8,   13,  18,  23,  28,  33,  38,  43,  48,  53,  58,  63,  68,  73,  78,  83,
+        88,  93,  98,  103, 108, 113, 118, 123, 128, 133, 138, 143, 148, 153, 158, 163, 168,
+        173, 178, 183, 188, 193, 198, 203, 208, 213, 218, 223, 228, 233, 238, 243, 248, 253,
+        258, 263, 268, 273, 278, 283, 288, 293, 298, 303, 308, 313, 318, 323, 328, 333, 338,
+        343, 348, 353, 358, 363, 368, 373, 378, 383, 388, 393, 398, 403, 408, 413, 418, 423,
+        428, 433, 438, 443, 448, 453, 458, 463, 468, 473, 478, 483, 488, 493, 498, 503, 508,
+        513, 518, 523, 528, 533, 538, 543, 548, 553, 558, 563, 568, 573, 578, 583, 588, 593,
+        598, 603, 608, 613, 618, 623, 628, 633, 638, 643, 648, 653, 658, 663, 668, 673, 678,
+        683, 688, 693, 698, 703, 708, 713, 718, 723, 728, 733, 738, 743, 748, 753, 758, 763,
+        768, 773, 778, 783, 788, 793, 798, 803, 808, 813, 818, 823, 828, 833, 838, 843, 848,
+        853, 858, 863, 868, 873, 878, 883, 888, 893, 898, 903, 908, 913, 918, 923, 928, 933,
+        938, 943, 948, 953, 958, 963, 968, 973, 978, 983, 988, 993, 998};
+    std::vector<float> results_vector(20 * 10 * 1);
+    result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
+    EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
+}
+
 TEST_CASE(slice_var_inputs_dyn)
 {
     migraphx::program p;
