@@ -113,6 +113,16 @@ struct parse_slice : op_parser<parse_slice>
             s.visit([&](auto v) { copy(v, std::back_inserter(sd.op.axes)); });
         }
 
+        // Convert negative axes if needed
+        if(not sd.op.axes.empty())
+        {
+            auto input_rank = args.at(0)->get_shape().ndim();
+            std::for_each(
+                std::begin(sd.op.axes), std::end(sd.op.axes), [&input_rank](int64_t& axis) {
+                    return (axis < 0) ? axis + input_rank : axis;
+                });
+        }
+
         if(args.size() >= 3)
         {
             sd.op.ends = sd.insert(args.at(2));

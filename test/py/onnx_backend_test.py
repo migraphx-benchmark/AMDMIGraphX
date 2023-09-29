@@ -257,7 +257,6 @@ def disabled_tests_onnx_1_7_0(backend_test):
     backend_test.exclude(r'test_slice_end_out_of_bounds_cpu')
     backend_test.exclude(r'test_slice_neg_cpu')
     backend_test.exclude(r'test_slice_neg_steps_cpu')
-    backend_test.exclude(r'test_slice_negative_axes_cpu')
     backend_test.exclude(r'test_slice_start_out_of_bounds_cpu')
     backend_test.exclude(
         r'test_softmax_cross_entropy_input_shape_is_NCd1_mean_weight_negative_ignore_index_cpu'
