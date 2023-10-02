@@ -94,3 +94,37 @@ TEST_CASE(mod_float_test)
     std::vector<float> gold{1.0f, 2.5f, 2.0f};
     EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
 }
+
+template <class T>
+void mod_test_gpu()
+{
+    migraphx::program p;
+    auto* mm = p.get_main_module();
+    migraphx::shape s{migraphx::shape::get_type<T>{}, {6}};
+    auto x   = mm->add_parameter("x", s);
+    auto y   = mm->add_parameter("y", s);
+    auto ret = mm->add_instruction(migraphx::make_op("mod"), x, y);
+    mm->add_return({ret});
+    p.compile(migraphx::make_target("gpu"), migraphx::compile_options{true, true, false, {}});
+
+    migraphx::parameter_map p_map;
+    std::vector<T> x_data = {-4, 7, 5, 4, -7, 8};
+    std::vector<T> y_data = {2, -3, 8, -2, 3, 5};
+    p_map["x"]            = migraphx::argument(s, x_data.data());
+    p_map["y"]            = migraphx::argument(s, y_data.data());
+
+    auto result = p.eval(p_map).back();
+    std::vector<T> results_vector(6);
+    result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
+    std::vector<T> gold{0, -2, 5, 0, 2, 3};
+    EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
+}
+
+// These are failing with conversion error
+TEST_CASE_REGISTER(mod_test_gpu<int8_t>)
+TEST_CASE_REGISTER(mod_test_gpu<int32_t>)
+// These are passing
+TEST_CASE_REGISTER(mod_test_gpu<int16_t>)
+TEST_CASE_REGISTER(mod_test_gpu<int64_t>)
+TEST_CASE_REGISTER(mod_test_gpu<float>)
+TEST_CASE_REGISTER(mod_test_gpu<double>)
