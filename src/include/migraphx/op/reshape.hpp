@@ -180,6 +180,20 @@ struct reshape
         auto&& idims = inputs.front().lens();
         std::vector<std::size_t> rdims(dims.begin(), dims.end());
 
+        // std::cout << "\n## n_neg_dims: " << n_neg_dims << std::endl;
+        // std::cout << "## idims start: " << std::endl;
+        // for(auto dim : idims)
+        // {
+        //     std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
+    
+        // std::cout << "## rdims start: " << std::endl;
+        // for (auto dim: rdims)
+        // {
+        //     std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
         for(std::size_t i = 0; i < dims.size(); i++)
         {
             if(dims[i] == 0)
@@ -196,6 +210,7 @@ struct reshape
             size_t missing_dim =
                 inputs.front().elements() /
                 std::accumulate(rdims.begin(), rdims.end(), 1, std::multiplies<int64_t>());
+            // std::cout << "## missing dim: " << missing_dim << std::endl;
             for(std::size_t i = 0; i < rdims.size(); i++)
             {
                 if(dims[i] == -1)
@@ -203,7 +218,21 @@ struct reshape
             }
         }
 
+        // std::cout << "## rdims end: " << std::endl;
+        // for(auto dim : rdims)
+        // {
+        //     std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
+
         auto s = reshape_dims(inputs.front(), rdims);
+
+        // std::cout << "## s->elements: " << s->elements() << std::endl;
+        // std::cout << "## inputs.front().elements(): " << inputs.front().elements() << std::endl;
+        // for(auto len : inputs.front().lens())
+        // {
+        //     std::cout << len << ", ";
+        // }
 
         if(s->elements() != inputs.front().elements())
             MIGRAPHX_THROW("reshape: Wrong number of elements for reshape: reshape has " +

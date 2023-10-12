@@ -95,9 +95,27 @@ struct convolution
             MIGRAPHX_THROW("CONVOLUTION: input k-dims does not match attribute size");
         }
 
+        // std::cout << "##################################################"<< std::endl;
+        // std::cout << "## group: " << group << std::endl;
+        // std::cout << "## x_shape.lens(): " << std::endl;
+        // for(auto len : x_shape.lens())
+        // {
+        //     std::cout << len << ", ";
+        // }
+        // std::cout << std::endl;
+
+        // std::cout << "## w_shape.lens(): " << std::endl;
+        // for(auto len : w_shape.lens())
+        // {
+        //     std::cout << len << ", ";
+        // }
+        // std::cout << std::endl;
+
         if(not x_shape.dynamic() and not w_shape.dynamic() and
            x_shape.lens().at(1) != (w_shape.lens().at(1) * group))
-            MIGRAPHX_THROW("CONVOLUTION: mismatched channel numbers");
+            MIGRAPHX_THROW("CONVOLUTION: mismatched channel numbers" +
+                           std::to_string(x_shape.lens().at(1)) + " " +
+                           std::to_string(w_shape.lens().at(1) * group));
 
         if(x_shape.dynamic() or w_shape.dynamic())
         {

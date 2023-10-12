@@ -86,11 +86,24 @@ struct concat
             // Static input shapes
             const auto& first_shape_lens = inputs.front().lens();
             const auto& type             = inputs.front().type();
+            // std::cout << "### " << axis << std::endl;
+            // std::all_of(inputs.begin(), inputs.end(), [&](auto s) {
+            //     std::cout << "### ";
+            //     for(auto len : s.lens())
+            //     {
+            //         std::cout << len << ", ";
+            //     }
+            //     std::cout << std::endl;
+            //     return true;
+            // });
             for(std::size_t ll = 0; ll < first_shape_lens.size(); ll++)
             {
                 if(ll != axis)
                 {
                     if(not std::all_of(inputs.begin(), inputs.end(), [&](auto s) {
+                        //    std::cout << "### ll: " << ll << " s.lens()[ll]: " << s.lens()[ll]
+                        //              << " first_shape_lens[ll]: " << first_shape_lens[ll]
+                        //              << std::endl;
                            return s.lens()[ll] == first_shape_lens[ll];
                        }))
                     {
