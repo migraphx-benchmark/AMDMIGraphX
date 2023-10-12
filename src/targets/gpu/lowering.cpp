@@ -115,7 +115,7 @@ struct miopen_apply
         add_neg_op();
         add_nms_op();
         add_select_module_op();
-        add_reshape_lazy_op();
+        // add_reshape_lazy_op();
     }
 
     void copy_params() const
