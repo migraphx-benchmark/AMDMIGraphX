@@ -128,6 +128,8 @@ struct parse_lstm : op_parser<parse_lstm>
         migraphx::shape input_shape = args[0]->get_shape();
         std::size_t hidden_size     = args[2]->get_shape().lens()[2];
 
+        std::cout << "Parse LSTM " << input_shape << " " << hidden_size << std::endl;
+
         if(contains(info.attributes, "hidden_size"))
         {
             std::size_t hidden_size_att =
@@ -202,6 +204,12 @@ struct parse_lstm : op_parser<parse_lstm>
             input_forget = parser.parse_value(info.attributes.at("input_forget")).at<int>();
         }
 
+        int layout = 0;
+        if(contains(info.attributes, "layout"))
+        {
+            layout = parser.parse_value(info.attributes.at("layout")).at<int>();
+        }
+
         // append undefined opeator to make 6 arguments
         if(args.size() < 8)
         {
@@ -215,7 +223,8 @@ struct parse_lstm : op_parser<parse_lstm>
                                                            {"actv_func", to_value(vec_actv_funcs)},
                                                            {"direction", dirct},
                                                            {"clip", clip},
-                                                           {"input_forget", input_forget}}),
+                                                           {"input_forget", input_forget},
+                                                           {"layout", layout},                                                           }),
                                                   args);
 
         auto last_output = info.add_instruction(make_op("rnn_last_hs_output"), hidden_states);

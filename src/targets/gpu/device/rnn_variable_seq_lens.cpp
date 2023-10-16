@@ -33,10 +33,13 @@ namespace device {
 void rnn_var_sl_shift_sequence(hipStream_t stream,
                                const argument& result,
                                const argument& arg_hs,
-                               const argument& arg_sl)
+                               const argument& arg_sl,
+                               int layout)
 {
     auto output_shape = result.get_shape();
-    int64_t max_len   = output_shape.lens()[0];
+    int seq_index  = (layout == 0) ? 0 : 1;
+    int batch_index  = (layout == 0) ? 1 : 0;
+    int64_t max_len   = output_shape.lens()[seq_index];
     visit_all(result, arg_hs)([&](auto output, auto input) {
         const auto* in_data = device_cast(input.data());
         auto* out_data      = device_cast(output.data());
@@ -45,15 +48,15 @@ void rnn_var_sl_shift_sequence(hipStream_t stream,
             const auto* sl_data = device_cast(sl.data());
             gs_launch(stream, output_shape.elements(), 256)([=](auto i) __device__ {
                 auto idx = out_s.multi(i);
-                auto t   = idx[0];
-                auto b   = idx[1];
+                auto t   = idx[seq_index];
+                auto b   = idx[batch_index];
                 auto l   = sl_data[b];
                 auto val = in_data[0];
                 val      = 0;
                 if(t >= max_len - l)
                 {
                     auto in_idx = idx;
-                    in_idx[0] -= (max_len - l);
+                    in_idx[seq_index] -= (max_len - l);
                     val = in_data[out_s.index(in_idx)];
                 }
                 out_data[i] = val;
@@ -66,10 +69,15 @@ void rnn_var_sl_shift_output(hipStream_t stream,
                              const argument& result,
                              const argument& arg_hs,
                              const argument& arg_sl,
-                             bool is_reverse)
+                             bool is_reverse,
+                             int layout)
 {
     auto output_shape = result.get_shape();
-    int64_t max_len   = output_shape.lens()[0];
+    std::cout << "Compute rnn_var_sl_shift_output shape1 " << output_shape << std::endl;
+    int seq_index  = (layout == 0) ? 0 : 1;
+    int batch_index  = (layout == 0) ? 2 : 0;
+    int64_t max_len   = output_shape.lens()[seq_index];
+    std::cout << "Compute rnn_var_sl_shift_output input1 " << arg_hs << std::endl;
     visit_all(result, arg_hs)([&](auto output, auto input) {
         const auto* in_data = device_cast(input.data());
         auto* out_data      = device_cast(output.data());
@@ -78,9 +86,9 @@ void rnn_var_sl_shift_output(hipStream_t stream,
             const auto* sl_data = device_cast(sl.data());
             gs_launch(stream, output_shape.elements(), 256)([=](auto i) __device__ {
                 auto idx = out_s.multi(i);
-                auto t   = idx[0];
-                auto d   = idx[1];
-                auto b   = idx[2];
+                auto t   = idx[seq_index];
+                auto d   = idx[seq_index + 1];
+                auto b   = idx[batch_index];
                 auto l   = sl_data[b];
                 auto val = in_data[0];
                 val      = 0;
@@ -88,24 +96,28 @@ void rnn_var_sl_shift_output(hipStream_t stream,
                 {
                     int offset  = (d == 1 or is_reverse) ? 1 : 0;
                     auto in_idx = idx;
-                    in_idx[0] += offset * (max_len - l);
+                    in_idx[seq_index] += offset * (max_len - l);
                     val = in_data[out_s.index(in_idx)];
                 }
                 out_data[i] = val;
             });
         });
     });
+    std::cout << "Compute rnn_var_sl_shift_output1" << result << std::endl;
 }
 
 void rnn_var_sl_last_output(hipStream_t stream,
                             const argument& result,
                             const argument& arg_hs,
                             const argument& arg_sl,
-                            bool is_reverse)
+                            bool is_reverse,
+                            int layout)
 {
     auto input_shape   = arg_hs.get_shape();
     auto out_comp_lens = input_shape.lens();
-    out_comp_lens[0]   = 1;
+    int seq_index  = (layout == 0) ? 0 : 1;
+    int batch_index  = (layout == 0) ? 2 : 0;
+    out_comp_lens[seq_index]   = 1;
     shape out_comp_shape{input_shape.type(), out_comp_lens};
 
     visit_all(result, arg_hs)([&](auto output, auto input) {
@@ -117,16 +129,16 @@ void rnn_var_sl_last_output(hipStream_t stream,
             auto out_s          = make_hip_shape<4>(out_comp_shape);
             gs_launch(stream, result.get_shape().elements(), 256)([=](auto i) __device__ {
                 auto idx = out_s.multi(i);
-                auto d   = idx[1];
-                auto b   = idx[2];
+                auto d   = idx[seq_index + 1];
+                auto b   = idx[batch_index];
                 auto l   = sl_data[b];
                 if(is_reverse or d == 1)
                 {
-                    idx[0] = 0;
+                    idx[seq_index] = 0;
                 }
                 else
                 {
-                    idx[0] = l - 1;
+                    idx[seq_index] = l - 1;
                 }
                 out_data[i] = in_data[in_s.index(idx)];
             });

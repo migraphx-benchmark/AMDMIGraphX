@@ -101,6 +101,8 @@ struct binary : op_name<Derived>
                            output.begin(),
                            static_cast<const Derived&>(*this).apply());
         });
+        std::cout << "Compute binary 1 " << this->name() << " "  << args[0] << result << std::endl;
+        std::cout << "************************** " << std::endl;
         return result;
     }
 };

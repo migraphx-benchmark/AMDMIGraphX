@@ -43,16 +43,18 @@ struct rnn_var_sl_shift_output
 {
     std::string output_name = "hidden_states";
     rnn_direction direction = rnn_direction::forward;
+    int layout = 0;
 
     template <class Self, class F>
     static auto reflect(Self& self, F f)
     {
-        return pack(f(self.output_name, "output_name"), f(self.direction, "direction"));
+        return pack(f(self.output_name, "output_name"), f(self.direction, "direction"), f(self.layout, "layout"));
     }
 
     std::string name() const { return "rnn_var_sl_shift_output"; }
     shape compute_shape(std::vector<shape> inputs) const
     {
+        std::cout << "Compute_shape rnn_var_sl_shift_output " << inputs[0] << std::endl;
         check_shapes{inputs, *this}.has(2);
         return inputs[0];
     }
@@ -60,35 +62,46 @@ struct rnn_var_sl_shift_output
     argument compute(const shape& output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
-        int64_t max_len = output_shape.lens()[0];
+        std::cout << "Compute rnn_var_sl_shift_output shape " << output_shape << std::endl;
+        int seq_index  = (layout == 0) ? 0 : 1;
+        int batch_index  = (layout == 0) ? 2 : 0;
+        int64_t max_len = output_shape.lens()[seq_index];
+        std::cout << "Compute rnn_var_sl_shift_output input " << args[0] << std::endl;
         visit_all(result, args[0])([&](auto output, auto input) {
             using value_type = typename decltype(output)::value_type;
             args[1].visit([&](auto seq_lens) {
                 par_for(output_shape.elements(), [&](auto i) {
                     auto idx       = output_shape.multi(i);
-                    auto batch_id  = idx[2];
-                    auto d         = idx[1];
-                    auto t         = idx[0];
+                    auto batch_id  = idx[batch_index];
+                    auto d         = idx[seq_index + 1];
+                    auto t         = idx[seq_index];
                     auto sl        = seq_lens[batch_id];
                     value_type val = value_type{0};
                     if(t < sl)
                     {
                         auto in_idx = idx;
                         int offset  = (direction == rnn_direction::reverse or d == 1) ? 1 : 0;
-                        in_idx[0] += offset * (max_len - sl);
+                        in_idx[seq_index] += offset * (max_len - sl);
                         val = input(in_idx.begin(), in_idx.end());
                     }
                     output(idx.begin(), idx.end()) = val;
                 });
             });
         });
-
+        std::cout << "Compute rnn_var_sl_shift_output" << result << std::endl;
         return result;
     }
 };
 
 struct rnn_var_sl_shift_sequence
 {
+    int layout = 0;
+
+    template <class Self, class F>
+    static auto reflect(Self& self, F f)
+    {
+        return pack(f(self.layout, "layout"));
+    }
     std::string name() const { return "rnn_var_sl_shift_sequence"; }
     shape compute_shape(std::vector<shape> inputs) const
     {
@@ -99,20 +112,22 @@ struct rnn_var_sl_shift_sequence
     argument compute(const shape& output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
-        int64_t max_len = output_shape.lens()[0];
+        int seq_index  = (layout == 0) ? 0 : 1;
+        int batch_index  = (layout == 0) ? 1 : 0;
+        int64_t max_len = output_shape.lens()[seq_index];
         visit_all(result, args[0])([&](auto output, auto input) {
             using value_type = typename decltype(output)::value_type;
             args[1].visit([&](auto seq_lens) {
                 par_for(output_shape.elements(), [&](auto i) {
                     auto idx       = output_shape.multi(i);
-                    auto b         = idx[1];
-                    auto t         = idx[0];
+                    auto b         = idx[batch_index];
+                    auto t         = idx[seq_index];
                     auto sl        = seq_lens[b];
                     value_type val = value_type{0};
                     if(t >= max_len - sl)
                     {
                         auto in_idx = idx;
-                        in_idx[0] -= (max_len - sl);
+                        in_idx[seq_index] -= (max_len - sl);
                         val = input(in_idx.begin(), in_idx.end());
                     }
                     output(idx.begin(), idx.end()) = val;

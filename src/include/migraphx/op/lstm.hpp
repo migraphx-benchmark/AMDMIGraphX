@@ -49,6 +49,7 @@ struct lstm
     rnn_direction direction = rnn_direction::forward;
     float clip              = 0.0f;
     int input_forget        = 0;
+    int layout              = 0;
 
     template <class Self, class F>
     static auto reflect(Self& self, F f)
@@ -57,7 +58,8 @@ struct lstm
                     f(self.actv_funcs, "actv_func"),
                     f(self.direction, "direction"),
                     f(self.clip, "clip"),
-                    f(self.input_forget, "input_forget"));
+                    f(self.input_forget, "input_forget"),
+                    f(self.layout, "layout"));
     }
 
     std::string name() const { return "lstm"; }
@@ -65,6 +67,7 @@ struct lstm
     {
         auto in_dims     = inputs[0].lens();
         auto hidden_dims = inputs[2].lens();
+        std::cout << "LSTM Compute shape " << inputs[0] << " " << in_dims[0] << " " << inputs[2] << " " <<hidden_dims[0] << std::endl;
         if(hidden_size != hidden_dims[2])
         {
             MIGRAPHX_THROW("LSTM: hidden size mismatch in attribute and input");

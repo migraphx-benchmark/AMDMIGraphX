@@ -104,6 +104,8 @@ struct dot
         argument result = argument{dyn_out.computed_shape};
         visit_all(result, args[0], args[1])(
             [&](auto cmat, auto amat, auto bmat) { gemm(cmat, amat, bmat, 1.0f, 0.0f); });
+        std::cout << "Compute dot 1 " << result << std::endl;
+        std::cout << "************************** " << std::endl;
         return result;
     }
 };

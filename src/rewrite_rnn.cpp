@@ -238,8 +238,8 @@ void rewrite_rnn::apply_vanilla_rnn(module& m, instruction_ref ins) const
 
     // in case of all sequences are of the same lengths and shorter than the
     // max sequence length, need to pad 0's at the end for output hidden states
-    ins = pad_hidden_states(m, args[0], seq_lens, ins);
-    replace_last_hs_output(m, ins, seq_lens, last_output, dirct);
+    ins = pad_hidden_states(m, args[0], seq_lens, ins, 0);
+    replace_last_hs_output(m, ins, seq_lens, last_output, dirct, 0);
 }
 
 std::vector<instruction_ref> rewrite_rnn::vanilla_rnn_cell(bool is_forward,
@@ -287,7 +287,7 @@ std::vector<instruction_ref> rewrite_rnn::vanilla_rnn_cell(bool is_forward,
     instruction_ref hidden_out = m.end();
     instruction_ref last_out{};
     last_out     = m.insert_instruction(ins, make_op("unsqueeze", {{"axes", {0, 1}}}), sih);
-    long seq_len = get_seq_len(m, seq, seq_lens);
+    long seq_len = get_seq_len(m, seq, seq_lens, 0);
     for(long i = 0; i < seq_len; i++)
     {
         long seq_index = is_forward ? i : (seq_len - 1 - i);
@@ -547,8 +547,8 @@ void rewrite_rnn::apply_gru(module& m, instruction_ref ins) const
 
     // in case of all sequences are of the same lengths and shorter than the
     // max sequence length, need to pad 0's at the end for output hidden states
-    ins = pad_hidden_states(m, args[0], seq_lens, ins);
-    replace_last_hs_output(m, ins, seq_lens, last_output, dirct);
+    ins = pad_hidden_states(m, args[0], seq_lens, ins, 0);
+    replace_last_hs_output(m, ins, seq_lens, last_output, dirct, 0);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -629,7 +629,7 @@ std::vector<instruction_ref> rewrite_rnn::gru_cell(bool is_forward,
             rb_h);
     }
 
-    long seq_len = get_seq_len(m, seq, seq_lens);
+    long seq_len = get_seq_len(m, seq, seq_lens, 0);
     for(long i = 0; i < seq_len; i++)
     {
         long seq_index = is_forward ? i : (seq_len - 1 - i);
@@ -768,28 +768,45 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
 {
     assert(ins->name() == "lstm");
     auto args = ins->inputs();
+    auto lstm_op            = any_cast<op::lstm>(ins->get_operator());
 
+    int layout = lstm_op.layout;
     shape seq_shape         = args[0]->get_shape();
     std::size_t hidden_size = args[2]->get_shape().lens()[2];
-    std::size_t batch_size  = seq_shape.lens()[1];
+    std::size_t batch_size = (layout == 0) ? seq_shape.lens()[1] : seq_shape.lens()[0];
+    std::size_t ihc_shape_dim1 = (layout == 0) ? 1 : batch_size;
+    std::size_t ihc_shape_dim2 = (layout == 0) ? batch_size : 1;
+    std::size_t ihc_ndir_axes_index = (layout == 0) ? 0 : 1;
+    std::size_t seq_len_axes_index = (layout == 0) ? 0 : 1;
+    std::size_t ho_ndir_axes_index = (layout == 0) ? 1 : 2;
+    int dir_axes_index = 0;
+
+    if (layout) {
+      batch_size = seq_shape.lens()[0];
+      dir_axes_index = 1;
+    }
+
     shape::type_t type      = seq_shape.type();
-    migraphx::shape ihc_shape{type, {1, batch_size, hidden_size}};
+    std::cout << "Apply LSTM: "<< ins->name() << " "<< seq_shape << " " << hidden_size << " " << batch_size << std::endl;
+    migraphx::shape ihc_shape{type, {ihc_shape_dim1, ihc_shape_dim2, hidden_size}};
+
     std::vector<float> ihc_data(ihc_shape.elements(), 0.0);
 
     migraphx::shape pph_shape{type, {1, 3 * hidden_size}};
 
     auto actv_funcs         = lstm_actv_funcs(ins);
-    auto lstm_op            = any_cast<op::lstm>(ins->get_operator());
     op::rnn_direction dirct = lstm_op.direction;
 
     // process sequence length
     instruction_ref seq_lens = m.end();
     if((args.size() >= 5) and not args[4]->is_undefined())
     {
+        std::cout << "Apply LSTM seq lens "<< std::endl;
         seq_lens = args[4];
     }
 
     bool variable_seq_len = is_variable_seq_lens(m, seq_lens);
+    std::cout << "Apply LSTM is seq len: "<< variable_seq_len << std::endl;
 
     instruction_ref last_hs_output{};
     instruction_ref last_cell_output{};
@@ -797,18 +814,21 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
     instruction_ref cell_outputs{};
     if(dirct == op::rnn_direction::bidirectional)
     {
+        std::cout << "Apply LSTM direction: "<< dirct << std::endl;
         // input weight matrix
         // input weight matrix
         auto w_forward = m.insert_instruction(
             ins, make_op("slice", {{"axes", {0}}, {"starts", {0}}, {"ends", {1}}}), args[1]);
         auto w_reverse = m.insert_instruction(
             ins, make_op("slice", {{"axes", {0}}, {"starts", {1}}, {"ends", {2}}}), args[1]);
+        std::cout << "Apply LSTM w_forward w_reverse " << w_forward->get_shape() << " " << w_reverse->get_shape() << std::endl;
 
         // hidden state weight matrix
         auto r_forward = m.insert_instruction(
             ins, make_op("slice", {{"axes", {0}}, {"starts", {0}}, {"ends", {1}}}), args[2]);
         auto r_reverse = m.insert_instruction(
             ins, make_op("slice", {{"axes", {0}}, {"starts", {1}}, {"ends", {2}}}), args[2]);
+        std::cout << "Apply LSTM r_forward r_reverse " << r_forward->get_shape() << " " << r_reverse->get_shape() << std::endl;
 
         // process bias
         instruction_ref bias_forward = m.end();
@@ -827,15 +847,16 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         if(args.size() >= 6 and not args[5]->is_undefined())
         {
             ih_forward = m.insert_instruction(
-                ins, make_op("slice", {{"axes", {0}}, {"starts", {0}}, {"ends", {1}}}), args[5]);
+                ins, make_op("slice", {{"axes", {ihc_ndir_axes_index}}, {"starts", {0}}, {"ends", {1}}}), args[5]);
             ih_reverse = m.insert_instruction(
-                ins, make_op("slice", {{"axes", {0}}, {"starts", {1}}, {"ends", {2}}}), args[5]);
+                ins, make_op("slice", {{"axes", {ihc_ndir_axes_index}}, {"starts", {1}}, {"ends", {2}}}), args[5]);
         }
         else
         {
             ih_forward = m.add_literal(migraphx::literal{ihc_shape, ihc_data});
             ih_reverse = m.add_literal(migraphx::literal{ihc_shape, ihc_data});
         }
+        std::cout << "Apply LSTM ih_forward ih_reverse " << ih_forward->get_shape() << " " << ih_reverse->get_shape() << std::endl;
 
         // process initial cell value
         instruction_ref ic_forward{};
@@ -843,16 +864,16 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         if(args.size() >= 7 and not args[6]->is_undefined())
         {
             ic_forward = m.insert_instruction(
-                ins, make_op("slice", {{"axes", {0}}, {"starts", {0}}, {"ends", {1}}}), args[6]);
+                ins, make_op("slice", {{"axes", {ihc_ndir_axes_index}}, {"starts", {0}}, {"ends", {1}}}), args[6]);
             ic_reverse = m.insert_instruction(
-                ins, make_op("slice", {{"axes", {0}}, {"starts", {1}}, {"ends", {2}}}), args[6]);
+                ins, make_op("slice", {{"axes", {ihc_ndir_axes_index}}, {"starts", {1}}, {"ends", {2}}}), args[6]);
         }
         else
         {
             ic_forward = m.add_literal(migraphx::literal{ihc_shape, ihc_data});
             ic_reverse = m.add_literal(migraphx::literal{ihc_shape, ihc_data});
         }
-
+        std::cout << "Apply LSTM ic_forward ic_reverse " << ic_forward->get_shape() << " " << ic_reverse->get_shape() << std::endl;
         // process weight of the peephole
         instruction_ref pph_forward = m.end();
         instruction_ref pph_reverse = m.end();
@@ -865,6 +886,7 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         }
 
         auto ret_forward = lstm_cell(true,
+                                     layout,
                                      m,
                                      ins,
                                      {args[0],
@@ -882,9 +904,10 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         if(variable_seq_len)
         {
             args[0] =
-                m.insert_instruction(ins, make_op("rnn_var_sl_shift_sequence"), args[0], seq_lens);
+                m.insert_instruction(ins, make_op("rnn_var_sl_shift_sequence", {{"layout", layout}}), args[0], seq_lens);
         }
         auto ret_reverse = lstm_cell(false,
+                                     layout,
                                      m,
                                      ins,
                                      {args[0],
@@ -899,14 +922,20 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
                                      actv_funcs.at(4),
                                      actv_funcs.at(5));
 
+        std::cout << "Apply LSTM ret_forward[1] ret_reverse[1] " << ret_forward[1]->get_shape() << " " << ret_reverse[1]->get_shape() << std::endl;
         auto concat_hs_output = m.insert_instruction(
-            ins, make_op("concat", {{"axis", 1}}), ret_forward[1], ret_reverse[1]);
+            ins, make_op("concat", {{"axis", ho_ndir_axes_index}}), ret_forward[1], ret_reverse[1]);
+        std::cout << "Apply LSTM concat_hs_output " << concat_hs_output->get_shape() << std::endl;
+        std::cout << "Apply LSTM ret_forward[3] ret_reverse[3] " << ret_forward[3]->get_shape() << " " << ret_reverse[3]->get_shape() << std::endl;
         auto concat_cell_output = m.insert_instruction(
-            ins, make_op("concat", {{"axis", 1}}), ret_forward[3], ret_reverse[3]);
+            ins, make_op("concat", {{"axis", ho_ndir_axes_index}}), ret_forward[3], ret_reverse[3]);
+        std::cout << "Apply LSTM concat_cell_output " << concat_cell_output->get_shape() << std::endl;
         last_hs_output =
-            m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), concat_hs_output);
+            m.insert_instruction(ins, make_op("squeeze", {{"axes", {seq_len_axes_index}}}), concat_hs_output);
+        std::cout << "Apply LSTM last_hs_output " << last_hs_output->get_shape() << std::endl;
         last_cell_output =
-            m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), concat_cell_output);
+            m.insert_instruction(ins, make_op("squeeze", {{"axes", {seq_len_axes_index}}}), concat_cell_output);
+        std::cout << "Apply LSTM last_cell_output " << last_cell_output->get_shape() << std::endl;
 
         // the following logic is to ensure the last instruction is a concat
         if(ret_forward[0] == m.end())
@@ -915,21 +944,31 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         }
         else
         {
+            std::cout << "Apply LSTM ret_forward[0] ret_forward[1] " << ret_forward[0]->get_shape() << " " << ret_forward[1]->get_shape() << std::endl;
+            std::cout << "Apply LSTM ret_reverse[0] ret_reverse[1] " << ret_reverse[0]->get_shape() << " " << ret_reverse[1]->get_shape() << std::endl;
             ret_forward[1] = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 0}}), ret_forward[0], ret_forward[1]);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), ret_forward[0], ret_forward[1]);
+            std::cout << "Apply LSTM ret_forward[1] " << ret_forward[1]->get_shape() << std::endl;
             ret_reverse[1] = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 0}}), ret_reverse[1], ret_reverse[0]);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), ret_reverse[1], ret_reverse[0]);
+            std::cout << "Apply LSTM ret_reverse[1] " << ret_reverse[1]->get_shape() << std::endl;
 
+            std::cout << "Apply LSTM ret_forward[2] ret_forward[3] " << ret_forward[2]->get_shape() << " " << ret_forward[3]->get_shape() << std::endl;
+            std::cout << "Apply LSTM ret_reverse[2] ret_reverse[3] " << ret_reverse[2]->get_shape() << " " << ret_reverse[3]->get_shape() << std::endl;
             ret_forward[3] = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 0}}), ret_forward[2], ret_forward[3]);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), ret_forward[2], ret_forward[3]);
+            std::cout << "Apply LSTM ret_forward[3] " << ret_forward[3]->get_shape() << std::endl;
             ret_reverse[3] = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 0}}), ret_reverse[3], ret_reverse[2]);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), ret_reverse[3], ret_reverse[2]);
+            std::cout << "Apply LSTM ret_reverse[3] " << ret_reverse[3]->get_shape() << std::endl;
             cell_outputs = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 1}}), ret_forward[3], ret_reverse[3]);
+                ins, make_op("concat", {{"axis", ho_ndir_axes_index}}), ret_forward[3], ret_reverse[3]);
+            std::cout << "Apply cell_outputs " << cell_outputs->get_shape() << std::endl;
         }
 
         hidden_state = m.replace_instruction(
-            ins, make_op("concat", {{"axis", 1}}), {ret_forward[1], ret_reverse[1]});
+            ins, make_op("concat", {{"axis", ho_ndir_axes_index}}), {ret_forward[1], ret_reverse[1]});
+        std::cout << "Apply hidden_state " << hidden_state->get_shape() << std::endl;
     }
     else
     {
@@ -942,6 +981,7 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         instruction_ref bias = m.end();
         if(args.size() >= 4 and not args[3]->is_undefined())
         {
+            std::cout << "Apply LSTM bias " << std::endl;
             bias = args[3];
         }
 
@@ -949,6 +989,7 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         instruction_ref ih{};
         if(args.size() >= 6 and not args[5]->is_undefined())
         {
+            std::cout << "Apply LSTM ih "<< std::endl;
             ih = args[5];
         }
         else
@@ -960,6 +1001,7 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         instruction_ref ic{};
         if(args.size() >= 7 and not args[6]->is_undefined())
         {
+            std::cout << "Apply LSTM ic "<< std::endl;
             ic = args[6];
         }
         else
@@ -971,57 +1013,72 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
         instruction_ref pph = m.end();
         if(args.size() == 8 and not args[7]->is_undefined())
         {
+            std::cout << "Apply LSTM pph " << std::endl;
             pph = args[7];
         }
 
         if(not is_forward and variable_seq_len)
         {
+            std::cout << "Apply LSTM rnn_var_sl_shift_sequence " << std::endl;
             args[0] =
-                m.insert_instruction(ins, make_op("rnn_var_sl_shift_sequence"), args[0], seq_lens);
+                m.insert_instruction(ins, make_op("rnn_var_sl_shift_sequence", {{"layout", layout}}), args[0], seq_lens);
         }
+        std::cout << "Apply LSTM before lstm_cell: " << std::endl;
         auto ret = lstm_cell(is_forward,
+                             layout,
                              m,
                              ins,
                              {args[0], w, r, bias, seq_lens, ih, ic, pph},
                              actv_funcs.at(0),
                              actv_funcs.at(1),
                              actv_funcs.at(2));
-
-        last_hs_output   = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), ret[1]);
-        last_cell_output = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), ret[3]);
-
+        std::cout << "Apply LSTM after lstm_cell: " << std::endl;
+        std::cout << "Apply LSTM ret[1] " << ret[1]->get_shape() << std::endl;
+        last_hs_output   = m.insert_instruction(ins, make_op("squeeze", {{"axes", {seq_len_axes_index}}}), ret[1]);
+        std::cout << "Apply LSTM after last_hs_output: " << last_hs_output->get_shape() << std::endl;
+        std::cout << "Apply LSTM ret[3] " << ret[3]->get_shape() << std::endl;
+        last_cell_output = m.insert_instruction(ins, make_op("squeeze", {{"axes", {seq_len_axes_index}}}), ret[3]);
+        std::cout << "Apply LSTM after last_cell_output: " << last_cell_output->get_shape() << std::endl;
         if(ret[0] == m.end())
         {
+            std::cout << "Apply LSTM ret[0] ret[1]: " << ret[1]->get_shape() << std::endl;
             cell_outputs = ret[3];
-            hidden_state = m.replace_instruction(ins, make_op("concat", {{"axis", 0}}), ret[1]);
+            hidden_state = m.replace_instruction(ins, make_op("concat", {{"axis", seq_len_axes_index}}), ret[1]);
+            std::cout << "Apply LSTM hidden_state: " << hidden_state->get_shape() << std::endl;
         }
         else
         {
             auto concat_cell_arg0 = is_forward ? ret[2] : ret[3];
             auto concat_cell_arg1 = is_forward ? ret[3] : ret[2];
+            std::cout << "Apply LSTM ret[2] ret[3]: " << ret[2]->get_shape() << " " << ret[3]->get_shape() << std::endl;
             cell_outputs          = m.insert_instruction(
-                ins, make_op("concat", {{"axis", 0}}), concat_cell_arg0, concat_cell_arg1);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), concat_cell_arg0, concat_cell_arg1);
+
+            std::cout << "Apply LSTM cell_outputs: " << cell_outputs->get_shape() << std::endl;
 
             auto concat_arg0 = is_forward ? ret[0] : ret[1];
             auto concat_arg1 = is_forward ? ret[1] : ret[0];
+            std::cout << "Apply LSTM ret[0] ret[1]: " << ret[0]->get_shape() << " " << ret[1]->get_shape() << std::endl;
             hidden_state     = m.replace_instruction(
-                ins, make_op("concat", {{"axis", 0}}), concat_arg0, concat_arg1);
+                ins, make_op("concat", {{"axis", seq_len_axes_index}}), concat_arg0, concat_arg1);
+            std::cout << "Apply LSTM hidden_state: " << hidden_state->get_shape() << std::endl;
         }
     }
 
     // in case of all sequences are of the same lengths and shorter than the
     // max sequence length, need to pad 0's at the end for output hidden states
-    hidden_state = pad_hidden_states(m, args[0], seq_lens, hidden_state);
+    //hidden_state = pad_hidden_states(m, args[0], seq_lens, hidden_state, layout);
 
     // replace last hidden states with corresponding instructions
-    ins = replace_last_hs_output(m, hidden_state, seq_lens, last_hs_output, dirct);
+    //ins = replace_last_hs_output(m, hidden_state, seq_lens, last_hs_output, dirct, layout);
 
     // replace last cell outputs with corresponding instructions
-    replace_last_cell_output(m, ins, seq_lens, cell_outputs, last_cell_output, dirct);
+    //replace_last_cell_output(m, ins, seq_lens, cell_outputs, last_cell_output, dirct, layout);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 std::vector<instruction_ref> rewrite_rnn::lstm_cell(bool is_forward,
+                                                    int layout,
                                                     module& m,
                                                     instruction_ref ins,
                                                     std::vector<instruction_ref> inputs,
@@ -1046,25 +1103,37 @@ std::vector<instruction_ref> rewrite_rnn::lstm_cell(bool is_forward,
     instruction_ref last_hs_output{};
     instruction_ref last_cell_output{};
 
+    std::size_t ihc_ndir_axes_index = (layout == 0) ? 0 : 1;
+    std::size_t seq_len_axes_index = (layout == 0) ? 0 : 1;
+
     migraphx::shape r_shape = r->get_shape();
     long hs                 = r_shape.lens()[2];
-    auto bs                 = ih->get_shape().lens()[1];
+    auto bs                 = (layout == 0) ? ih->get_shape().lens()[1] : ih->get_shape().lens()[0];
+    std::cout << "Apply LSTM lstm_cell: " << r_shape << " " << ih->get_shape() << " " << bs << std::endl;
 
     std::vector<int64_t> perm{1, 0};
     // w matrix, squeeze and transpose
     auto sw  = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), w);
     auto tsw = m.insert_instruction(ins, make_op("transpose", {{"permutation", perm}}), sw);
+    std::cout << "Apply LSTM lstm_cell after sw tsw " << sw->get_shape() << " " << tsw->get_shape() << std::endl;
 
+    std::cout << "Apply LSTM lstm_cell before sr " << r_shape << std::endl;
     // r matrix, squeeze and transpose
     auto sr  = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), r);
+    std::cout << "Apply LSTM lstm_cell before tsr " << sr->get_shape() << std::endl;
     auto tsr = m.insert_instruction(ins, make_op("transpose", {{"permutation", perm}}), sr);
+    std::cout << "Apply LSTM lstm_cell after sr tsr " << tsr->get_shape() <<std::endl;
 
     // initial hidden state
-    auto sih = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), ih);
+    std::cout << "Apply LSTM lstm_cell before sih " << ih->get_shape() <<std::endl;
+    auto sih = m.insert_instruction(ins, make_op("squeeze", {{"axes", {ihc_ndir_axes_index}}}), ih);
+    std::cout << "Apply LSTM lstm_cell after sih " << sih->get_shape() <<std::endl;
 
     // initial cell state
-    auto sic     = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), ic);
+    std::cout << "Apply LSTM lstm_cell before sic " << ic->get_shape() <<std::endl;
+    auto sic     = m.insert_instruction(ins, make_op("squeeze", {{"axes", {ihc_ndir_axes_index}}}), ic);
     auto ic_lens = sic->get_shape().lens();
+    std::cout << "Apply LSTM lstm_cell after sic " << sic->get_shape() << " " << ic_lens[0] << std::endl;
 
     // bias
     instruction_ref wrb{};
@@ -1109,38 +1178,49 @@ std::vector<instruction_ref> rewrite_rnn::lstm_cell(bool is_forward,
             ins, make_op("broadcast", {{"axis", 1}, {"out_lens", ic_lens}}), pphf);
     }
 
-    long seq_len = get_seq_len(m, seq, seq_lens);
+    long seq_len = get_seq_len(m, seq, seq_lens, layout);
+    std::cout << "Apply LSTM lstm_cell seq_len " << seq_len << std::endl;
     for(long i = 0; i < seq_len; ++i)
     {
         long seq_index = is_forward ? i : (seq_len - 1 - i);
+        std::cout << "Apply LSTM seq_len loop seq_index " << seq_index << std::endl;
+        std::cout << "Apply LSTM seq_len loop 0 " << seq->get_shape() << std::endl;
         auto xt        = m.insert_instruction(
             ins,
-            make_op("slice", {{"axes", {0}}, {"starts", {seq_index}}, {"ends", {seq_index + 1}}}),
+            make_op("slice", {{"axes", {seq_len_axes_index}}, {"starts", {seq_index}}, {"ends", {seq_index + 1}}}),
             seq);
+        std::cout << "Apply LSTM seq_len loop 1 " << xt->get_shape() << std::endl;
         auto cont_xt = m.insert_instruction(ins, make_op("contiguous"), xt);
-        xt           = m.insert_instruction(ins, make_op("squeeze", {{"axes", {0}}}), cont_xt);
-
+        std::cout << "Apply LSTM seq_len loop 2 " << cont_xt->get_shape() << std::endl;
+        xt           = m.insert_instruction(ins, make_op("squeeze", {{"axes", {seq_len_axes_index}}}), xt);
+        std::cout << "Apply LSTM seq_len loop 3 " << xt->get_shape() << std::endl;  
         auto xt_tsw  = m.insert_instruction(ins, make_op("dot"), xt, tsw);
+        std::cout << "Apply LSTM seq_len loop 4 " << xt_tsw->get_shape() << std::endl; 
         auto sih_tsr = m.insert_instruction(ins, make_op("dot"), sih, tsr);
+        std::cout << "Apply LSTM seq_len loop 5 " << sih_tsr->get_shape() << std::endl;
         auto xt_sih  = m.insert_instruction(ins, make_op("add"), xt_tsw, sih_tsr);
+        std::cout << "Apply LSTM seq_len loop 6 " << xt_sih->get_shape() << std::endl;
         if(bias != m.end())
         {
             xt_sih = m.insert_instruction(ins, make_op("add"), xt_sih, wrb);
         }
-
+        std::cout << "Apply LSTM seq_len loop xt_sih " << xt_sih->get_shape() << std::endl;
         auto it_before_actv = m.insert_instruction(
             ins, make_op("slice", {{"axes", {1}}, {"starts", {0}}, {"ends", {hs}}}), xt_sih);
+        std::cout << "Apply LSTM seq_len loop 7 " << it_before_actv->get_shape() << std::endl;  
         auto ot_before_actv = m.insert_instruction(
             ins, make_op("slice", {{"axes", {1}}, {"starts", {hs}}, {"ends", {2 * hs}}}), xt_sih);
+        std::cout << "Apply LSTM seq_len loop 8 " << ot_before_actv->get_shape() << std::endl;
         auto ft_before_actv = m.insert_instruction(
             ins,
             make_op("slice", {{"axes", {1}}, {"starts", {2 * hs}}, {"ends", {3 * hs}}}),
             xt_sih);
+        std::cout << "Apply LSTM seq_len loop 9 " << ft_before_actv->get_shape() << std::endl;
         auto ct_before_actv = m.insert_instruction(
             ins,
             make_op("slice", {{"axes", {1}}, {"starts", {3 * hs}}, {"ends", {4 * hs}}}),
             xt_sih);
-
+        std::cout << "Apply LSTM seq_len loop 10 " << ct_before_actv->get_shape() << std::endl;
         if(pph != m.end())
         {
             auto pphi_ct   = m.insert_instruction(ins, make_op("mul"), pphi_brcst, sic);
@@ -1150,13 +1230,19 @@ std::vector<instruction_ref> rewrite_rnn::lstm_cell(bool is_forward,
             ft_before_actv = m.insert_instruction(ins, make_op("add"), ft_before_actv, pphf_ct);
         }
         auto it = m.insert_instruction(ins, actv_func1, it_before_actv);
+        std::cout << "Apply LSTM seq_len loop 11 " << it->get_shape() << std::endl;
         auto ft = m.insert_instruction(ins, actv_func1, ft_before_actv);
+        std::cout << "Apply LSTM seq_len loop 12 " << ft->get_shape() << std::endl;
         auto ct = m.insert_instruction(ins, actv_func2, ct_before_actv);
+        std::cout << "Apply LSTM seq_len loop 13 " << ct->get_shape() << std::endl;
 
         // equation Ct = ft (.) Ct-1 + it (.) ct
         auto ft_cell = m.insert_instruction(ins, make_op("mul"), ft, sic);
+        std::cout << "Apply LSTM seq_len loop 14 " << ft_cell->get_shape() << std::endl;
         auto it_ct   = m.insert_instruction(ins, make_op("mul"), it, ct);
+        std::cout << "Apply LSTM seq_len loop 15 " << it_ct->get_shape() << std::endl;
         auto cellt   = m.insert_instruction(ins, make_op("add"), ft_cell, it_ct);
+        std::cout << "Apply LSTM seq_len loop 16 " << cellt->get_shape() << std::endl;
 
         if(pph != m.end())
         {
@@ -1164,36 +1250,50 @@ std::vector<instruction_ref> rewrite_rnn::lstm_cell(bool is_forward,
             ot_before_actv  = m.insert_instruction(ins, make_op("add"), ot_before_actv, ppho_cellt);
         }
         auto ot = m.insert_instruction(ins, actv_func1, ot_before_actv);
+        std::cout << "Apply LSTM seq_len loop 17 " << ot->get_shape() << std::endl;
 
         // Ht = ot (.) h(Ct)
         auto h_cellt = m.insert_instruction(ins, actv_func3, cellt);
+        std::cout << "Apply LSTM seq_len loop 18 " << h_cellt->get_shape() << std::endl;
         auto ht      = m.insert_instruction(ins, make_op("mul"), ot, h_cellt);
+        std::cout << "Apply LSTM seq_len loop 19 " << ht->get_shape() << std::endl;
 
         sic = cellt;
         sih = ht;
 
-        last_hs_output = m.insert_instruction(ins, make_op("unsqueeze", {{"axes", {0, 1}}}), ht);
+        last_hs_output = m.insert_instruction(ins, make_op("unsqueeze", {{"axes", {seq_len_axes_index, seq_len_axes_index + 1}}}), ht);
+        std::cout << "Apply LSTM seq_len loop 20 " << last_hs_output->get_shape() << std::endl;
         last_cell_output =
-            m.insert_instruction(ins, make_op("unsqueeze", {{"axes", {0, 1}}}), cellt);
+            m.insert_instruction(ins, make_op("unsqueeze", {{"axes", {seq_len_axes_index, seq_len_axes_index + 1}}}), cellt);
+        std::cout << "Apply LSTM seq_len loop 21 " << last_cell_output->get_shape() << std::endl;
 
         if(i < seq_len - 1)
         {
+            std::cout << "Apply LSTM seq_len loop 22 " << i << std::endl;
             if(i == 0)
             {
                 hidden_states = last_hs_output;
+                std::cout << "Apply LSTM seq_len loop 023 " << hidden_states->get_shape() << std::endl;
                 cell_outputs  = last_cell_output;
+                std::cout << "Apply LSTM seq_len loop 024 " << cell_outputs->get_shape() << std::endl;
             }
             else
             {
                 auto concat_hs_arg0 = is_forward ? hidden_states : last_hs_output;
                 auto concat_hs_arg1 = is_forward ? last_hs_output : hidden_states;
+                std::cout << "Apply LSTM seq_len loop 123 " << concat_hs_arg0->get_shape() << std::endl;
+                std::cout << "Apply LSTM seq_len loop 124 " << concat_hs_arg1->get_shape() << std::endl;
                 hidden_states       = m.insert_instruction(
-                    ins, make_op("concat", {{"axis", 0}}), concat_hs_arg0, concat_hs_arg1);
+                    ins, make_op("concat", {{"axis", seq_len_axes_index}}), concat_hs_arg0, concat_hs_arg1);
+                std::cout << "Apply LSTM seq_len loop 125 " << hidden_states->get_shape() << std::endl;
 
                 auto concat_cell_arg0 = is_forward ? cell_outputs : last_cell_output;
                 auto concat_cell_arg1 = is_forward ? last_cell_output : cell_outputs;
+                std::cout << "Apply LSTM seq_len loop 126 " << concat_cell_arg0->get_shape() << std::endl;
+                std::cout << "Apply LSTM seq_len loop 127 " << concat_cell_arg1->get_shape() << std::endl;
                 cell_outputs          = m.insert_instruction(
-                    ins, make_op("concat", {{"axis", 0}}), concat_cell_arg0, concat_cell_arg1);
+                    ins, make_op("concat", {{"axis", seq_len_axes_index}}), concat_cell_arg0, concat_cell_arg1);
+                std::cout << "Apply LSTM seq_len loop 128 " << cell_outputs->get_shape() << std::endl;
             }
         }
     }
@@ -1310,11 +1410,13 @@ bool rewrite_rnn::is_variable_seq_lens(const module& m, instruction_ref seq_lens
 }
 
 std::size_t
-rewrite_rnn::get_seq_len(const module& m, instruction_ref input, instruction_ref seq_lens) const
+rewrite_rnn::get_seq_len(const module& m, instruction_ref input, instruction_ref seq_lens, int layout) const
 {
+    int seq_index = 0;
+    if (layout) seq_index = 1;
     bool is_var_lens = is_variable_seq_lens(m, seq_lens);
     auto input_shape = input->get_shape();
-    auto length      = input_shape.lens()[0];
+    auto length      = input_shape.lens()[seq_index];
     if(not is_var_lens and seq_lens != m.end())
     {
         auto arg_len = seq_lens->eval();
@@ -1330,16 +1432,18 @@ instruction_ref rewrite_rnn::replace_last_hs_output(module& m,
                                                     instruction_ref ins,
                                                     instruction_ref seq_lens,
                                                     instruction_ref last_hs_output,
-                                                    op::rnn_direction dirct) const
+                                                    op::rnn_direction dirct,
+                                                    int layout) const
 {
     bool variable_seq_len = is_variable_seq_lens(m, seq_lens);
     instruction_ref result_ins{};
     if(variable_seq_len)
     {
+        std::cout <<"rnn_var_sl_shift_output rnn_var_sl_shift_output 1 " << ins->get_shape() << std::endl;
         result_ins =
             m.insert_instruction(std::next(ins),
                                  make_op("rnn_var_sl_shift_output",
-                                         {{"output_name", "hidden_states"}, {"direction", dirct}}),
+                                         {{"output_name", "hidden_states"}, {"direction", dirct}, {"layout", layout}}),
                                  ins,
                                  seq_lens);
         m.replace_instruction(ins, result_ins);
@@ -1348,11 +1452,13 @@ instruction_ref rewrite_rnn::replace_last_hs_output(module& m,
 
         for(auto& hs_out : hs_outputs)
         {
+            std::cout <<"replace_last_hs_output rnn_var_sl_last_output 1 " << hs_out->get_shape() << std::endl;
             auto inputs = hs_out->inputs();
             m.replace_instruction(hs_out,
-                                  make_op("rnn_var_sl_last_output", {{"direction", dirct}}),
+                                  make_op("rnn_var_sl_last_output", {{"direction", dirct}, {"layout", layout}}),
                                   inputs.front(),
                                   seq_lens);
+            std::cout <<"replace_last_hs_output rnn_var_sl_last_output  2 " << hs_out->get_shape() << std::endl;
         }
     }
     else
@@ -1376,7 +1482,8 @@ void rewrite_rnn::replace_last_cell_output(module& m,
                                            instruction_ref seq_lens,
                                            instruction_ref cell_outputs,
                                            instruction_ref last_cell_output,
-                                           op::rnn_direction dirct) const
+                                           op::rnn_direction dirct,
+                                           int layout) const
 {
     bool variable_seq_len = is_variable_seq_lens(m, seq_lens);
     auto ins_outputs =
@@ -1386,20 +1493,24 @@ void rewrite_rnn::replace_last_cell_output(module& m,
     {
         if(not ins_outputs.empty())
         {
+            std::cout <<"replace_last_cell_output cell_outputs 1 " << cell_outputs->get_shape() << std::endl;
             cell_outputs = m.insert_instruction(
                 std::next(ins),
                 make_op("rnn_var_sl_shift_output",
-                        {{"output_name", "cell_outputs"}, {"direction", dirct}}),
+                        {{"output_name", "cell_outputs"}, {"direction", dirct}, {"layout", layout}}),
                 cell_outputs,
                 seq_lens);
+            std::cout <<"replace_last_cell_output cell_outputs 2 " << cell_outputs->get_shape() << std::endl;
         }
 
         for(auto co : ins_outputs)
         {
+            std::cout <<"replace_last_cell_output rnn_var_sl_last_output 2 " << cell_outputs->get_shape() << std::endl;
             m.replace_instruction(co,
-                                  make_op("rnn_var_sl_last_output", {{"direction", dirct}}),
+                                  make_op("rnn_var_sl_last_output", {{"direction", dirct}, {"layout", layout}}),
                                   cell_outputs,
                                   seq_lens);
+            std::cout <<"replace_last_cell_output cell_outputs 3 " << cell_outputs->get_shape() << std::endl;
         }
     }
     // replace the rnn_last_cell_output with the last_cell_output. The while
@@ -1416,26 +1527,32 @@ void rewrite_rnn::replace_last_cell_output(module& m,
 instruction_ref rewrite_rnn::pad_hidden_states(module& m,
                                                instruction_ref seq,
                                                instruction_ref seq_lens,
-                                               instruction_ref hs) const
+                                               instruction_ref hs,
+                                               int layout) const
 {
-    auto max_seq_len = seq->get_shape().lens()[0];
-    auto seq_len     = get_seq_len(m, seq, seq_lens);
-
+    int seq_index = 0;
+    if (layout) seq_index = 1;
+    auto max_seq_len = seq->get_shape().lens()[seq_index];
+    std::cout << "pad_hidden_states max_seq_len " << max_seq_len << std::endl;
+    auto seq_len     = get_seq_len(m, seq, seq_lens, layout);
+    std::cout << "pad_hidden_states seq_len " << seq_len << std::endl;
     // condition of all sequence are of the same length and
     // less than max_seq_len, we need to append the hs outputs
     auto hs_padded = hs;
     if(seq_len < max_seq_len)
     {
         auto s        = hs->get_shape();
+        std::cout << "pad_hidden_states s " << s << std::endl;
         auto pad_lens = s.lens();
-        pad_lens[0]   = static_cast<std::size_t>(max_seq_len - seq_len);
+        pad_lens[seq_index]  = static_cast<std::size_t>(max_seq_len - seq_len);
         shape pad_s{s.type(), pad_lens};
+        std::cout << "pad_hidden_states pad_s " << pad_s << std::endl;
         std::vector<float> pad_data(pad_s.elements(), 0.0f);
         auto pl   = m.add_literal(pad_s, pad_data.begin(), pad_data.end());
-        hs_padded = m.insert_instruction(std::next(hs), make_op("concat", {{"axis", 0}}), hs, pl);
+        hs_padded = m.insert_instruction(std::next(hs), make_op("concat", {{"axis", seq_index}}), hs, pl);
         m.replace_instruction(hs, hs_padded);
     }
-
+    std::cout << "pad_hidden_states " << hs_padded->get_shape() << std::endl;
     return hs_padded;
 }
 
