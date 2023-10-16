@@ -2990,7 +2990,7 @@ TEST_CASE(gru_fp16)
         hs_data, migraphx::verify::expected{hs_data_gold}, migraphx::verify::tolerance{0.005}));
 }
 
-#if 0
+
 TEST_CASE(lstm_forward)
 {
     std::size_t batch_size  = 3;
@@ -3105,7 +3105,7 @@ TEST_CASE(lstm_forward)
             ih,
             ic,
             und);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto hs_concat = p.eval({}).back();
         std::vector<float> hs_data;
@@ -3154,7 +3154,7 @@ TEST_CASE(lstm_forward)
             ic,
             und);
         mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto last_hs = p.eval({}).back();
         std::vector<float> output_data;
@@ -3207,7 +3207,7 @@ TEST_CASE(lstm_forward)
             ic,
             und);
         mm->add_instruction(migraphx::make_op("rnn_last_cell_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto last_hs = p.eval({}).back();
         std::vector<float> output_data;
@@ -3228,7 +3228,6 @@ TEST_CASE(lstm_forward)
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
 }
-#endif
 
 #if 0
 TEST_CASE(lstm_forward_layout)
@@ -3475,7 +3474,7 @@ TEST_CASE(lstm_forward_layout)
 }
 #endif
 
-#if 0
+
 TEST_CASE(lstm_forward_more)
 {
     std::size_t batch_size  = 3;
@@ -3580,7 +3579,7 @@ TEST_CASE(lstm_forward_more)
             seq,
             w,
             r);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto last_hs = p.eval({}).back();
         std::vector<float> output_data;
@@ -3629,7 +3628,7 @@ TEST_CASE(lstm_forward_more)
             ih,
             ic,
             pph);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto hs_concat = p.eval({}).back();
         std::vector<float> hs_data;
@@ -3687,7 +3686,7 @@ TEST_CASE(lstm_forward_more)
             ic,
             und);
         mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto last_hs = p.eval({}).back();
         std::vector<float> output_data;
@@ -3745,7 +3744,7 @@ TEST_CASE(lstm_forward_more)
             ic,
             pph);
         mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
 
         auto hs_concat = p.eval({}).back();
         std::vector<float> hs_data;
@@ -3766,7 +3765,6 @@ TEST_CASE(lstm_forward_more)
         EXPECT(migraphx::verify::verify_rms_range(hs_data, hs_data_gold));
     }
 }
-#endif
 
 #if 0
 TEST_CASE(lstm_forward_more_layout)
@@ -4849,7 +4847,7 @@ TEST_CASE(lstm_reverse)
     migraphx::shape ic_shape{migraphx::shape::float_type, {num_dirct, batch_size, hidden_size}};
     migraphx::shape pph_shape{migraphx::shape::float_type, {num_dirct, 3 * hidden_size}};
     float clip = 0.0f;
-#if 0
+
     // reverse, concatenation of hidden states as program output
     {
         migraphx::program p;
@@ -4954,7 +4952,7 @@ TEST_CASE(lstm_reverse)
             0.0,       0.0};
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
-#endif
+
 
     // variable sequence lengths
     {
@@ -5005,7 +5003,7 @@ TEST_CASE(lstm_reverse)
             0,         0,          0,        0,          0,         0};
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
-#if 0
+
     // reverse, 3 args, last cell output as program output
     {
         migraphx::program p;
@@ -5086,7 +5084,7 @@ TEST_CASE(lstm_reverse)
                                             0.667298};
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
-#endif
+
 }
 
 #if 0
@@ -5450,7 +5448,7 @@ TEST_CASE(lstm_reverse_layout)
 }
 #endif
 
-#if 0
+
 // lstm activation function test
 TEST_CASE(lstm_reverse_actv)
 {
@@ -5554,7 +5552,7 @@ TEST_CASE(lstm_reverse_actv)
             seq,
             w,
             r);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5590,7 +5588,7 @@ TEST_CASE(lstm_reverse_actv)
             w,
             r);
         mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5636,7 +5634,7 @@ TEST_CASE(lstm_reverse_actv)
             seq,
             w,
             r);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5655,9 +5653,8 @@ TEST_CASE(lstm_reverse_actv)
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
 }
-#endif
 
-#if 0
+
 TEST_CASE(lstm_bidirectional)
 {
     std::size_t batch_size  = 3;
@@ -5730,7 +5727,7 @@ TEST_CASE(lstm_bidirectional)
     migraphx::shape ih_shape{migraphx::shape::float_type, {num_dirct, batch_size, hidden_size}};
     migraphx::shape ic_shape{migraphx::shape::float_type, {num_dirct, batch_size, hidden_size}};
     migraphx::shape pph_shape{migraphx::shape::float_type, {num_dirct, 3 * hidden_size}};
-#if 0
+
     // concatenation of hidden states as program output
     {
         migraphx::program p;
@@ -5762,7 +5759,7 @@ TEST_CASE(lstm_bidirectional)
             ih,
             ic,
             pph);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5816,7 +5813,7 @@ TEST_CASE(lstm_bidirectional)
             ic,
             pph);
         mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5859,7 +5856,7 @@ TEST_CASE(lstm_bidirectional)
             ic,
             pph);
         mm->add_instruction(migraphx::make_op("rnn_last_cell_output"), hs);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5891,7 +5888,7 @@ TEST_CASE(lstm_bidirectional)
             seq,
             w,
             r);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5912,7 +5909,6 @@ TEST_CASE(lstm_bidirectional)
             -0.0826436, 0.214159,   0.262295,  0.0247127,  0.14472};
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
-#endif
     // sequence length is 1, contenation of hidden state as program output
     {
         migraphx::program p;
@@ -5938,7 +5934,7 @@ TEST_CASE(lstm_bidirectional)
             seq,
             w,
             r);
-        p.compile(migraphx::make_target("ref"));
+        p.compile(migraphx::make_target("gpu"));
         auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
         hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
@@ -5950,7 +5946,7 @@ TEST_CASE(lstm_bidirectional)
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
     }
 }
-#endif
+
 
 #if 0
 TEST_CASE(lstm_bidirectional_layout)
