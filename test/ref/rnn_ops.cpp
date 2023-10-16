@@ -4972,7 +4972,7 @@ TEST_CASE(lstm_reverse)
         migraphx::shape seq_len_s{migraphx::shape::int32_type, {batch_size}};
         std::vector<int32_t> len_data{3, 2, 1};
         auto sql = mm->add_literal(seq_len_s, len_data);
-        auto hs  = mm->add_instruction(
+        mm->add_instruction(
             migraphx::make_op(
                 "lstm",
                 {{"hidden_size", hidden_size},
@@ -4991,42 +4991,10 @@ TEST_CASE(lstm_reverse)
             ih,
             ic,
             pph);
-        //auto lho = mm->add_instruction(migraphx::make_op("rnn_last_hs_output"), hs);
-        //auto lco = mm->add_instruction(migraphx::make_op("rnn_last_cell_output"), hs);
-        mm->add_return({hs});// lho, lco});
         p.compile(migraphx::make_target("gpu"));
-
-        auto outputs = p.eval({});
-        auto arg_hs  = outputs.front();
-        //auto arg_lho = outputs.at(1);
-        //auto arg_lco = outputs.at(2);
-
+        auto hs_concat = p.eval({}).back();
         std::vector<float> output_data;
-        //std::vector<float> last_output_data;
-        //std::vector<float> last_cell_data;
-
-        arg_hs.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
-        //arg_lho.visit([&](auto output) { last_output_data.assign(output.begin(), output.end()); });
-        //arg_lco.visit([&](auto output) { last_cell_data.assign(output.begin(), output.end()); });
-
-        for (auto it : output_data)
-        {
-            std::cout << it << " ";
-        }
-        std::cout << std::endl;
-/*
-        for (auto it : last_output_data)
-        {
-            std::cout << it << " ";
-        }
-        std::cout << std::endl;
-
-        for (auto it : last_cell_data)
-        {
-            std::cout << it << " ";
-        }
-        std::cout << std::endl;*/
-
+        hs_concat.visit([&](auto output) { output_data.assign(output.begin(), output.end()); });
         std::vector<float> output_data_gold{
             -0.126517, 0.0359124,  0.107453, -0.0617278, 0.911307,  0.11468,   0.114449,
             0.0196755, -0.102969,  0.295872, 0.515859,   0.246501,  -0.168327, 0.00023761,
@@ -5035,11 +5003,7 @@ TEST_CASE(lstm_reverse)
             0,         0,          0,        0,          0,         0,         0,
             0,         0,          0,        0,          0,         0,         0,
             0,         0,          0,        0,          0,         0};
-        std::vector<float> last_output_data_gold{-0.126517, 0.0359124, 0.107453, -0.0617278, 0.911307, 0.11468, 0.114449, 0.0196755, -0.102969, 0.295872, 0.515859, 0.246501};
-        std::vector<float> last_cell_data_gold{-0.809165, 0.159475, 0.168285, -0.125515, 2.08242, 0.442513, 0.187127, 0.0577626, -0.277116, 0.380078, 0.631614, 0.311142};
         EXPECT(migraphx::verify::verify_rms_range(output_data, output_data_gold));
-        //EXPECT(migraphx::verify::verify_rms_range(last_output_data, last_output_data_gold));
-        //EXPECT(migraphx::verify::verify_rms_range(last_cell_data, last_cell_data_gold));
     }
 #if 0
     // reverse, 3 args, last cell output as program output

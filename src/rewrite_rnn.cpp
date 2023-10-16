@@ -1067,13 +1067,13 @@ void rewrite_rnn::apply_lstm(module& m, instruction_ref ins) const
 
     // in case of all sequences are of the same lengths and shorter than the
     // max sequence length, need to pad 0's at the end for output hidden states
-    //hidden_state = pad_hidden_states(m, args[0], seq_lens, hidden_state, layout);
+    hidden_state = pad_hidden_states(m, args[0], seq_lens, hidden_state, layout);
 
     // replace last hidden states with corresponding instructions
-    //ins = replace_last_hs_output(m, hidden_state, seq_lens, last_hs_output, dirct, layout);
+    ins = replace_last_hs_output(m, hidden_state, seq_lens, last_hs_output, dirct, layout);
 
     // replace last cell outputs with corresponding instructions
-    //replace_last_cell_output(m, ins, seq_lens, cell_outputs, last_cell_output, dirct, layout);
+    replace_last_cell_output(m, ins, seq_lens, cell_outputs, last_cell_output, dirct, layout);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
