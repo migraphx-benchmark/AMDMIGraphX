@@ -136,18 +136,8 @@ struct reshape_lazy
     {
         const auto& idims    = input.lens();
         const auto& istrides = input.strides();
-        std::cout << "#### reshape_lazy_dims idims: " << std::endl;
-        for(auto dim : idims)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << "#### reshape_lazy_dims istrides: " << std::endl;
-        for(auto dim : istrides)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
+        std::cout << "#### reshape_lazy_dims input: " << std::endl;
+        std::cout << input << std::endl;
 
         std::cout << "#### reshape_lazy_dims rdims: " << std::endl;
         for(auto dim : rdims)
@@ -245,7 +235,7 @@ struct reshape_lazy
     shape static_compute_shape(std::vector<shape> inputs, std::size_t n_neg_dims) const
     {
 
-        std::cout << "\n########################### "<< std::endl;
+        std::cout << "\nstatic_compute_shape ########################### " << std::endl;
         std::cout << "\n## n_neg_dims: " << n_neg_dims << std::endl;
         std::cout << "## dims: " << std::endl;
         for(auto dim : dims)
@@ -304,6 +294,7 @@ struct reshape_lazy
         std::cout << std::endl;
 
         auto s = reshape_lazy_dims(inputs.front(), rdims);
+        std::cout << "\n########################### " << std::endl;
         if(not s.has_value())
             MIGRAPHX_THROW("reshape_lazy on axis that is not packed.");
 
@@ -319,19 +310,36 @@ struct reshape_lazy
 
     shape compute_shape(std::vector<shape> inputs) const
     {
+        std::cout << "$$$$ compute_shape" << std::endl;
+        std::cout << "$$ dims: ";
+        for(auto dim : dims)
+        {
+            std::cout << dim << ", ";
+        }
+
+        std::cout << "$$ inputs: " << std::endl;
+        for(auto input : inputs)
+        {
+            std::cout << "$$$ " << input << std::endl;
+        }
+        std::cout << std::endl;
         check_shapes{inputs, *this, true}.has(1);
         auto n_neg_dims = std::count(dims.begin(), dims.end(), -1);
         if(n_neg_dims > 1)
             MIGRAPHX_THROW("reshape_lazy: Dimensions for reshape_lazy can only have one -1 dim");
         auto s0 = inputs[0];
+        shape ret;
         if(s0.dynamic())
         {
-            return dyn_compute_shape(s0);
+            ret = dyn_compute_shape(s0);
         }
         else
         {
-            return static_compute_shape(inputs, n_neg_dims);
+            ret = static_compute_shape(inputs, n_neg_dims);
         }
+        std::cout << "## returned shape: " << ret << "is dynamic: " << std::boolalpha << ret.dynamic() << std::endl;
+        std::cout << "$$$$$$$$$$$$$$$$$$" << std::endl;
+        return ret;
     }
 
     argument compute(const dyn_output& dyn_out, std::vector<argument> args) const

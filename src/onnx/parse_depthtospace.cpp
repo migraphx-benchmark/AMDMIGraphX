@@ -85,6 +85,7 @@ struct parse_depthtospace : op_parser<parse_depthtospace>
         else
             MIGRAPHX_THROW("DepthToSpace: mode attribute cannot be read.");
 
+        std::cout << "++++++++ Parsing DepthToSpace" << std::endl;
         auto temp1 = info.add_instruction(make_op("reshape", {{"dims", lens1}}), args[0]);
         auto temp2 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), temp1);
         return info.add_instruction(make_op("reshape", {{"dims", lens2}}), temp2);
