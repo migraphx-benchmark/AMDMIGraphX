@@ -416,12 +416,13 @@ struct ref_rnn_var_sl_last_output
     {
         argument result{output_shape};
         auto out_comp_lens = args[0].get_shape().lens();
+        // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
+        // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
         int seq_index  = (op.layout == 0) ? 0 : 1;
         int batch_index  = (op.layout == 0) ? 2 : 0;
         out_comp_lens[seq_index]   = 1;
         shape out_comp_s{output_shape.type(), out_comp_lens};
 
-        std::cout << "Compute rnn_var_sl_last_output input " << args[0] << std::endl;
         visit_all(result, args[0])([&](auto output, auto input) {
             args[1].visit([&](auto seq_lens) {
                 par_for(output_shape.elements(), [&](auto i) {
@@ -439,7 +440,7 @@ struct ref_rnn_var_sl_last_output
                 });
             });
         });
-        std::cout << "Compute rnn_var_sl_last_output " << result << std::endl;
+
         return result;
     }
 };

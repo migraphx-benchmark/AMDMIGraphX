@@ -69,8 +69,6 @@ struct contiguous
                 output(idx.begin(), idx.end()) = input(idx.begin(), idx.end());
             });
         });
-        std::cout << "Compute contiguous 1 " << result << std::endl;
-        std::cout << "************************** " << std::endl;
         return result;
     }
 

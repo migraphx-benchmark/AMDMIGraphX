@@ -133,8 +133,6 @@ struct squeeze
 
     argument compute(const dyn_output& dyn_out, std::vector<argument> args) const
     {
-        std::cout << "Compute squeeze " << args[0].reshape(dyn_out.computed_shape) << std::endl;
-        std::cout << "************************** " << std::endl;
         return args[0].reshape(dyn_out.computed_shape);
     }
     std::ptrdiff_t output_alias(const std::vector<shape>&) const { return 0; }

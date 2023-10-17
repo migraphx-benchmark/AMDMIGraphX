@@ -54,7 +54,6 @@ struct rnn_var_sl_shift_output
     std::string name() const { return "rnn_var_sl_shift_output"; }
     shape compute_shape(std::vector<shape> inputs) const
     {
-        std::cout << "Compute_shape rnn_var_sl_shift_output " << inputs[0] << std::endl;
         check_shapes{inputs, *this}.has(2);
         return inputs[0];
     }
@@ -62,11 +61,11 @@ struct rnn_var_sl_shift_output
     argument compute(const shape& output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
-        std::cout << "Compute rnn_var_sl_shift_output shape " << output_shape << std::endl;
+        // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
+        // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
         int seq_index  = (layout == 0) ? 0 : 1;
         int batch_index  = (layout == 0) ? 2 : 0;
         int64_t max_len = output_shape.lens()[seq_index];
-        std::cout << "Compute rnn_var_sl_shift_output input " << args[0] << std::endl;
         visit_all(result, args[0])([&](auto output, auto input) {
             using value_type = typename decltype(output)::value_type;
             args[1].visit([&](auto seq_lens) {
@@ -88,7 +87,7 @@ struct rnn_var_sl_shift_output
                 });
             });
         });
-        std::cout << "Compute rnn_var_sl_shift_output" << result << std::endl;
+
         return result;
     }
 };
@@ -112,6 +111,8 @@ struct rnn_var_sl_shift_sequence
     argument compute(const shape& output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
+        // layout = 0 [seq_length, batch_size, input_size]
+        // layout = 1 [batch_size, seq_length, input_size]
         int seq_index  = (layout == 0) ? 0 : 1;
         int batch_index  = (layout == 0) ? 1 : 0;
         int64_t max_len = output_shape.lens()[seq_index];

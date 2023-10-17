@@ -128,8 +128,6 @@ struct parse_lstm : op_parser<parse_lstm>
         migraphx::shape input_shape = args[0]->get_shape();
         std::size_t hidden_size     = args[2]->get_shape().lens()[2];
 
-        std::cout << "Parse LSTM " << input_shape << " " << hidden_size << std::endl;
-
         if(contains(info.attributes, "hidden_size"))
         {
             std::size_t hidden_size_att =
@@ -224,14 +222,14 @@ struct parse_lstm : op_parser<parse_lstm>
                                                            {"direction", dirct},
                                                            {"clip", clip},
                                                            {"input_forget", input_forget},
-                                                           {"layout", layout},                                                           }),
+                                                           {"layout", layout}}),
                                                   args);
 
-        auto last_output = info.add_instruction(make_op("rnn_last_hs_output"), hidden_states);
+        auto last_output = info.add_instruction(make_op("rnn_last_hs_output", {{"layout", layout}}), hidden_states);
 
         // third output for last cell output
         auto last_cell_output =
-            info.add_instruction(make_op("rnn_last_cell_output"), hidden_states);
+            info.add_instruction(make_op("rnn_last_cell_output", {{"layout", layout}}), hidden_states);
 
         return {hidden_states, last_output, last_cell_output};
     }

@@ -268,12 +268,9 @@ struct slice
         {
         case 1: {
             std::size_t offset = compute_offset(input_shape);
-            std::cout << "Compute slice 1 " << input << std::endl;
-            std::cout << "************************** " << std::endl;
             return {dyn_out.computed_shape, [=] { return input.data() + offset; }};
         }
         case 3: {
-            std::cout << "Compute slice 3" << std::endl;
             shape calc_shape;
             std::size_t offset = 0;
             visit_all(args[1], args[2])([&](auto input_starts, auto input_ends) {
@@ -291,7 +288,6 @@ struct slice
             return {calc_shape, [=] { return input.data() + offset; }};
         }
         case 4: {
-            std::cout << "Compute slice 4" << std::endl;
             shape calc_shape;
             std::size_t offset = 0;
             visit_all(args[1], args[2], args[3])(

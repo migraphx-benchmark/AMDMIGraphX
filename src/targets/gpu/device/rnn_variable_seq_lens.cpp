@@ -37,6 +37,8 @@ void rnn_var_sl_shift_sequence(hipStream_t stream,
                                int layout)
 {
     auto output_shape = result.get_shape();
+    // layout = 0 [seq_length, batch_size, input_size]
+    // layout = 1 [batch_size, seq_length, input_size]
     int seq_index  = (layout == 0) ? 0 : 1;
     int batch_index  = (layout == 0) ? 1 : 0;
     int64_t max_len   = output_shape.lens()[seq_index];
@@ -73,11 +75,11 @@ void rnn_var_sl_shift_output(hipStream_t stream,
                              int layout)
 {
     auto output_shape = result.get_shape();
-    std::cout << "Compute rnn_var_sl_shift_output shape1 " << output_shape << std::endl;
+    // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
+    // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
     int seq_index  = (layout == 0) ? 0 : 1;
     int batch_index  = (layout == 0) ? 2 : 0;
     int64_t max_len   = output_shape.lens()[seq_index];
-    std::cout << "Compute rnn_var_sl_shift_output input1 " << arg_hs << std::endl;
     visit_all(result, arg_hs)([&](auto output, auto input) {
         const auto* in_data = device_cast(input.data());
         auto* out_data      = device_cast(output.data());
@@ -103,7 +105,6 @@ void rnn_var_sl_shift_output(hipStream_t stream,
             });
         });
     });
-    std::cout << "Compute rnn_var_sl_shift_output1" << result << std::endl;
 }
 
 void rnn_var_sl_last_output(hipStream_t stream,
@@ -115,6 +116,8 @@ void rnn_var_sl_last_output(hipStream_t stream,
 {
     auto input_shape   = arg_hs.get_shape();
     auto out_comp_lens = input_shape.lens();
+    // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
+    // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
     int seq_index  = (layout == 0) ? 0 : 1;
     int batch_index  = (layout == 0) ? 2 : 0;
     out_comp_lens[seq_index]   = 1;

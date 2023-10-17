@@ -52,7 +52,7 @@ struct rnn_var_sl_last_output
     {
         auto dims = inputs[0].lens();
 
-        // remove the first dimension, remaing are output shape
+        // remove seq_len dimension, remaining are output shape
         if (layout == 0) {
           dims.erase(dims.begin());
         }

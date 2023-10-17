@@ -67,7 +67,6 @@ struct lstm
     {
         auto in_dims     = inputs[0].lens();
         auto hidden_dims = inputs[2].lens();
-        std::cout << "LSTM Compute shape " << inputs[0] << " " << in_dims[0] << " " << inputs[2] << " " <<hidden_dims[0] << std::endl;
         if(hidden_size != hidden_dims[2])
         {
             MIGRAPHX_THROW("LSTM: hidden size mismatch in attribute and input");
@@ -85,7 +84,10 @@ struct lstm
         }
 
         std::vector<std::size_t> out_dims(in_dims);
-        out_dims.insert(out_dims.begin() + 1, num_directions);
+        // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
+        // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
+        std::size_t num_directions_offset = (layout == 0) ? 1 : 2;
+        out_dims.insert(out_dims.begin() + num_directions_offset, num_directions);
         out_dims.back() = hidden_size;
 
         return {inputs[0].type(), out_dims};

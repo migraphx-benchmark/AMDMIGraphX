@@ -158,8 +158,6 @@ struct concat
                 std::copy(input.begin(), input.end(), slice.begin());
             });
         }
-        std::cout << "Compute concat 1 " << " " << args[0] << " "<< result << std::endl;
-        std::cout << "************************** " << std::endl;
         return result;
     }
 };
