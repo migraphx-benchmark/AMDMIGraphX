@@ -50,11 +50,13 @@ struct rnn_last_hs_output
         auto dims = inputs[0].lens();
 
         // remove seq_len dimension, remaining are output shape
-        if (layout == 0) {
-          dims.erase(dims.begin());
+        if(layout == 0)
+        {
+            dims.erase(dims.begin());
         }
-        else {
-          dims.erase(std::next(dims.begin()));
+        else
+        {
+            dims.erase(std::next(dims.begin()));
         }
         return {inputs[0].type(), dims};
     }

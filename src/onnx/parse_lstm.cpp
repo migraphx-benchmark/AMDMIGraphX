@@ -225,11 +225,12 @@ struct parse_lstm : op_parser<parse_lstm>
                                                            {"layout", layout}}),
                                                   args);
 
-        auto last_output = info.add_instruction(make_op("rnn_last_hs_output", {{"layout", layout}}), hidden_states);
+        auto last_output = info.add_instruction(make_op("rnn_last_hs_output", {{"layout", layout}}),
+                                                hidden_states);
 
         // third output for last cell output
-        auto last_cell_output =
-            info.add_instruction(make_op("rnn_last_cell_output", {{"layout", layout}}), hidden_states);
+        auto last_cell_output = info.add_instruction(
+            make_op("rnn_last_cell_output", {{"layout", layout}}), hidden_states);
 
         return {hidden_states, last_output, last_cell_output};
     }

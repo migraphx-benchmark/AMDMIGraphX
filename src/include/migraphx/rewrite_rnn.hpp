@@ -95,7 +95,8 @@ struct MIGRAPHX_EXPORT rewrite_rnn
                                   op::rnn_direction dirct,
                                   int layout) const;
 
-    std::size_t get_seq_len(const module& m, instruction_ref input, instruction_ref seq_lens, int layout) const;
+    std::size_t
+    get_seq_len(const module& m, instruction_ref input, instruction_ref seq_lens, int layout) const;
 
     instruction_ref pad_hidden_states(module& m,
                                       instruction_ref seq,

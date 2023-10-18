@@ -38,7 +38,7 @@ namespace op {
 struct rnn_var_sl_last_output
 {
     rnn_direction direction = rnn_direction::forward;
-    int layout = 0;
+    int layout              = 0;
 
     template <class Self, class F>
     static auto reflect(Self& self, F f)
@@ -53,11 +53,13 @@ struct rnn_var_sl_last_output
         auto dims = inputs[0].lens();
 
         // remove seq_len dimension, remaining are output shape
-        if (layout == 0) {
-          dims.erase(dims.begin());
+        if(layout == 0)
+        {
+            dims.erase(dims.begin());
         }
-        else {
-          dims.erase(std::next(dims.begin()));
+        else
+        {
+            dims.erase(std::next(dims.begin()));
         }
         return {inputs[0].type(), dims};
     }

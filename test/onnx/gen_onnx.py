@@ -4068,21 +4068,22 @@ def onnx_lstm_f_layout_hs_test():
     pph = helper.make_tensor_value_info('pph', TensorProto.FLOAT, [1, 60])
 
     hs = helper.make_tensor_value_info('hs', TensorProto.FLOAT, [3, 5, 1, 20])
-    output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [3, 1, 20])
+    output = helper.make_tensor_value_info('output', TensorProto.FLOAT,
+                                           [3, 1, 20])
 
-
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['hs', 'output'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'forward',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['hs', 'output'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='forward',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [hs, output])
+
 
 @onnx_test()
 def onnx_lstm_f_layout_cell_test():
@@ -4095,19 +4096,19 @@ def onnx_lstm_f_layout_cell_test():
     c0 = helper.make_tensor_value_info('c0', TensorProto.FLOAT, [3, 1, 20])
     pph = helper.make_tensor_value_info('pph', TensorProto.FLOAT, [1, 60])
 
-    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT, [3, 1, 20])
+    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT,
+                                            [3, 1, 20])
 
-
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['','','cellout'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'forward',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['', '', 'cellout'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='forward',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [cellout])
 
@@ -4125,18 +4126,19 @@ def onnx_lstm_r_layout_test():
 
     hs = helper.make_tensor_value_info('hs', TensorProto.FLOAT, [3, 5, 1, 20])
 
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['hs'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'reverse',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['hs'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='reverse',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [hs])
+
 
 @onnx_test()
 def onnx_lstm_r_layout_hs_cell_test():
@@ -4149,22 +4151,24 @@ def onnx_lstm_r_layout_hs_cell_test():
     c0 = helper.make_tensor_value_info('c0', TensorProto.FLOAT, [3, 1, 20])
     pph = helper.make_tensor_value_info('pph', TensorProto.FLOAT, [1, 60])
 
-    output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [3, 1, 20])
-    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT, [3, 1, 20])
+    output = helper.make_tensor_value_info('output', TensorProto.FLOAT,
+                                           [3, 1, 20])
+    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT,
+                                            [3, 1, 20])
 
-
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['','output','cellout'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'reverse',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['', 'output', 'cellout'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='reverse',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [output, cellout])
+
 
 @onnx_test()
 def onnx_lstm_bi_layout_cell_test():
@@ -4177,19 +4181,19 @@ def onnx_lstm_bi_layout_cell_test():
     c0 = helper.make_tensor_value_info('c0', TensorProto.FLOAT, [3, 2, 20])
     pph = helper.make_tensor_value_info('pph', TensorProto.FLOAT, [2, 60])
 
-    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT, [3, 2, 20])
+    cellout = helper.make_tensor_value_info('cellout', TensorProto.FLOAT,
+                                            [3, 2, 20])
 
-
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['','','cellout'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'bidirectional',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['', '', 'cellout'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='bidirectional',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [cellout])
 
@@ -4206,19 +4210,19 @@ def onnx_lstm_bi_layout_last_test():
     pph = helper.make_tensor_value_info('pph', TensorProto.FLOAT, [2, 60])
 
     hs = helper.make_tensor_value_info('hs', TensorProto.FLOAT, [3, 5, 2, 20])
-    output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [3, 2, 20])
+    output = helper.make_tensor_value_info('output', TensorProto.FLOAT,
+                                           [3, 2, 20])
 
-
-    node = onnx.helper.make_node('LSTM',
-                                 inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
-                                 outputs=['hs','output'],
-                                 activations = ['sigmoid', 'tanh', 'tanh'],
-                                 clip = 0,
-                                 direction = 'bidirectional',
-                                 hidden_size = 20,
-                                 input_forget = 1,
-                                 layout = 1
-                                 )
+    node = onnx.helper.make_node(
+        'LSTM',
+        inputs=['seq', 'w', 'r', 'bias', 'seq_len', 'h0', 'c0', 'pph'],
+        outputs=['hs', 'output'],
+        activations=['sigmoid', 'tanh', 'tanh'],
+        clip=0,
+        direction='bidirectional',
+        hidden_size=20,
+        input_forget=1,
+        layout=1)
 
     return ([node], [seq, w, r, bias, seq_len, h0, c0, pph], [hs, output])
 

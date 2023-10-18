@@ -43,12 +43,14 @@ struct rnn_var_sl_shift_output
 {
     std::string output_name = "hidden_states";
     rnn_direction direction = rnn_direction::forward;
-    int layout = 0;
+    int layout              = 0;
 
     template <class Self, class F>
     static auto reflect(Self& self, F f)
     {
-        return pack(f(self.output_name, "output_name"), f(self.direction, "direction"), f(self.layout, "layout"));
+        return pack(f(self.output_name, "output_name"),
+                    f(self.direction, "direction"),
+                    f(self.layout, "layout"));
     }
 
     std::string name() const { return "rnn_var_sl_shift_output"; }
@@ -63,8 +65,8 @@ struct rnn_var_sl_shift_output
         argument result{output_shape};
         // layout = 0 [seq_length, num_directions, batch_size, hidden_size]
         // layout = 1 [batch_size, seq_length, num_directions, hidden_size]
-        int seq_index  = (layout == 0) ? 0 : 1;
-        int batch_index  = (layout == 0) ? 2 : 0;
+        int seq_index   = (layout == 0) ? 0 : 1;
+        int batch_index = (layout == 0) ? 2 : 0;
         int64_t max_len = output_shape.lens()[seq_index];
         visit_all(result, args[0])([&](auto output, auto input) {
             using value_type = typename decltype(output)::value_type;
@@ -113,8 +115,8 @@ struct rnn_var_sl_shift_sequence
         argument result{output_shape};
         // layout = 0 [seq_length, batch_size, input_size]
         // layout = 1 [batch_size, seq_length, input_size]
-        int seq_index  = (layout == 0) ? 0 : 1;
-        int batch_index  = (layout == 0) ? 1 : 0;
+        int seq_index   = (layout == 0) ? 0 : 1;
+        int batch_index = (layout == 0) ? 1 : 0;
         int64_t max_len = output_shape.lens()[seq_index];
         visit_all(result, args[0])([&](auto output, auto input) {
             using value_type = typename decltype(output)::value_type;

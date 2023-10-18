@@ -1804,7 +1804,7 @@ TEST_CASE(lstm_bidirectional_layout)
     migraphx::shape pph_shape{migraphx::shape::float_type, {nd, 3 * hs}};
     // 0 activation function
     {
-         migraphx::program p;
+        migraphx::program p;
         auto* mm     = p.get_main_module();
         auto seq     = mm->add_parameter("seq", seq_shape);
         auto w       = mm->add_parameter("w", w_shape);
@@ -1884,7 +1884,6 @@ TEST_CASE(lstm_bidirectional_layout)
         EXPECT(p == prog);
     }
 }
-
 
 TEST_CASE(lstm_bi_actv_funcs)
 {
