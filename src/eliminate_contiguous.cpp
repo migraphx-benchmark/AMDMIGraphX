@@ -137,6 +137,19 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
         auto new_args = args;
         auto mod_args = ins->module_inputs();
 
+        bool print_replace = false;
+        if(op_name == "gpu::contiguous")
+        {
+            print_replace = true;
+            std::cout << "++++ gpu::contiguous block ++++" << std::endl;
+            for (auto arg: args)
+            {
+                std::cout << "++++ " << arg->name() << ": " << std::endl;
+                std::cout << "++++ " << arg->outputs().front()->get_shape() << std::endl;
+                std::cout << "++++ is standard shape: " << std::boolalpha << arg->outputs().front()->get_shape().standard() << std::endl;
+            }
+        }
+
         for(auto arg : ins->inputs())
         {
             if(arg->name() != op_name)
@@ -148,8 +161,14 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
             }
             auto prev = arg->inputs().front();
             replace(new_args, arg, prev);
-            if(try_compute_shape(ins, new_args, mod_args))
+            if(try_compute_shape(ins, new_args, mod_args) && prev->get_shape().standard())
             {
+                if(print_replace)
+                {
+                    std::cout << "++++ Replace: " << std::endl;
+                    std::cout << "++++ old:     " << arg->name() << ", shape: " << arg->get_shape() << std::endl;
+                    std::cout << "++++ new:     " << prev->name() << ", shape: " << prev->get_shape() << std::endl;
+                }
                 instruction::replace_argument(ins, arg, prev);
             }
             else if(prev->can_eval())
@@ -157,6 +176,7 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
                 const_instructions.push_back(arg);
             }
         }
+        std::cout << "+++++++++++++++++++++++++++++++" << std::endl;
     }
 
     // Perform static contiguous evaluations in parallel
