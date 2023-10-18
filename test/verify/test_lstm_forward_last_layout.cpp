@@ -84,7 +84,8 @@ struct test_lstm_forward_last_layout : verify_program<test_lstm_forward_last_lay
             ih,
             ic,
             pph);
-        mm->add_instruction(migraphx::make_op("rnn_last_hs_output", {{"layout", layout}}), output, len);
+        mm->add_instruction(
+            migraphx::make_op("rnn_last_hs_output", {{"layout", layout}}), output, len);
 
         return p;
     }

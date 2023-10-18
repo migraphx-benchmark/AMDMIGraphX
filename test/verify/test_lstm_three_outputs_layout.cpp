@@ -57,18 +57,20 @@ struct test_lstm_three_outputs : verify_program<test_lstm_three_outputs>
             migraphx::make_op(
                 "lstm",
                 {{"hidden_size", hidden_size},
-                 {"actv_func",
-                  migraphx::to_value(std::vector<migraphx::operation>{migraphx::make_op("sigmoid"),
-                                                                      migraphx::make_op("tanh"),
-                                                                      migraphx::make_op("tanh")})},
-                 {"direction", migraphx::to_value(migraphx::op::rnn_direction::forward)},
-                 {"clip", clip},
-                 {"layout", layout}}),
+                  {"actv_func",
+                   migraphx::to_value(std::vector<migraphx::operation>{migraphx::make_op("sigmoid"),
+                                                                       migraphx::make_op("tanh"),
+                                                                       migraphx::make_op("tanh")})},
+                  {"direction", migraphx::to_value(migraphx::op::rnn_direction::forward)},
+                  {"clip", clip},
+                  {"layout", layout}}),
             seq,
             w,
             r);
-        auto last_hs   = mm->add_instruction(migraphx::make_op("rnn_last_hs_output", {{"layout", layout}}), hs);
-        auto last_cell = mm->add_instruction(migraphx::make_op("rnn_last_cell_output", {{"layout", layout}}), hs);
+        auto last_hs =
+            mm->add_instruction(migraphx::make_op("rnn_last_hs_output", {{"layout", layout}}), hs);
+        auto last_cell = mm->add_instruction(
+            migraphx::make_op("rnn_last_cell_output", {{"layout", layout}}), hs);
         mm->add_return({hs, last_hs, last_cell});
 
         return p;
