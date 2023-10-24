@@ -389,17 +389,16 @@ struct miopen_apply
             std::vector<instruction_ref> before_contiguous_args = ins->inputs();
             auto before_alloc = insert_allocation(ins, std::prev(ins)->get_shape());
             before_contiguous_args.push_back(before_alloc);
-            std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"<< std::endl;
-            std::cout << "@@@ inputs bca: " << before_contiguous_args.size() << std::endl;
+            // std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"<< std::endl;
+            // std::cout << "@@@ inputs bca: " << before_contiguous_args.size() << std::endl;
             for (auto arg: before_contiguous_args)
             {
-                std::cout << "@@@ input shape bca: " << arg->get_shape() << std::endl;
+                // std::cout << "@@@ input shape bca: " << arg->get_shape() << std::endl;
             }
             auto before_contig =
                 mod->insert_instruction(ins, make_op("gpu::contiguous"), {before_contiguous_args});
 
-            std::cout << "$$$ ins shape: " << ins->get_shape()
-                      << std::endl;
+            // std::cout << "$$$ ins shape: " << ins->get_shape() << std::endl;
             auto new_lazy_reshape = mod->insert_instruction(
                 ins,
                 make_op("reshape_lazy", {{"dims", {ins->get_operator().to_value().at("dims")}}}),
@@ -408,12 +407,12 @@ struct miopen_apply
             std::vector<instruction_ref> after_contiguous_args = {new_lazy_reshape};
             auto after_alloc = insert_allocation(new_lazy_reshape, new_lazy_reshape->get_shape());
             after_contiguous_args.push_back(after_alloc);
-            std::cout << "$$$ aca: " << before_contiguous_args.size() << std::endl;
+            // std::cout << "$$$ aca: " << before_contiguous_args.size() << std::endl;
             for(auto arg : after_contiguous_args)
             {
-                std::cout << "$$$ shape aca: " << arg->get_shape() << std::endl;
+                // std::cout << "$$$ shape aca: " << arg->get_shape() << std::endl;
             }
-            std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl;
+            // std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl;
             return mod->replace_instruction(ins, make_op("gpu::contiguous"), after_contiguous_args);
         });
     }

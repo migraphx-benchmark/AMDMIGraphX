@@ -78,12 +78,21 @@ struct transpose
 
             std::vector<size_t> output_lens(input.ndim());
             std::vector<size_t> output_strides(input.ndim());
+            // std::cout << "transpose::compute_shape dims: ";
+            // for(auto dim : dims)
+            // {
+            //     std::cout << dim << ", ";
+            // }
+            // std::cout << std::endl;
+            // std::cout << "transpose::compute_shape input: " << input << std::endl;
             for(std::size_t i = 0; i < input.ndim(); i++)
             {
                 output_lens[i]    = input_lens[dims[i]];
                 output_strides[i] = input_strides[dims[i]];
             }
-            return {input.type(), output_lens, output_strides};
+            shape out = {input.type(), output_lens, output_strides};
+            // std::cout << "transpose::compute_shape ouput: " << out << std::endl;
+            return out;
         }
     }
 

@@ -136,10 +136,11 @@ struct reshape_lazy
     {
         const auto& idims    = input.lens();
         const auto& istrides = input.strides();
-        std::cout << "#### reshape_lazy_dims input: " << std::endl;
+        std::cout << std::endl << "#### reshape_lazy_dims #### " << std::endl;
+        std::cout << "#### input: " << std::endl;
         std::cout << input << std::endl;
 
-        std::cout << "#### reshape_lazy_dims rdims: " << std::endl;
+        std::cout << "#### rdims: " << std::endl;
         for(auto dim : rdims)
         {
             std::cout << dim << ", ";
@@ -223,10 +224,12 @@ struct reshape_lazy
             }
         }
 
-        std::cout << "#### reshape_lazy_dims rdims.size(): " << rdims.size()
-                  << "rstrides.size(): " << rstrides.size() << std::endl;
         if(rdims.size() != rstrides.size())
+        {
+            std::cout << "#### rdims.size() != rstrides.size()\n\treshape_lazy_dims rdims.size(): "
+                      << rdims.size() << "rstrides.size(): " << rstrides.size() << std::endl;
             return nullopt;
+        }
 
         std::cout << "#### return default" << std::endl;
         return shape{input.type(), rdims, rstrides};
@@ -235,25 +238,25 @@ struct reshape_lazy
     shape static_compute_shape(std::vector<shape> inputs, std::size_t n_neg_dims) const
     {
 
-        std::cout << "\nstatic_compute_shape ########################### " << std::endl;
-        std::cout << "\n## n_neg_dims: " << n_neg_dims << std::endl;
-        std::cout << "## dims: " << std::endl;
-        for(auto dim : dims)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
+        // std::cout << "\nstatic_compute_shape ########################### " << std::endl;
+        // std::cout << "\n## n_neg_dims: " << n_neg_dims << std::endl;
+        // std::cout << "## dims: " << std::endl;
+        // for(auto dim : dims)
+        // {
+            // std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
     
         check_shapes{inputs, *this}.has(1);
         auto&& idims = inputs.front().lens();
         std::vector<std::size_t> rdims(dims.begin(), dims.end());
 
-        std::cout << "## idims: " << std::endl;
-        for(auto dim : idims)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
+        // std::cout << "## idims: " << std::endl;
+        // for(auto dim : idims)
+        // {
+            // std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
 
         for(std::size_t i = 0; i < dims.size(); i++)
         {
@@ -266,19 +269,19 @@ struct reshape_lazy
                 rdims[i] = 1;
         }
 
-        std::cout << "## rdims start: " << std::endl;
-        for(auto dim : rdims)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
+        // std::cout << "## rdims start: " << std::endl;
+        // for(auto dim : rdims)
+        // {
+            // std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
 
         if(n_neg_dims > 0)
         {
             size_t missing_dim =
                 inputs.front().elements() /
                 std::accumulate(rdims.begin(), rdims.end(), 1, std::multiplies<int64_t>());
-            std::cout << "## missing dim: " << missing_dim << std::endl;
+            // std::cout << "## missing dim: " << missing_dim << std::endl;
             for(std::size_t i = 0; i < rdims.size(); i++)
             {
                 if(dims[i] == -1)
@@ -286,15 +289,15 @@ struct reshape_lazy
             }
         }
 
-        std::cout << "## rdims end: " << std::endl;
-        for(auto dim : rdims)
-        {
-            std::cout << dim << ", ";
-        }
-        std::cout << std::endl;
+        // std::cout << "## rdims end: " << std::endl;
+        // for(auto dim : rdims)
+        // {
+            // std::cout << dim << ", ";
+        // }
+        // std::cout << std::endl;
 
         auto s = reshape_lazy_dims(inputs.front(), rdims);
-        std::cout << "\n########################### " << std::endl;
+        // std::cout << "\n########################### " << std::endl;
         if(not s.has_value())
             MIGRAPHX_THROW("reshape_lazy on axis that is not packed.");
 
@@ -310,19 +313,19 @@ struct reshape_lazy
 
     shape compute_shape(std::vector<shape> inputs) const
     {
-        std::cout << "$$$$ compute_shape" << std::endl;
-        std::cout << "$$ dims: ";
-        for(auto dim : dims)
-        {
-            std::cout << dim << ", ";
-        }
+        // std::cout << "$$$$ compute_shape" << std::endl;
+        // std::cout << "$$ dims: ";
+        // for(auto dim : dims)
+        // {
+            // std::cout << dim << ", ";
+        // }
 
-        std::cout << "$$ inputs: " << std::endl;
-        for(auto input : inputs)
-        {
-            std::cout << "$$$ " << input << std::endl;
-        }
-        std::cout << std::endl;
+        // std::cout << "$$ inputs: " << std::endl;
+        // for(auto input : inputs)
+        // {
+            // std::cout << "$$$ " << input << std::endl;
+        // }
+        // std::cout << std::endl;
         check_shapes{inputs, *this, true}.has(1);
         auto n_neg_dims = std::count(dims.begin(), dims.end(), -1);
         if(n_neg_dims > 1)
@@ -337,8 +340,8 @@ struct reshape_lazy
         {
             ret = static_compute_shape(inputs, n_neg_dims);
         }
-        std::cout << "## returned shape: " << ret << "is dynamic: " << std::boolalpha << ret.dynamic() << std::endl;
-        std::cout << "$$$$$$$$$$$$$$$$$$" << std::endl;
+        // std::cout << "## returned shape: " << ret << "is dynamic: " << std::boolalpha << ret.dynamic() << std::endl;
+        // std::cout << "$$$$$$$$$$$$$$$$$$" << std::endl;
         return ret;
     }
 
