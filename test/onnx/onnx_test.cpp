@@ -3426,14 +3426,14 @@ TEST_CASE(isinf_half_test)
     EXPECT(p == prog);
 }
 
-TEST_CASE(isinf_half_neg_test)
+TEST_CASE(isinf_neg_test)
 {
     migraphx::program p;
     auto* mm = p.get_main_module();
-    migraphx::shape s{migraphx::shape::half_type, {2, 3}};
+    migraphx::shape s{migraphx::shape::float_type, {2, 3}};
     auto t1     = mm->add_parameter("t1", s);
     auto is_inf = mm->add_instruction(migraphx::make_op("isinf"), t1);
-    auto zero_l = mm->add_literal(migraphx::literal{migraphx::shape::half_type, {0}});
+    auto zero_l = mm->add_literal(migraphx::literal{migraphx::shape::float_type, {0}});
     auto mb_zero =
         mm->add_instruction(migraphx::make_op("multibroadcast", {{"out_lens", s.lens()}}), zero_l);
 
@@ -3446,18 +3446,18 @@ TEST_CASE(isinf_half_neg_test)
     auto ret = mm->add_instruction(migraphx::make_op("logical_and"), is_inf, is_neg);
     mm->add_return({ret});
 
-    auto prog = migraphx::parse_onnx("isinf_half_neg_test.onnx");
+    auto prog = migraphx::parse_onnx("isinf_neg_test.onnx");
     EXPECT(p == prog);
 }
 
-TEST_CASE(isinf_half_pos_test)
+TEST_CASE(isinf_double_pos_test)
 {
     migraphx::program p;
     auto* mm = p.get_main_module();
-    migraphx::shape s{migraphx::shape::half_type, {2, 3}};
+    migraphx::shape s{migraphx::shape::double_type, {2, 3}};
     auto t1     = mm->add_parameter("t1", s);
     auto is_inf = mm->add_instruction(migraphx::make_op("isinf"), t1);
-    auto zero_l = mm->add_literal(migraphx::literal{migraphx::shape::half_type, {0}});
+    auto zero_l = mm->add_literal(migraphx::literal{migraphx::shape::double_type, {0}});
     auto mb_zero =
         mm->add_instruction(migraphx::make_op("multibroadcast", {{"out_lens", s.lens()}}), zero_l);
 
@@ -3470,7 +3470,7 @@ TEST_CASE(isinf_half_pos_test)
     auto ret = mm->add_instruction(migraphx::make_op("logical_and"), is_inf, is_neg);
     mm->add_return({ret});
 
-    auto prog = migraphx::parse_onnx("isinf_half_pos_test.onnx");
+    auto prog = migraphx::parse_onnx("isinf_double_pos_test.onnx");
     EXPECT(p == prog);
 }
 

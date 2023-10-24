@@ -1021,7 +1021,12 @@ TEST_CASE(isinf_half_test)
 
     migraphx::shape s{migraphx::shape::half_type, {2, 3}};
     migraphx::parameter_map pp;
-    std::vector<float> tmp = {-1.7, NAN, INFINITY, 3.6, -INFINITY, INFINITY};
+    float nan = std::numeric_limits<float>::quiet_NaN();
+    float x   = std::numeric_limits<float>::max();
+    // Use a synthesized value instead of numeric_limits<T>::infinity() to catch any run time
+    // FP results that would bypass FP-units if compiler option like --fast-math is turned on
+    float infinity         = x * x;
+    std::vector<float> tmp = {-1.7, nan, infinity, 3.6, -infinity, infinity};
     std::vector<migraphx::half> data{tmp.cbegin(), tmp.cend()};
     pp["t1"] = migraphx::argument(s, data.data());
 
@@ -1033,15 +1038,19 @@ TEST_CASE(isinf_half_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-TEST_CASE(isinf_half_neg_test)
+TEST_CASE(isinf_neg_test)
 {
-    migraphx::program p = migraphx::parse_onnx("isinf_half_neg_test.onnx");
+    migraphx::program p = migraphx::parse_onnx("isinf_neg_test.onnx");
     p.compile(migraphx::make_target("ref"));
 
-    migraphx::shape s{migraphx::shape::half_type, {2, 3}};
+    migraphx::shape s{migraphx::shape::float_type, {2, 3}};
     migraphx::parameter_map pp;
-    std::vector<float> tmp = {-1.7, NAN, INFINITY, 3.6, -INFINITY, INFINITY};
-    std::vector<migraphx::half> data{tmp.cbegin(), tmp.cend()};
+    float nan               = std::numeric_limits<float>::quiet_NaN();
+    float x                 = std::numeric_limits<float>::max();
+    // Use a synthesized value instead of numeric_limits<T>::infinity() to catch any run time
+    // FP results that would bypass FP-units if compiler option like --fast-math is turned on
+    float infinity          = x * x;
+    std::vector<float> data = {-1.7, nan, infinity, 3.6, -infinity, infinity};
     pp["t1"] = migraphx::argument(s, data.data());
 
     auto result = p.eval(pp).back();
@@ -1052,15 +1061,19 @@ TEST_CASE(isinf_half_neg_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-TEST_CASE(isinf_half_pos_test)
+TEST_CASE(isinf_double_pos_test)
 {
-    migraphx::program p = migraphx::parse_onnx("isinf_half_pos_test.onnx");
+    migraphx::program p = migraphx::parse_onnx("isinf_double_pos_test.onnx");
     p.compile(migraphx::make_target("ref"));
 
-    migraphx::shape s{migraphx::shape::half_type, {2, 3}};
+    migraphx::shape s{migraphx::shape::double_type, {2, 3}};
     migraphx::parameter_map pp;
-    std::vector<float> tmp = {-1.7, NAN, INFINITY, 3.6, -INFINITY, INFINITY};
-    std::vector<migraphx::half> data{tmp.cbegin(), tmp.cend()};
+    double nan                = std::numeric_limits<double>::quiet_NaN();
+    double x                  = std::numeric_limits<double>::max();
+    // Use a synthesized value instead of numeric_limits<T>::infinity() to catch any run time
+    // FP results that would bypass FP-units if compiler option like --fast-math is turned on
+    double infinity           = x * x;
+    std::vector<double> data  = {-1.7, nan, infinity, 3.6, -infinity, infinity};
     pp["t1"] = migraphx::argument(s, data.data());
 
     auto result = p.eval(pp).back();
@@ -1078,8 +1091,12 @@ TEST_CASE(isinf_no_detect_test)
 
     migraphx::shape s{migraphx::shape::float_type, {2, 3}};
     migraphx::parameter_map pp;
-    std::vector<float> tmp = {-1.7, NAN, INFINITY, 3.6, -INFINITY, INFINITY};
-    std::vector<migraphx::half> data{tmp.cbegin(), tmp.cend()};
+    float nan = std::numeric_limits<float>::quiet_NaN();
+    float x   = std::numeric_limits<float>::max();
+    // Use a synthesized value instead of numeric_limits<T>::infinity() to catch any run time
+    // FP results that would bypass FP-units if compiler option like --fast-math is turned on
+    float infinity          = x * x;
+    std::vector<float> data = {-1.7, nan, infinity, 3.6, -infinity, infinity};
     pp["t1"] = migraphx::argument(s, data.data());
 
     auto result = p.eval(pp).back();

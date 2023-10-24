@@ -30,43 +30,57 @@
 
 #include <test.hpp>
 
-TEST_CASE(isinf_test)
+TEST_CASE(isinf_double_test)
 {
-    // float test
-    {
-        migraphx::program p;
-        auto* mm = p.get_main_module();
-        migraphx::shape s{migraphx::shape::float_type, {2, 3}};
-        auto inf_val             = std::numeric_limits<float>::infinity();
-        std::vector<float> data0 = {1.2, 5.2, inf_val, -inf_val, 0., 100.};
-        auto l1                  = mm->add_literal(migraphx::literal{s, data0});
-        mm->add_instruction(migraphx::make_op("isinf"), l1);
-        p.compile(migraphx::make_target("ref"));
-        auto result = p.eval({}).back();
-        std::vector<float> results_vector;
-        result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
-        std::vector<float> gold = {0, 0, 1, 1, 0, 0};
-        EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
-    }
+    migraphx::program p;
+    auto* mm = p.get_main_module();
+    migraphx::shape s{migraphx::shape::double_type, {2, 3}};
+    auto inf_val              = std::numeric_limits<double>::infinity();
+    std::vector<double> data0 = {1.2, 5.2, inf_val, -inf_val, 0., 100.};
+    auto l1                   = mm->add_literal(migraphx::literal{s, data0});
+    mm->add_instruction(migraphx::make_op("isinf"), l1);
+    p.compile(migraphx::make_target("ref"));
+    auto result = p.eval({}).back();
+    std::vector<double> results_vector;
+    result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
+    std::vector<double> gold = {0, 0, 1, 1, 0, 0};
+    EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
+}
 
-    // half test
-    {
-        migraphx::program p;
-        auto* mm = p.get_main_module();
-        migraphx::shape s{migraphx::shape::half_type, {2, 3}};
-        auto inf_val = std::numeric_limits<migraphx::half>::infinity();
-        migraphx::half a{1.2};
-        migraphx::half b{5.2};
-        std::vector<migraphx::half> data0 = {a, b, inf_val, -inf_val, b, a};
-        auto l1                           = mm->add_literal(migraphx::literal{s, data0});
-        mm->add_instruction(migraphx::make_op("isinf"), l1);
-        p.compile(migraphx::make_target("ref"));
-        auto result = p.eval({}).back();
-        std::vector<float> results_vector;
-        result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
-        std::vector<float> gold = {0, 0, 1, 1, 0, 0};
-        EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
-    }
+TEST_CASE(isinf_float_test)
+{
+    migraphx::program p;
+    auto* mm = p.get_main_module();
+    migraphx::shape s{migraphx::shape::float_type, {2, 3}};
+    auto inf_val             = std::numeric_limits<float>::infinity();
+    std::vector<float> data0 = {1.2, 5.2, inf_val, -inf_val, 0., 100.};
+    auto l1                  = mm->add_literal(migraphx::literal{s, data0});
+    mm->add_instruction(migraphx::make_op("isinf"), l1);
+    p.compile(migraphx::make_target("ref"));
+    auto result = p.eval({}).back();
+    std::vector<float> results_vector;
+    result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
+    std::vector<float> gold = {0, 0, 1, 1, 0, 0};
+    EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));    
+}
+
+TEST_CASE(isinf_half_test)
+{
+    migraphx::program p;
+    auto* mm = p.get_main_module();
+    migraphx::shape s{migraphx::shape::half_type, {2, 3}};
+    auto inf_val = std::numeric_limits<migraphx::half>::infinity();
+    migraphx::half a{1.2};
+    migraphx::half b{5.2};
+    std::vector<migraphx::half> data0 = {a, b, inf_val, -inf_val, b, a};
+    auto l1                           = mm->add_literal(migraphx::literal{s, data0});
+    mm->add_instruction(migraphx::make_op("isinf"), l1);
+    p.compile(migraphx::make_target("ref"));
+    auto result = p.eval({}).back();
+    std::vector<float> results_vector;
+    result.visit([&](auto output) { results_vector.assign(output.begin(), output.end()); });
+    std::vector<float> gold = {0, 0, 1, 1, 0, 0};
+    EXPECT(migraphx::verify::verify_rms_range(results_vector, gold));
 }
 
 TEST_CASE(isinf_dyn_test)

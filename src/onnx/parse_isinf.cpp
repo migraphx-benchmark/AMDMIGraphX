@@ -71,26 +71,14 @@ struct parse_isinf : op_parser<parse_isinf>
         auto mb_zero =
             info.add_instruction(make_op("multibroadcast", {{"out_lens", x_shape.lens()}}), zero_l);
 
-        if(detect_negative)
+
+        auto cond = info.add_broadcastable_binary_op(detect_negative ? "less": "greater", args[0], mb_zero);
+        if(cond->get_shape().type() != shape::bool_type)
         {
-            auto is_neg = info.add_broadcastable_binary_op("less", args[0], mb_zero);
-            if(is_neg->get_shape().type() != shape::bool_type)
-            {
-                is_neg = info.add_instruction(
-                    make_op("convert", {{"target_type", shape::bool_type}}), is_neg);
-            }
-            return info.add_instruction(make_op("logical_and"), is_inf, is_neg);
+            cond = info.add_instruction(
+                make_op("convert", {{"target_type", shape::bool_type}}), cond);
         }
-        else
-        {
-            auto is_pos = info.add_broadcastable_binary_op("greater", args[0], mb_zero);
-            if(is_pos->get_shape().type() != shape::bool_type)
-            {
-                is_pos = info.add_instruction(
-                    make_op("convert", {{"target_type", shape::bool_type}}), is_pos);
-            }
-            return info.add_instruction(make_op("logical_and"), is_inf, is_pos);
-        }
+        return info.add_instruction(make_op("logical_and"), is_inf, cond);
     }
 };
 

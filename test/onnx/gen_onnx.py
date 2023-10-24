@@ -3872,8 +3872,8 @@ def isinf_half_test():
 
 
 @onnx_test()
-def isinf_half_neg_test():
-    t1 = helper.make_tensor_value_info('t1', TensorProto.FLOAT16, [2, 3])
+def isinf_neg_test():
+    t1 = helper.make_tensor_value_info('t1', TensorProto.FLOAT, [2, 3])
     t2 = helper.make_tensor_value_info('t2', TensorProto.BOOL, [2, 3])
 
     node = onnx.helper.make_node(
@@ -3887,8 +3887,8 @@ def isinf_half_neg_test():
 
 
 @onnx_test()
-def isinf_half_pos_test():
-    t1 = helper.make_tensor_value_info('t1', TensorProto.FLOAT16, [2, 3])
+def isinf_double_pos_test():
+    t1 = helper.make_tensor_value_info('t1', TensorProto.DOUBLE, [2, 3])
     t2 = helper.make_tensor_value_info('t2', TensorProto.BOOL, [2, 3])
 
     node = onnx.helper.make_node(
