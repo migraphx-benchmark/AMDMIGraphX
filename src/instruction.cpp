@@ -270,6 +270,42 @@ void instruction::replace_refs(
     }
 }
 
+bool instruction::can_replace(const shape& r)
+{
+    auto can_replace = true;
+    auto old_res     = result;
+    if(r != result)
+    {
+        result = r;
+        for(auto& ins : output)
+        {
+            assert(ins->name() == "@return" or ins->name().front() != '@');
+            if(not ins->can_recompute_shape())
+            {
+                can_replace = false;
+                break;
+            }
+        }
+    }
+    result = old_res;
+    return can_replace;
+}
+
+bool instruction::can_recompute_shape()
+{
+    try
+    {
+        auto new_shape = compute_shape(op, arguments, module_args);
+        can_replace(new_shape);
+    }
+    catch(migraphx::exception& e)
+    {
+        std::cout << "Can recompute shape fails :" << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
 void instruction::replace(std::vector<instruction_ref> args)
 {
     clear_arguments();

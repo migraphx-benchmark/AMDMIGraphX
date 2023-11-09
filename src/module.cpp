@@ -312,8 +312,12 @@ instruction_ref module::replace_instruction(instruction_ref ins,
 {
     assert(has_instruction(ins));
     assert(not starts_with(op.name(), "@"));
-    auto out_shape = compute_shape(op, args, module_args);
-    instruction::replace(ins, op, out_shape, std::move(args), std::move(module_args));
+    auto out_shape   = compute_shape(op, args, module_args);
+    bool can_replace = ins->name() == "gpu::contiguous" ? ins->can_replace(out_shape) : true;
+    if(can_replace)
+    {
+        instruction::replace(ins, op, out_shape, args, module_args);
+    }
     assert(ins->valid(begin()));
     return ins;
 }

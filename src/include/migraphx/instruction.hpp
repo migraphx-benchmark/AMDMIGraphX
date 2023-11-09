@@ -148,6 +148,10 @@ struct MIGRAPHX_EXPORT instruction
                       instruction_ref ins,
                       const std::unordered_map<instruction_ref, std::string>& names);
 
+    bool can_replace(const shape& r);
+
+    bool can_recompute_shape();
+
     private:
     // internal
     void replace(operation o, const shape& r, std::vector<instruction_ref> args);
