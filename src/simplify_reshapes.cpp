@@ -274,7 +274,6 @@ struct find_concat_multibroadcasts
         auto inputs     = ins->inputs();
         auto in_strides = inputs.front()->get_shape().strides();
 
-        // std::cout << "#1 " << op.name() << std::endl;
         // Only apply when concat axis is not a broadcasted dimension
         if(std::any_of(inputs.begin(), inputs.end(), [&](auto i) {
                return i->get_shape().strides()[op.axis] == 0;
@@ -283,33 +282,18 @@ struct find_concat_multibroadcasts
             return;
         }
 
-        // std::cout << "#2" << std::endl;
         // Use inputs of multibroadcast ops as inputs to new concat op
         std::transform(inputs.begin(), inputs.end(), inputs.begin(), [](auto i) {
             return i->inputs().front();
         });
 
-        // std::cout << "#3" << std::endl;
         // Reduce axis by number of leading broadcasted dimensions
-        auto inp_size = inputs.front()->get_shape().lens().size();
-        if(inp_size < out_lens.size())
-        {
-            // std::cout << "#4" << std::endl;
-            std::cout << "#in_strides.size: " << in_strides.size() << std::endl;
-            std::cout << "#op.axis: " << op.axis << std::endl;
-            // if (op.axis < 0)
-            // {
-            //     op.axis = inp_size + op.axis;
-            // }
+        if(inputs.front()->get_shape().lens().size() < out_lens.size())
             op.axis -= std::count(in_strides.begin(), in_strides.begin() + op.axis, 0);
-        }
 
-        std::cout << "#5" << std::endl;
         auto concat = m.insert_instruction(ins, op, inputs);
-        std::cout << "#6" << std::endl;
         m.replace_instruction(
             ins, migraphx::make_op("multibroadcast", {{"out_lens", out_lens}}), concat);
-        std::cout << "#7" << std::endl;
     }
 };
 

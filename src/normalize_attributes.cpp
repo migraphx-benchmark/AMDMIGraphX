@@ -167,11 +167,6 @@ auto tune_attribute(const std::vector<int64_t>& vec,
             return v < 0 ? v + mv : v;
         });
 
-    // for (auto r: result)
-    // {
-    //     std::cout << r << ", ";
-    // }
-    // std::cout << std::endl;
     return result;
 }
 
