@@ -106,6 +106,7 @@ instruction_ref reflect_pad(const onnx_parser::node_info& info,
             slices.push_back(info.add_instruction(
                 make_op("slice", {{"axes", axes}, {"starts", starts}, {"ends", ends}}), input));
         }
+        std::cout << "#parse pad concat axis: " << axis << std::endl;
         input = info.add_instruction(make_op("concat", {{"axis", axis}}), slices);
     }
     return input;

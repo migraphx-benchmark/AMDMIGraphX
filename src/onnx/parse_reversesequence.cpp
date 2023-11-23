@@ -123,6 +123,7 @@ struct parse_reversesequence : op_parser<parse_reversesequence>
                 if(sequence_lens[b] < time_size)
                 {
                     auto s1 = add_slice(b, sequence_lens[b], time_size);
+                    std::cout << "#parse_reversesequence time_axis: " << time_axis << std::endl;
                     s0 = info.add_instruction(make_op("concat", {{"axis", time_axis}}), s0, s1);
                 }
             }
@@ -136,6 +137,7 @@ struct parse_reversesequence : op_parser<parse_reversesequence>
             }
             else
             {
+                std::cout << "#parse_reversesequence batch_axis: " << batch_axis << std::endl;
                 ret = info.add_instruction(make_op("concat", {{"axis", batch_axis}}), ret, s0);
             }
         }

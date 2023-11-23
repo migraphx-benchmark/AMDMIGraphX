@@ -24,6 +24,7 @@
 #include <migraphx/optimize_module.hpp>
 #include <migraphx/pass_manager.hpp>
 #include <migraphx/simplify_reshapes.hpp>
+#include <migraphx/normalize_ops.hpp>
 #include <migraphx/simplify_algebra.hpp>
 #include <migraphx/eliminate_common_subexpression.hpp>
 #include <migraphx/dead_code_elimination.hpp>
@@ -41,6 +42,8 @@ void optimize_module::apply(module_pass_manager& mpm) const
         {
             mpm.run_pass(simplify_reshapes{});
             mpm.run_pass(simplify_algebra{});
+            mpm.run_pass(normalize_ops{});
+            mpm.run_pass(dead_code_elimination{});
         }
         mpm.run_pass(eliminate_common_subexpression{});
         mpm.run_pass(dead_code_elimination{});

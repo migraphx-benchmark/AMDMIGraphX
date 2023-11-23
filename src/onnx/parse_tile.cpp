@@ -51,6 +51,7 @@ struct parse_tile : op_parser<parse_tile>
             auto l1 = l0;
             for(int j = 1; j < repeats[i]; j++)
             {
+                std::cout << "#parse_tile axis: " << i << std::endl;
                 l0 = info.add_instruction(make_op("concat", {{"axis", i}}), l0, l1);
             }
         }

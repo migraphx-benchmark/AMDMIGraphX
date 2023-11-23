@@ -43,6 +43,7 @@ namespace op {
 struct multibroadcast
 {
     std::vector<std::size_t> output_lens = {};
+    // int64_t axis                         = 0;
 
     // optional attribute
     std::vector<shape::dynamic_dimension> output_dyn_dims = {};
@@ -52,6 +53,13 @@ struct multibroadcast
     {
         return pack(f(self.output_lens, "out_lens"), f(self.output_dyn_dims, "out_dyn_dims"));
     }
+
+    // value attributes() const
+    // {
+    //     value normalize;
+    //     normalize["axis"] = value::array{normalize_attribute::include_min};
+    //     return {{"normalize_axes", normalize}};
+    // }
 
     std::string name() const { return "multibroadcast"; }
 

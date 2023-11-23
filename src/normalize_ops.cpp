@@ -50,6 +50,13 @@ void normalize_ops::apply(module& m) const
             m.replace_instruction(ins, tuned_op, inputs);
             ins->set_normalized();
         }
+        else
+        {
+            if(tuned_op.name() == "concat")
+            {
+                std::cout << "Failed to normalize op: " << tuned_op.name() << std::endl;
+            }
+        }
     }
 }
 

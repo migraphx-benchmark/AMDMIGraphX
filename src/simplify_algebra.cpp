@@ -699,6 +699,10 @@ struct find_concat_op
                 std::transform(start, last, std::back_inserter(inputs), [&](auto j) {
                     return j->inputs().at(i);
                 });
+                if (iaxis < 0)
+                {
+                    std::cout << "#1 simplify_algebra concat axis: " << iaxis << " op: " << op.name() << std::endl;
+                }
                 auto concat =
                     m.insert_instruction(ins, make_op("concat", {{"axis", iaxis}}), inputs);
                 concats.push_back(concat);
@@ -721,7 +725,13 @@ struct find_concat_op
         if(args.size() == 1)
             m.replace_instruction(ins, args.front());
         else
+        {
+            // if (axis < 0)
+            // {
+            //     axis = args[0]->get_shape().lens().size() + axis;
+            // }
             m.replace_instruction(ins, make_op("concat", {{"axis", axis}}), args);
+        }
     }
 };
 
@@ -926,6 +936,11 @@ struct find_splits
                     return;
                 auto concat_axis = slice_op.axes.front();
                 // TODO: Check if axises match
+                if (concat_axis < 0)
+                {
+                    std::cout << "#3 simplify_algebra concat axis: " << concat_axis
+                              << " op: " << slice_op.name() << std::endl;
+                }
                 auto concat = m.insert_instruction(
                     ins, make_op("concat", {{"axis", concat_axis}}), data_args);
 
@@ -1165,6 +1180,10 @@ struct find_conv_dot_horiz_fusion
 
             move_instructions_back(m, input, args);
             // TODO: Check if axes match
+            if (concat_axis < 0)
+            {
+                std::cout << "#4 make_op concat axis: " << concat_axis << " op: " << name << std::endl;
+            }
             auto concat =
                 m.insert_instruction(input, make_op("concat", {{"axis", concat_axis}}), args);
             auto fused     = m.insert_instruction(std::next(input), op, input, concat);
