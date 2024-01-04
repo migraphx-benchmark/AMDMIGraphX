@@ -68,3 +68,21 @@ python gradio_app.py
 ```
 
 This will load the models (which can take several minutes), and when the setup is ready, starts a server on `http://127.0.0.1:7860`.
+
+## Fast execution
+To start the gradio application with [rocm 6.0](https://github.com/ROCm/AMDMIGraphX/tree/rocm-6.0.0) docker out of the box execute the following scripts.
+
+### Setting up and starting docker
+
+```bash
+start_docker.sh
+```
+This can take a while
+
+### Inside docker
+```bash
+run_gradio.sh
+```
+This will start a server on `http://localhost:7860/`
+
+Note: Some interaction is required because it will ask for huggingface token.
