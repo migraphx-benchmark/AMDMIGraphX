@@ -46,38 +46,18 @@ struct parse_einsum : op_parser<parse_einsum>
                           const onnx_parser::node_info& info,
                           const std::vector<instruction_ref>& args) const
     {
-        return decompose_equation(info, args);
-    }
-
-    private:
-    instruction_ref decompose_equation(const onnx_parser::node_info& info,
-                                       const std::vector<instruction_ref>& args) const
-    {
         instruction_ref op;
         std::optional<instruction_ref> last_op;
 
         if(not contains(info.attributes, "equation"))
-        {
             MIGRAPHX_THROW("Equation attribute is required");
-        }
 
         std::string equation = info.attributes.at("equation").s();
+        std::cout << "EQUATION: " << equation << std::endl;
 
-        std::cout << "EQUATION: " << std::endl;
-        std::cout << equation << std::endl;
-#if DEBUG == 1
-#endif
-
-        auto [letters, mat, lengths] = analyse_einsum_equation(equation);
-
+        auto [terms, unique_labels]    = analyze_equation(equation, args);
+        auto mat                       = make_mapping_matrix(terms, unique_labels);
         std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
-
-        if(letters.size() != std::get<1>(mat_shape))
-        {
-            MIGRAPHX_THROW("Unexpected number of letters");
-        }
-
-        basic_verification(lengths, args, equation);
 
         std::vector<std::vector<int>> rows = full(2, std::get<1>(mat_shape), -1);
         int fd                             = std::get<1>(mat_shape);
@@ -181,139 +161,6 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         return op;
-    }
-
-    std::tuple<std::set<char>, std::vector<std::vector<int>>, std::vector<int>>
-    analyse_einsum_equation(std::string equation) const
-    {
-        std::vector<std::string> spl = split(trim(equation), "->");
-        if(spl.size() != 2 or spl[1].size() == 0 or spl[0].size() == 0)
-        {
-            MIGRAPHX_THROW("The equation has to have two sides"); // TODO can have only left side
-        }
-
-        std::vector<std::string> inputs;
-        for(std::string s : split(spl[0], ","))
-        {
-            inputs.push_back(trim(s));
-        }
-        std::string output = trim(spl[1]);
-
-#if DEBUG == 1
-        std::cout << "INPUTS:" << std::endl;
-        for(std::string inp : inputs)
-        {
-            std::cout << inp << std::endl;
-        }
-        std::cout << "OUTPUT:" << std::endl;
-        std::cout << output << std::endl;
-#endif
-
-        std::set<char> letters;
-        for(std::string inp : inputs)
-        {
-            letters.merge(std::set<char>(inp.begin(), inp.end()));
-        }
-
-#if DEBUG == 1
-        std::cout << "LETTERS:" << std::endl;
-        for(char c : letters)
-        {
-            std::cout << c << std::endl;
-        }
-#endif
-
-        if(!std::all_of(letters.begin(), letters.end(), [](char c) {
-               return ('a' <= c and c <= 'z') or ('A' <= c and c <= 'Z');
-           }))
-        {
-            MIGRAPHX_THROW("Equation must only contain letters"); // TODO ellipsis
-        }
-
-        std::map<char, int> rev;
-
-        int i = 0;
-        for(char c : letters)
-        {
-            rev[c] = i++;
-        }
-
-        for(char c : output)
-        {
-            if(!letters.count(c))
-            {
-                MIGRAPHX_THROW("Output contains unexpected letter");
-            }
-        }
-
-        std::vector<std::vector<int>> mat = full(inputs.size() + 1, letters.size(), -1);
-
-        i = 0;
-        for(std::string inp : inputs)
-        {
-            int k = 0;
-            for(char c : inp)
-            {
-                mat[i][rev[c]] = k++;
-            }
-            i += 1;
-        }
-
-        int k = 0;
-        for(char c : output)
-        {
-            mat[inputs.size()][rev[c]] = k++;
-        }
-
-#if DEBUG == 1
-        std::cout << "MATRIX:" << std::endl;
-        for(int i = 0; i < mat.size(); ++i)
-        {
-            for(int j = 0; j < mat[0].size(); ++j)
-            {
-                std::cout << mat[i][j] << " ";
-            }
-            std::cout << std::endl;
-        }
-#endif
-
-        std::vector<int> lengths;
-        for(std::string inp : inputs)
-        {
-            lengths.push_back(inp.size());
-        }
-        lengths.push_back(output.size());
-
-#if DEBUG == 1
-        std::cout << "LENGTHS:" << std::endl;
-        for(int le : lengths)
-        {
-            std::cout << le << std::endl;
-        }
-#endif
-
-        // TODO handle duplicates
-
-        return {letters, mat, lengths};
-    }
-
-    void basic_verification(std::vector<int> lengths,
-                            const std::vector<instruction_ref>& args,
-                            std::string /*equation*/) const
-    {
-        if(lengths.size() - 1 != args.size())
-        {
-            MIGRAPHX_THROW("Equation doesn't match with number of provided inputs");
-        }
-
-        int i = 0;
-        for(const auto& arg : args)
-        {
-            if(lengths[i++] != arg->get_shape().ndim())
-            {
-                MIGRAPHX_THROW("Dimensions of provided input don't match with equation");
-            }
-        }
     }
 
     instruction_ref apply_transpose_reshape(const onnx_parser::node_info& info,
@@ -489,39 +336,6 @@ struct parse_einsum : op_parser<parse_einsum>
         return op;
     }
 
-    std::string ltrim(std::string s) const
-    {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-                    return !std::isspace(ch);
-                }));
-        return s;
-    }
-
-    std::string rtrim(std::string s) const
-    {
-        s.erase(
-            std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); })
-                .base(),
-            s.end());
-        return s;
-    }
-
-    std::string trim(std::string s) const { return ltrim(rtrim(s)); }
-
-    std::vector<std::string> split(const std::string& str, const std::string& delim) const
-    {
-        std::vector<std::string> ret;
-        std::size_t prev = 0u, cur = 0u;
-        while((cur = str.find(delim, prev)) != std::string::npos)
-        {
-            ret.emplace_back(str.substr(prev, cur - prev));
-            prev = cur + delim.size();
-        }
-        ret.emplace_back(str.substr(prev, std::string::npos));
-
-        return ret;
-    }
-
     std::vector<std::vector<int>> full(int rows, int cols, int fill_value) const
     {
         std::vector<std::vector<int>> ret(rows);
@@ -594,6 +408,8 @@ struct parse_einsum : op_parser<parse_einsum>
             std::cout << std::endl;
         }
 #endif
+
+        return mat;
     }
 
     std::tuple<std::vector<std::string>, std::string, std::map<char, int>>
