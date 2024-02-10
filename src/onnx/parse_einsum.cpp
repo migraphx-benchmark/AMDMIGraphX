@@ -26,6 +26,7 @@
 #include <migraphx/ranges.hpp>
 #include <migraphx/instruction.hpp>
 #include <migraphx/make_op.hpp>
+#include <migraphx/stringutils.hpp>
 
 #define DEBUG 0
 
@@ -35,6 +36,9 @@ namespace onnx {
 
 struct parse_einsum : op_parser<parse_einsum>
 {
+    using string_vec   = std::vector<std::string>;
+    using char_int_map = std::map<char, int>;
+
     std::vector<op_desc> operators() const { return {{"Einsum"}}; }
 
     instruction_ref parse(const op_desc& /*opd*/,
@@ -59,9 +63,9 @@ struct parse_einsum : op_parser<parse_einsum>
 
         std::string equation = info.attributes.at("equation").s();
 
-#if DEBUG == 1
-        std::cout << "EQUATION: " std::endl;
+        std::cout << "EQUATION: " << std::endl;
         std::cout << equation << std::endl;
+#if DEBUG == 1
 #endif
 
         auto [letters, mat, lengths] = analyse_einsum_equation(equation);
@@ -529,6 +533,190 @@ struct parse_einsum : op_parser<parse_einsum>
             }
         }
         return ret;
+    }
+
+    std::tuple<string_vec, std::string>
+    analyze_equation(std::string_view equation, const std::vector<instruction_ref>& args) const
+    {
+        std::tuple<string_vec, std::string> ret;
+        auto& [terms, unique_labels] = ret;
+
+        auto [input_terms, output_term, label_count] = parse_equation(equation);
+
+        validate_input_terms(input_terms, args);
+        if(not output_term.empty())
+            validate_output_term(output_term, label_count);
+        else
+            output_term = generate_output_term(label_count);
+
+#if DEBUG
+        std::cout << migraphx::to_string_range(input_terms) << std::endl;
+        std::cout << output_term << std::endl;
+        std::cout << "{" << std::endl;
+        for(auto [k, v] : label_count)
+            std::cout << "  " << k << ": " << v << std::endl;
+        std::cout << "}" << std::endl;
+
+#endif
+
+        terms = std::move(input_terms);
+        terms.emplace_back(std::move(output_term));
+        for(auto [l, _] : label_count)
+            unique_labels += l;
+
+        return ret;
+    }
+
+    std::vector<std::vector<int>> make_mapping_matrix(const string_vec& terms,
+                                                      std::string_view unique_labels) const
+    {
+        std::map<char, int> label_to_column;
+        for(auto i = 0; i < unique_labels.size(); ++i)
+            label_to_column[unique_labels[i]] = i;
+
+        std::vector<std::vector<int>> mat = full(terms.size(), unique_labels.size(), -1);
+
+        for(auto i = 0; i < terms.size(); ++i)
+        {
+            const auto& term = terms[i];
+            for(auto j = 0; j < term.size(); ++j)
+                mat[i][label_to_column[term[j]]] = j;
+        }
+
+#if DEBUG == 1
+        std::cout << "MATRIX:" << std::endl;
+        for(int i = 0; i < mat.size(); ++i)
+        {
+            for(int j = 0; j < mat[0].size(); ++j)
+            {
+                std::cout << mat[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+#endif
+    }
+
+    std::tuple<std::vector<std::string>, std::string, std::map<char, int>>
+    parse_equation(std::string_view equation) const
+    {
+        std::tuple<std::vector<std::string>, std::string, std::map<char, int>> ret;
+        auto& [input_terms, output_term, label_count] = ret;
+
+        std::string term;
+        bool has_ellipsis  = false;
+        bool explicit_form = false;
+
+        for(int i = 0; i < equation.size(); ++i)
+        {
+            const char c = equation[i];
+            switch(c)
+            {
+            case ' ': break;
+            case '-':
+                if(explicit_form)
+                {
+                    MIGRAPHX_THROW("Einsum equation has multiple '->' symbols");
+                }
+                if(i + 1 >= equation.size() || equation[i + 1] != '>')
+                {
+                    MIGRAPHX_THROW("Invalid '->' in einsum equation");
+                }
+                ++i;
+                explicit_form = true;
+                [[fallthrough]];
+            case ',':
+                has_ellipsis = false;
+                input_terms.emplace_back(term);
+                term.clear();
+                break;
+            case '.':
+                if(has_ellipsis)
+                {
+                    MIGRAPHX_THROW("Ellipsis can only appear once per einsum equation term");
+                }
+                if(i + 2 >= equation.size() || equation[i + 1] != '.' || equation[i + 2] != '.')
+                {
+                    MIGRAPHX_THROW("Incomplete ellipsis in einsum equation " +
+                                   std::string(equation));
+                }
+                i += 2;
+                has_ellipsis = true;
+                term += '*';
+                break;
+            default:
+                if(!std::isalpha(c))
+                {
+                    MIGRAPHX_THROW(std::string("Invalid character '") + c +
+                                   "' in einsum equation term");
+                }
+                term += c;
+                if(not explicit_form)
+                    ++label_count[c];
+            }
+        }
+
+        if(explicit_form)
+            output_term = term;
+        else
+            input_terms.push_back(term);
+
+        return ret;
+    }
+
+    std::string generate_output_term(const char_int_map& label_count) const
+    {
+        std::string output_term;
+        for(const auto [label, count] : label_count)
+            if(count == 1)
+                output_term += label;
+
+        return output_term;
+    }
+
+    void validate_output_term(std::string_view output_term, const char_int_map& label_count) const
+    {
+        for(const auto label : output_term)
+            if(not contains(label_count, label))
+                MIGRAPHX_THROW("Output term contains label " + std::to_string(label) +
+                               ", which is not present in any of the input terms");
+    }
+
+    void validate_input_terms(const string_vec& input_terms,
+                              const std::vector<instruction_ref>& args) const
+    {
+        if(input_terms.size() != args.size())
+            MIGRAPHX_THROW(
+                "Number of terms in the input equation - " + std::to_string(input_terms.size()) +
+                " does not match the number of input tensors " + std::to_string(args.size()));
+
+        auto global_ellipses_dims = 0u;
+        for(auto i = 0u; i < args.size(); ++i)
+        {
+            const auto& term = input_terms[i];
+            const auto dims  = args[i]->get_shape().lens();
+            const auto rank  = dims.size();
+
+            auto current_dim = 0u;
+            for(const auto l : term)
+            {
+                if(l == '*')
+                {
+                    auto ellipses_dims = rank - term.size() + 1;
+                    if(global_ellipses_dims > 0 and ellipses_dims != global_ellipses_dims)
+                        MIGRAPHX_THROW("Every occurrence of ellipsis in the equation must "
+                                       "represent the same number of dimensions");
+                    global_ellipses_dims = ellipses_dims;
+                    current_dim += ellipses_dims;
+                }
+                else
+                    ++current_dim;
+            }
+
+            if(current_dim != rank)
+                MIGRAPHX_THROW("Number of labels in " + std::to_string(i + 1) + ". input_term (" +
+                               term + ") does not match the rank (" + std::to_string(rank) +
+                               ") of corresponding input");
+        }
     }
 };
 

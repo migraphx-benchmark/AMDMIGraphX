@@ -1082,7 +1082,13 @@ def create_backend_test(testname=None, target_device=None):
         c2.set_device(target_device)
     backend_test = MIGraphXBackendTest(c2, __name__)
 
-    if testname:
+    if True:
+        backend_test.include(r'test_einsum_batch_diagonal_cpu')
+        backend_test.include(r'test_einsum_batch_matmul_cpu')
+        backend_test.include(r'test_einsum_inner_prod_cpu')
+        backend_test.include(r'test_einsum_sum_cpu')
+        backend_test.include(r'test_einsum_transpose_cpu')
+    elif testname:
         backend_test.include(testname + '.*')
     else:
         # Onnx Operator tests
