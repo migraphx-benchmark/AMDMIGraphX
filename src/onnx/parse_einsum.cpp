@@ -27,7 +27,7 @@
 #include <migraphx/instruction.hpp>
 #include <migraphx/make_op.hpp>
 
-#define DEBUG 2
+#define DEBUG 1
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -79,7 +79,7 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<std::vector<int>> rows = full(2, full_dim, -1);
 
         int i = 0;
-        for(const auto& arg : args)
+        for(instruction_ref arg : args)
         {
             op      = info.add_instruction(make_op("identity"), arg);
             rows[1] = mat[i]; // compute output row
@@ -241,7 +241,7 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         int i = 0;
-        for(const auto& arg : args)
+        for(instruction_ref arg : args)
         {
             if(lengths[i++] != arg->get_shape().ndim())
             {
@@ -569,17 +569,22 @@ struct parse_einsum : op_parser<parse_einsum>
 
         int ndim = rows[0].size();
 
-        if(axes.size() == 0 and set_intersection(left, right).size() == 0)
-        {
-            instruction_ref op = info.add_instruction(make_op("mul"), op1, op2);
-            // compute output row
-            std::transform(rows[0].begin(),
-                           rows[0].end(),
-                           rows[1].begin(),
-                           rows[1].begin(),
-                           std::greater<int>{});
-            return op;
-        }
+//         if(axes.size() == 0 and set_intersection(left, right).size() == 0)
+//         {
+// #if DEBUG == 2
+//             std::cout << "MUL" << std::endl;
+//             std::cout << op1->get_shape() << std::endl;
+//             std::cout << op2->get_shape() << std::endl;
+// #endif
+//             instruction_ref op = info.add_instruction(make_op("mul"), op1, op2);
+//             // compute output row
+//             std::transform(rows[0].begin(),
+//                            rows[0].end(),
+//                            rows[1].begin(),
+//                            rows[1].begin(),
+//                            std::greater<int>{});
+//             return op;
+//         }
 
         if(set_intersection(axes, left).size() == 0 and set_intersection(axes, right).size() == 0)
         {
@@ -639,7 +644,10 @@ struct parse_einsum : op_parser<parse_einsum>
                 std::sort(right_no_left.begin(), right_no_left.end());
                 op1 = info.add_instruction(make_op("reduce_sum", {{"axes", right_no_left}}), op1);
                 // compute output row
-                // TODO
+                for(int r : right_no_left)
+                {
+                    rows[0][r] = -1;
+                }
             }
 
             has_dim.clear();
@@ -672,7 +680,10 @@ struct parse_einsum : op_parser<parse_einsum>
                 std::sort(left_no_right.begin(), left_no_right.end());
                 op2 = info.add_instruction(make_op("reduce_sum", {{"axes", left_no_right}}), op2);
                 // compute output row
-                // TODO
+                for(int r : left_no_right)
+                {
+                    rows[1][r] = -1;
+                }
             }
 
             // Transpose
@@ -750,11 +761,21 @@ struct parse_einsum : op_parser<parse_einsum>
             {
                 op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
                 // compute output row
-                // TODO
+                auto cpy = rows[0];
+                int i    = 0;
+                for(int p : perm)
+                {
+                    rows[0][i++] = cpy[p];
+                }
 
                 op2 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op2);
                 // compute output row
-                // TODO
+                cpy = rows[1];
+                i   = 0;
+                for(int p : perm)
+                {
+                    rows[1][i++] = cpy[p];
+                }
             }
 
             // Reshape
@@ -807,15 +828,174 @@ struct parse_einsum : op_parser<parse_einsum>
             }
 #endif
 
-            instruction_ref op;
-            op = info.add_instruction(make_op("dot"), op1, op2);
-            // compute output row
+            instruction_ref op = apply_batch_dot(
+                info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
 
+            // Transpose again
+            std::vector<int> ordered_axes = common_axes;
+            std::copy_if(left.begin(), left.end(), std::back_inserter(ordered_axes), [=](int el) {
+                return std::find(right.begin(), right.end(), el) == right.end();
+            });
+            std::copy_if(right.begin(), right.end(), std::back_inserter(ordered_axes), [=](int el) {
+                return std::find(left.begin(), left.end(), el) == left.end();
+            });
+            std::copy(not_in_both.begin(), not_in_both.end(), std::back_inserter(ordered_axes));
 
-            return op1;
+            std::vector<std::tuple<int, int>> rev_perm;
+            int i = 0;
+            for(int a : ordered_axes)
+            {
+                rev_perm.push_back({a, i++});
+            }
+
+            std::sort(rev_perm.begin(), rev_perm.end(), [](auto lhs, auto rhs) {
+                return std::get<0>(lhs) < std::get<0>(rhs);
+            });
+
+            perm.clear();
+            for(auto p : rev_perm)
+            {
+                perm.push_back(std::get<1>(p));
+            }
+
+            if(not is_transpose_identity(perm))
+            {
+                op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
+                // compute output row
+                auto cpy = rows[0];
+                int i    = 0;
+                for(int p : perm)
+                {
+                    rows[0][i++] = cpy[p];
+                }
+
+                op = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op);
+                // compute output row
+                cpy = rows[1];
+                i   = 0;
+                for(int p : perm)
+                {
+                    rows[1][i++] = cpy[p];
+                }
+            }
+
+            return op;
         }
 
         MIGRAPHX_THROW("axes and right or left have axes in common");
+    }
+
+    instruction_ref apply_batch_dot(const onnx_parser::node_info& info,
+                                    std::vector<std::vector<int>>& rows,
+                                    instruction_ref op1,
+                                    instruction_ref op2,
+                                    std::vector<int> batch_axes,
+                                    std::vector<int> keep_axes,
+                                    std::vector<int> sum_axes,
+                                    std::vector<int> left,
+                                    std::vector<int> right) const
+    {
+        if(op1->get_shape().ndim() != op2->get_shape().ndim())
+        {
+            MIGRAPHX_THROW("batch_dot input tensors need to have the same number of dimensions");
+        }
+
+        std::vector<std::size_t> op1_shape = op1->get_shape().lens();
+        std::vector<std::size_t> op2_shape = op2->get_shape().lens();
+
+        int dim0 = 1;
+        for(int i : batch_axes)
+        {
+            dim0 *= op1_shape[i];
+        }
+
+        int dim0b = 1;
+        for(int i : batch_axes)
+        {
+            dim0b *= op2_shape[i];
+        }
+
+        int dimb = 1;
+        if(keep_axes.empty())
+        {
+            dimb = -1;
+        }
+        else
+        {
+            for(int i : keep_axes)
+            {
+                dimb *= op1_shape[i];
+            }
+        }
+
+        int dim1 = 1;
+        for(int i : sum_axes)
+        {
+            dim1 *= op1_shape[i];
+        }
+
+        int dim2 = 1;
+        for(int i : sum_axes)
+        {
+            dim2 *= op2_shape[i];
+        }
+
+#if DEBUG == 2
+        std::cout << "dim0: " << dim0 << std::endl;
+        std::cout << "dim0b: " << dim0b << std::endl;
+        std::cout << "dimb: " << dimb << std::endl;
+        std::cout << "dim1: " << dim1 << std::endl;
+        std::cout << "dim2: " << dim2 << std::endl;
+#endif
+
+        instruction_ref op1sh =
+            info.add_instruction(make_op("reshape", {{"dims", {dim0, dimb, dim1}}}), op1);
+        instruction_ref op2sh =
+            info.add_instruction(make_op("reshape", {{"dims", {dim0b, dimb, dim2}}}), op2);
+
+        instruction_ref dot = info.add_instruction(
+            make_op("dot"),
+            op1sh,
+            info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh));
+
+        std::vector<int> new_shape;
+        for(int i : batch_axes)
+        {
+            new_shape.push_back(std::max(op1_shape[i], op2_shape[i]));
+        }
+        for(int i : left)
+        {
+            if(std::find(batch_axes.begin(), batch_axes.end(), i) == batch_axes.end())
+            {
+                new_shape.push_back(op1_shape[i]);
+            }
+        }
+        for(int i : right)
+        {
+            if(std::find(batch_axes.begin(), batch_axes.end(), i) == batch_axes.end())
+            {
+                new_shape.push_back(op2_shape[i]);
+            }
+        }
+
+        while(new_shape.size() < op1_shape.size())
+        {
+            new_shape.push_back(1);
+        }
+
+        instruction_ref op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
+        // compute output row
+        std::transform(
+            rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), std::greater<int>{});
+        for(int a : sum_axes)
+        {
+            if(std::find(right.begin(), right.end(), a) == right.end())
+            {
+                rows[1][a] = -1;
+            }
+        }
+
+        return op;
     }
 
     bool is_transpose_identity(std::vector<int> perm) const

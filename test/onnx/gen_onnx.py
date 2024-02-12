@@ -8083,6 +8083,47 @@ def rnn_r_3arg_layout_test():
 
 
 @onnx_test()
+def einsum_transpose_missing_output_test():
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [2, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 2])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x'],
+                                 outputs=['y'],
+                                 equation='ji')
+
+    return ([node], [x], [y])
+
+
+@onnx_test()
+def einsum_hadamard_product_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [2, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='ij, ij -> ij')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_ijkl_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [2, 3, 2, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='ij, kl -> ijkl')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
 def roialign_default_test():
     x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [10, 4, 7, 8])
     roi = helper.make_tensor_value_info('rois', TensorProto.FLOAT, [8, 4])
