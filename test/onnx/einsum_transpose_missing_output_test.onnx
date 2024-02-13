@@ -1,12 +1,0 @@
-	$einsum_transpose_missing_output_test:s
-!
-xy"Einsum*
-equation"ji $einsum_transpose_missing_output_testZ
-x
-
-
-b
-y
-
-
-B

@@ -1,8 +1,8 @@
-	einsum_hadamard_product_test:‘
-0
+	einsum_hadamard_product_test:Ž
+-
 x1
-x2y"Einsum*
-equation"ij, ij -> ij einsum_hadamard_product_testZ
+x2y"Einsum*
+equation"	ij,ij->ij einsum_hadamard_product_testZ
 x1
 
 

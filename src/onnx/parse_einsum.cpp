@@ -27,7 +27,7 @@
 #include <migraphx/instruction.hpp>
 #include <migraphx/make_op.hpp>
 
-#define DEBUG 1
+#define DEBUG 0
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -569,22 +569,28 @@ struct parse_einsum : op_parser<parse_einsum>
 
         int ndim = rows[0].size();
 
-//         if(axes.size() == 0 and set_intersection(left, right).size() == 0)
-//         {
-// #if DEBUG == 2
-//             std::cout << "MUL" << std::endl;
-//             std::cout << op1->get_shape() << std::endl;
-//             std::cout << op2->get_shape() << std::endl;
-// #endif
-//             instruction_ref op = info.add_instruction(make_op("mul"), op1, op2);
-//             // compute output row
-//             std::transform(rows[0].begin(),
-//                            rows[0].end(),
-//                            rows[1].begin(),
-//                            rows[1].begin(),
-//                            std::greater<int>{});
-//             return op;
-//         }
+        //         if(axes.size() == 0 and set_intersection(left, right).size() == 0)
+        //         {
+        // #if DEBUG == 2
+        //             std::cout << "MUL" << std::endl;
+        //             std::cout << op1->get_shape() << std::endl;
+        //             std::cout << op2->get_shape() << std::endl;
+        // #endif
+        //             instruction_ref op = info.add_instruction(make_op("mul"), op1, op2);
+        //             // compute output row
+        //             std::transform(rows[0].begin(),
+        //                            rows[0].end(),
+        //                            rows[1].begin(),
+        //                            rows[1].begin(),
+        //                            std::greater<int>{});
+        //             return op;
+        //         }
+
+        if(not(set_intersection(axes, left).size() == 0 and
+               set_intersection(axes, right).size() == 0))
+        {
+            MIGRAPHX_THROW("Not implemented");
+        }
 
         if(set_intersection(axes, left).size() == 0 and set_intersection(axes, right).size() == 0)
         {
