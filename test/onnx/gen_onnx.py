@@ -8247,6 +8247,20 @@ def einsum_batch_matrix_multiplication_test():
 
 
 @onnx_test()
+def einsum_tensor_contraction_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3, 5, 7])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [1, 3, 3, 7, 5])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [2, 7, 1, 3, 7])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='pqrs,tuqvr->pstuv')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
 def einsum_matrix_diagonal_test():
     x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3])
     y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3])
@@ -8311,6 +8325,21 @@ def einsum_3_inputs_test():
                                  inputs=['x1', 'x2', 'x3'],
                                  outputs=['y'],
                                  equation='bac,cd,def->ebc')
+
+    return ([node], [x1, x2, x3], [y])
+
+
+@onnx_test()
+def einsum_bilinear_transformation_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [5, 3, 7])
+    x3 = helper.make_tensor_value_info('x3', TensorProto.FLOAT, [2, 7])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [2, 5])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2', 'x3'],
+                                 outputs=['y'],
+                                 equation='ik,jkl,il->ij')
 
     return ([node], [x1, x2, x3], [y])
 

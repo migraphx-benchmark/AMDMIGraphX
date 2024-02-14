@@ -26,8 +26,10 @@
 #include <migraphx/ranges.hpp>
 #include <migraphx/instruction.hpp>
 #include <migraphx/make_op.hpp>
+#include <migraphx/stringutils.hpp>
 
 #define DEBUG 0
+#define GRAPH 1
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -35,6 +37,9 @@ namespace onnx {
 
 struct parse_einsum : op_parser<parse_einsum>
 {
+    using string_vec   = std::vector<std::string>;
+    using char_int_map = std::map<char, int>;
+
     std::vector<op_desc> operators() const { return {{"Einsum"}}; }
 
     instruction_ref parse(const op_desc& /*opd*/,
@@ -64,27 +69,60 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << equation << std::endl;
 #endif
 
-        auto [letters, mat, lengths] = analyse_einsum_equation(equation);
+        // auto [letters, mat, lengths] = analyse_einsum_equation(equation);
+        auto [terms, unique_labels] = analyze_equation(equation, args);
+        auto mat                    = make_mapping_matrix(terms, unique_labels);
+        auto duplicates             = look_for_duplicates(terms);
 
         std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
         int full_dim                   = std::get<1>(mat_shape);
 
-        if(letters.size() != full_dim)
-        {
-            MIGRAPHX_THROW("Unexpected number of letters");
-        }
+        // if(letters.size() != full_dim)
+        // {
+        //     MIGRAPHX_THROW("Unexpected number of letters");
+        // }
 
-        basic_verification(lengths, args, equation);
+        // basic_verification(lengths, args, equation);
 
         std::vector<std::vector<int>> rows = full(2, full_dim, -1);
 
         int i = 0;
         for(instruction_ref arg : args)
         {
-            op      = info.add_instruction(make_op("identity"), arg);
+#ifdef GRAPH
+            std::cout << "input: " << i << std::endl;
+#endif
+            op      = arg;
             rows[1] = mat[i]; // compute output row
 
-            op = apply_transpose_reshape(info, rows, op, mat[i]);
+            auto tr_row    = mat[i];
+            auto duplicate = duplicates[i];
+            if(duplicate.size())
+            {
+                std::vector<std::tuple<int, std::vector<int>>> diag;
+                for(auto [_, v] : duplicate)
+                {
+                    if(v.size() == 1)
+                    {
+                        continue;
+                    }
+
+                    diag.push_back({v[0], v});
+                }
+
+                std::cout << "DIAG *****************" << std::endl;
+                for(auto [_, v] : diag)
+                {
+                    std::cout << _ << ": ";
+                    for(auto el : v)
+                    {
+                        std::cout << el << " ";
+                    }
+                    std::cout << std::endl;
+                }
+            }
+
+            op = apply_transpose_reshape(info, rows, op, tr_row);
 
             // reduction
             std::vector<int> red;
@@ -107,6 +145,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(red.size())
             {
+#ifdef GRAPH
+                std::cout << "reduce_sum" << std::endl;
+                std::cout << "> input shape: " << op->get_shape() << std::endl;
+                std::cout << "> axes: ";
+                for(auto _ : red)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
                 // compute output row
                 for(int r : red)
@@ -217,6 +265,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(red.size())
             {
+#ifdef GRAPH
+                std::cout << "reduce_sum" << std::endl;
+                std::cout << "> input shape: " << op->get_shape() << std::endl;
+                std::cout << "> axes: ";
+                for(auto _ : red)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
                 // compute output row
                 for(int r : red)
@@ -392,6 +450,16 @@ struct parse_einsum : op_parser<parse_einsum>
         {
             s_axes.push_back(std::get<1>(a));
         }
+#ifdef GRAPH
+        std::cout << "unsqueeze" << std::endl;
+        std::cout << "> input shape: " << op->get_shape() << std::endl;
+        std::cout << "> axes: ";
+        for(auto _ : s_axes)
+        {
+            std::cout << _ << " ";
+        }
+        std::cout << std::endl;
+#endif
         op = info.add_instruction(make_op("unsqueeze", {{"axes", s_axes}}), op);
         // check output row
         for(int s_a : s_axes)
@@ -443,6 +511,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
         if(not is_transpose_identity(new_perm))
         {
+#ifdef GRAPH
+            std::cout << "transpose" << std::endl;
+            std::cout << "> input shape: " << op->get_shape() << std::endl;
+            std::cout << "> permutation: ";
+            for(auto _ : new_perm)
+            {
+                std::cout << _ << " ";
+            }
+            std::cout << std::endl;
+#endif
             op = info.add_instruction(make_op("transpose", {{"permutation", new_perm}}), op);
             // compute output row
             auto cpy = rows[1];
@@ -509,6 +587,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
         if(not is_transpose_identity(new_perm))
         {
+#ifdef GRAPH
+            std::cout << "transpose" << std::endl;
+            std::cout << "> input shape: " << op->get_shape() << std::endl;
+            std::cout << "> permutation: ";
+            for(auto _ : new_perm)
+            {
+                std::cout << _ << " ";
+            }
+            std::cout << std::endl;
+#endif
             op = info.add_instruction(make_op("transpose", {{"permutation", new_perm}}), op);
             // compute output row
             auto cpy = rows[1];
@@ -521,6 +609,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
         if(sq.size())
         {
+#ifdef GRAPH
+            std::cout << "squeeze" << std::endl;
+            std::cout << "> input shape: " << op->get_shape() << std::endl;
+            std::cout << "> axes: ";
+            for(auto _ : sq)
+            {
+                std::cout << _ << " ";
+            }
+            std::cout << std::endl;
+#endif
             op = info.add_instruction(make_op("squeeze", {{"axes", sq}}), op);
             // compute output row
             for(int a : sq)
@@ -648,6 +746,16 @@ struct parse_einsum : op_parser<parse_einsum>
             if(right_no_left.size())
             {
                 std::sort(right_no_left.begin(), right_no_left.end());
+#ifdef GRAPH
+                std::cout << "reduce_sum" << std::endl;
+                std::cout << "> input1 shape: " << op1->get_shape() << std::endl;
+                std::cout << "> axes: ";
+                for(auto _ : right_no_left)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op1 = info.add_instruction(make_op("reduce_sum", {{"axes", right_no_left}}), op1);
                 // compute output row
                 for(int r : right_no_left)
@@ -684,6 +792,16 @@ struct parse_einsum : op_parser<parse_einsum>
             if(left_no_right.size())
             {
                 std::sort(left_no_right.begin(), left_no_right.end());
+#ifdef GRAPH
+                std::cout << "reduce_sum" << std::endl;
+                std::cout << "> input2 shape: " << op2->get_shape() << std::endl;
+                std::cout << "> axes: ";
+                for(auto _ : left_no_right)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op2 = info.add_instruction(make_op("reduce_sum", {{"axes", left_no_right}}), op2);
                 // compute output row
                 for(int r : left_no_right)
@@ -765,6 +883,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(!is_transpose_identity(perm))
             {
+#ifdef GRAPH
+                std::cout << "transpose" << std::endl;
+                std::cout << "> input1 shape: " << op1->get_shape() << std::endl;
+                std::cout << "> permutation: ";
+                for(auto _ : perm)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
                 // compute output row
                 auto cpy = rows[0];
@@ -773,7 +901,16 @@ struct parse_einsum : op_parser<parse_einsum>
                 {
                     rows[0][i++] = cpy[p];
                 }
-
+#ifdef GRAPH
+                std::cout << "transpose" << std::endl;
+                std::cout << "> input2 shape: " << op2->get_shape() << std::endl;
+                std::cout << "> permutation: ";
+                for(auto _ : perm)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op2 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op2);
                 // compute output row
                 cpy = rows[1];
@@ -866,6 +1003,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(not is_transpose_identity(perm))
             {
+#ifdef GRAPH
+                std::cout << "transpose" << std::endl;
+                std::cout << "> input1 shape: " << op1->get_shape() << std::endl;
+                std::cout << "> permutation: ";
+                for(auto _ : perm)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
                 // compute output row
                 auto cpy = rows[0];
@@ -874,7 +1021,16 @@ struct parse_einsum : op_parser<parse_einsum>
                 {
                     rows[0][i++] = cpy[p];
                 }
-
+#ifdef GRAPH
+                std::cout << "transpose" << std::endl;
+                std::cout << "> input shape: " << op->get_shape() << std::endl;
+                std::cout << "> permutation: ";
+                for(auto _ : perm)
+                {
+                    std::cout << _ << " ";
+                }
+                std::cout << std::endl;
+#endif
                 op = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op);
                 // compute output row
                 cpy = rows[1];
@@ -946,7 +1102,7 @@ struct parse_einsum : op_parser<parse_einsum>
             dim2 *= op2_shape[i];
         }
 
-#if DEBUG == 2
+#if DEBUG == 3
         std::cout << "dim0: " << dim0 << std::endl;
         std::cout << "dim0b: " << dim0b << std::endl;
         std::cout << "dimb: " << dimb << std::endl;
@@ -954,15 +1110,84 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << "dim2: " << dim2 << std::endl;
 #endif
 
+        std::string dot_kind = get_dot_kind(rows, batch_axes);
+#if DEBUG == 3
+        std::cout << "DOT KIND: " << dot_kind << std::endl;
+        std::cout << "op1_shape" << op1->get_shape() << std::endl;
+        std::cout << "op2_shape" << op2->get_shape() << std::endl;
+#endif
+
+#ifdef GRAPH
+        std::cout << "reshape" << std::endl;
+        std::cout << "> input1 shape: " << op1->get_shape() << std::endl;
+        std::cout << "> dims: ";
+        for(auto _ : std::vector<int>{dim0, dimb, dim1})
+        {
+            std::cout << _ << " ";
+        }
+        std::cout << std::endl;
+#endif
         instruction_ref op1sh =
             info.add_instruction(make_op("reshape", {{"dims", {dim0, dimb, dim1}}}), op1);
+#ifdef GRAPH
+        std::cout << "reshape" << std::endl;
+        std::cout << "> input2 shape: " << op2->get_shape() << std::endl;
+        std::cout << "> dims: ";
+        for(auto _ : std::vector<int>{dim0b, dimb, dim2})
+        {
+            std::cout << _ << " ";
+        }
+        std::cout << std::endl;
+#endif
         instruction_ref op2sh =
             info.add_instruction(make_op("reshape", {{"dims", {dim0b, dimb, dim2}}}), op2);
 
-        instruction_ref dot = info.add_instruction(
-            make_op("dot"),
-            op1sh,
-            info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh));
+        instruction_ref dot;
+        // if(dot_kind == "11" or dot_kind == "N1" or dot_kind == "1N")
+        // {
+        //     op1sh = info.add_instruction(
+        //         make_op("reshape", {{"dims", {-1, op1sh->get_shape().lens().back()}}}), op1sh);
+        //     op2sh = info.add_instruction(
+        //         make_op("reshape", {{"dims", {-1, op2sh->get_shape().lens().back()}}}), op2sh);
+
+        //     std::vector<std::size_t> all_dims = op1sh->get_shape().lens();
+        //     std::copy(op2sh->get_shape().lens().begin(),
+        //               op2sh->get_shape().lens().end(),
+        //               std::back_inserter(all_dims));
+        //     bool square = std::min_element(all_dims.begin(), all_dims.end()) ==
+        //                   std::max_element(all_dims.begin(), all_dims.end());
+
+        //     if(not square)
+        //     {
+        //         dot = info.add_instruction(
+        //             make_op("dot"),
+        //             op1sh,
+        //             info.add_instruction(make_op("transpose", {{"permutation", {1, 0}}}),
+        //             op2sh));
+        //     }
+        //     else
+        //     {
+        //         dot = info.add_instruction(
+        //             make_op("dot"),
+        //             info.add_instruction(make_op("transpose", {{"permutation", {1, 0}}}), op2sh),
+        //             op1sh);
+        //     }
+        // }
+        // else
+        {
+#ifdef GRAPH
+            std::cout << "transpose" << std::endl;
+            std::cout << "> input2 shape: " << op2sh->get_shape() << std::endl;
+            std::cout << "> permutation: 0, 2, 1 " << std::endl;
+#endif
+            op2sh = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh);
+#ifdef GRAPH
+            std::cout << "dot" << std::endl;
+            std::cout << "> input1 shape: " << op1sh->get_shape() << std::endl;
+            std::cout << "> input2 shape: " << op2sh->get_shape() << std::endl;
+#endif
+            dot = info.add_instruction(make_op("dot"), op1sh, op2sh);
+        }
 
         std::vector<int> new_shape;
         for(int i : batch_axes)
@@ -988,7 +1213,16 @@ struct parse_einsum : op_parser<parse_einsum>
         {
             new_shape.push_back(1);
         }
-
+#ifdef GRAPH
+        std::cout << "reshape" << std::endl;
+        std::cout << "> input shape: " << dot->get_shape() << std::endl;
+        std::cout << "> dims: ";
+        for(auto _ : new_shape)
+        {
+            std::cout << _ << " ";
+        }
+        std::cout << std::endl;
+#endif
         instruction_ref op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
         // compute output row
         std::transform(
@@ -1002,6 +1236,44 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         return op;
+    }
+
+    std::string get_dot_kind(const std::vector<std::vector<int>>& rows,
+                             std::vector<int> batch_axes) const
+    {
+#if DEBUG == 3
+        std::cout << "GET DOT KIND ROWS:" << std::endl;
+        for(int i = 0; i < rows.size(); ++i)
+        {
+            for(int j = 0; j < rows[0].size(); ++j)
+            {
+                std::cout << rows[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "BATCH AXES:" << std::endl;
+        for(int k : batch_axes)
+        {
+            std::cout << k << std::endl;
+        }
+#endif
+
+        std::vector<int> batch_left, batch_right;
+        for(int k : batch_axes)
+        {
+            batch_left.push_back(rows[0][k]);
+            batch_right.push_back(rows[1][k]);
+        }
+
+        bool n_left = batch_left.size() >
+                      0 /*and *std::max_element(batch_left.begin(), batch_left.end()) == 2*/;
+        bool n_right =
+            batch_right.size() > 0 /*and
+                                    *std::max_element(batch_right.begin(), batch_right.end()) == 2*/
+            ;
+
+        std::string ret;
+        return ret + (n_left ? "N" : "1") + (n_right ? "N" : "1");
     }
 
     bool is_transpose_identity(std::vector<int> perm) const
@@ -1095,6 +1367,217 @@ struct parse_einsum : op_parser<parse_einsum>
         std::set_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
         return ret;
+    }
+
+    // NEW PARSING
+
+    std::tuple<string_vec, std::string>
+    analyze_equation(std::string_view equation, const std::vector<instruction_ref>& args) const
+    {
+        std::tuple<string_vec, std::string> ret;
+        auto& [terms, unique_labels] = ret;
+
+        auto [input_terms, output_term, label_count, explicit_form] = parse_equation(equation);
+
+        validate_input_terms(input_terms, args);
+        if(not output_term.empty())
+            validate_output_term(output_term, label_count);
+        else if(not explicit_form)
+            output_term = generate_output_term(label_count);
+
+#if DEBUG
+        std::cout << migraphx::to_string_range(input_terms) << std::endl;
+        std::cout << output_term << std::endl;
+        std::cout << "{" << std::endl;
+        for(auto [k, v] : label_count)
+            std::cout << "  " << k << ": " << v << std::endl;
+        std::cout << "}" << std::endl;
+
+#endif
+
+        terms = std::move(input_terms);
+        terms.emplace_back(std::move(output_term));
+        for(auto [l, _] : label_count)
+            unique_labels += l;
+
+        return ret;
+    }
+
+    std::vector<std::vector<int>> make_mapping_matrix(const string_vec& terms,
+                                                      std::string_view unique_labels) const
+    {
+        std::map<char, int> label_to_column;
+        for(auto i = 0; i < unique_labels.size(); ++i)
+            label_to_column[unique_labels[i]] = i;
+
+        std::vector<std::vector<int>> mat = full(terms.size(), unique_labels.size(), -1);
+
+        for(auto i = 0; i < terms.size(); ++i)
+        {
+            const auto& term = terms[i];
+            for(auto j = 0; j < term.size(); ++j)
+                mat[i][label_to_column[term[j]]] = j;
+        }
+
+#if DEBUG == 1
+        std::cout << "MATRIX:" << std::endl;
+        for(int i = 0; i < mat.size(); ++i)
+        {
+            for(int j = 0; j < mat[0].size(); ++j)
+            {
+                std::cout << mat[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+#endif
+
+        return mat;
+    }
+
+    std::vector<std::map<char, std::vector<int>>> look_for_duplicates(string_vec terms) const
+    {
+        std::vector<std::map<char, std::vector<int>>> duplicates;
+        for(auto term : terms)
+        {
+            if(term.size() == std::set<char>(term.begin(), term.end()).size())
+            {
+                duplicates.push_back({});
+                continue;
+            }
+
+            std::map<char, std::vector<int>> counts;
+            int i = 0;
+            for(char c : term)
+            {
+                counts[c].push_back(i++);
+            }
+            duplicates.push_back(counts);
+        }
+
+        return duplicates;
+    }
+
+    std::tuple<std::vector<std::string>, std::string, std::map<char, int>, bool>
+    parse_equation(std::string_view equation) const
+    {
+        std::tuple<std::vector<std::string>, std::string, std::map<char, int>, bool> ret;
+        auto& [input_terms, output_term, label_count, explicit_form] = ret;
+
+        std::string term;
+        bool has_ellipsis = false;
+        explicit_form     = false;
+
+        for(int i = 0; i < equation.size(); ++i)
+        {
+            const char c = equation[i];
+            switch(c)
+            {
+            case ' ': break;
+            case '-':
+                if(explicit_form)
+                {
+                    MIGRAPHX_THROW("Einsum equation has multiple '->' symbols");
+                }
+                if(i + 1 >= equation.size() || equation[i + 1] != '>')
+                {
+                    MIGRAPHX_THROW("Invalid '->' in einsum equation");
+                }
+                ++i;
+                explicit_form = true;
+                [[fallthrough]];
+            case ',':
+                has_ellipsis = false;
+                input_terms.emplace_back(term);
+                term.clear();
+                break;
+            case '.':
+                if(has_ellipsis)
+                {
+                    MIGRAPHX_THROW("Ellipsis can only appear once per einsum equation term");
+                }
+                if(i + 2 >= equation.size() || equation[i + 1] != '.' || equation[i + 2] != '.')
+                {
+                    MIGRAPHX_THROW("Incomplete ellipsis in einsum equation " +
+                                   std::string(equation));
+                }
+                i += 2;
+                has_ellipsis = true;
+                term += '*';
+                break;
+            default:
+                if(!std::isalpha(c))
+                {
+                    MIGRAPHX_THROW(std::string("Invalid character '") + c +
+                                   "' in einsum equation term");
+                }
+                term += c;
+                if(not explicit_form)
+                    ++label_count[c];
+            }
+        }
+
+        if(explicit_form)
+            output_term = term;
+        else
+            input_terms.push_back(term);
+
+        return ret;
+    }
+
+    std::string generate_output_term(const char_int_map& label_count) const
+    {
+        std::string output_term;
+        for(const auto [label, count] : label_count)
+            if(count == 1)
+                output_term += label;
+
+        return output_term;
+    }
+
+    void validate_output_term(std::string_view output_term, const char_int_map& label_count) const
+    {
+        for(const auto label : output_term)
+            if(not contains(label_count, label))
+                MIGRAPHX_THROW("Output term contains label " + std::to_string(label) +
+                               ", which is not present in any of the input terms");
+    }
+
+    void validate_input_terms(const string_vec& input_terms,
+                              const std::vector<instruction_ref>& args) const
+    {
+        if(input_terms.size() != args.size())
+            MIGRAPHX_THROW(
+                "Number of terms in the input equation - " + std::to_string(input_terms.size()) +
+                " does not match the number of input tensors " + std::to_string(args.size()));
+
+        auto global_ellipses_dims = 0u;
+        for(auto i = 0u; i < args.size(); ++i)
+        {
+            const auto& term = input_terms[i];
+            const auto dims  = args[i]->get_shape().lens();
+            const auto rank  = dims.size();
+
+            auto current_dim = 0u;
+            for(const auto l : term)
+            {
+                if(l == '*')
+                {
+                    auto ellipses_dims = rank - term.size() + 1;
+                    if(global_ellipses_dims > 0 and ellipses_dims != global_ellipses_dims)
+                        MIGRAPHX_THROW("Every occurrence of ellipsis in the equation must "
+                                       "represent the same number of dimensions");
+                    global_ellipses_dims = ellipses_dims;
+                    current_dim += ellipses_dims;
+                }
+                else
+                    ++current_dim;
+            }
+
+            if(current_dim != rank)
+                MIGRAPHX_THROW("Number of labels in " + std::to_string(i + 1) + ". input_term (" +
+                               term + ") does not match the rank (" + std::to_string(rank) +
+                               ") of corresponding input");
+        }
     }
 };
 
