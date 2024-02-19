@@ -649,55 +649,53 @@ TEST_CASE(einsum_element_wise_multiplication_and_row_sum_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-// TODO /code/AMDMIGraphX/src/include/migraphx/op/dot.hpp:84: compute_shape: DOT: static outer
-// dimensions of A and B mismatch: {1, 4, 2} x {2, 4, 1}
-// TEST_CASE(einsum_3_inputs_test)
-// {
-//     migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+TEST_CASE(einsum_3_inputs_test)
+{
+    migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
+    p.compile(migraphx::make_target("ref"));
 
-//     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
-//     std::vector<float> x1_data = {0.78808491,
-//                                   0.6661874,
-//                                   0.4170594,
-//                                   0.80972418,
-//                                   0.22687053,
-//                                   0.52144567,
-//                                   0.70463225,
-//                                   0.8934412};
+    migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
+    std::vector<float> x1_data = {0.78808491,
+                                  0.6661874,
+                                  0.4170594,
+                                  0.80972418,
+                                  0.22687053,
+                                  0.52144567,
+                                  0.70463225,
+                                  0.8934412};
 
-//     migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
-//     std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
+    migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
+    std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
 
-//     migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
-//     std::vector<float> x3_data = {0.04135729,
-//                                   0.36723732,
-//                                   0.82196749,
-//                                   0.35332048,
-//                                   0.92673273,
-//                                   0.50014512,
-//                                   0.91129541,
-//                                   0.97557965};
+    migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
+    std::vector<float> x3_data = {0.04135729,
+                                  0.36723732,
+                                  0.82196749,
+                                  0.35332048,
+                                  0.92673273,
+                                  0.50014512,
+                                  0.91129541,
+                                  0.97557965};
 
-//     migraphx::parameter_map pm;
-//     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
-//     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
-//     pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
+    migraphx::parameter_map pm;
+    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+    pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
 
-//     auto result = p.eval(pm).back();
-//     std::vector<float> result_vector;
-//     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+    auto result = p.eval(pm).back();
+    std::vector<float> result_vector;
+    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-//     std::vector<float> gold = {1.54312876,
-//                                0.59155446,
-//                                1.19274407,
-//                                0.56709538,
-//                                2.79449706,
-//                                1.61644006,
-//                                2.15997517,
-//                                1.5496049};
-//     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
-// }
+    std::vector<float> gold = {1.54312876,
+                               0.59155446,
+                               1.19274407,
+                               0.56709538,
+                               2.79449706,
+                               1.61644006,
+                               2.15997517,
+                               1.5496049};
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+}
 
 TEST_CASE(einsum_bilinear_transformation_test)
 {

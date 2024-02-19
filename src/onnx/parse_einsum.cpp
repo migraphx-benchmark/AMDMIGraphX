@@ -661,7 +661,9 @@ struct parse_einsum : op_parser<parse_einsum>
         instruction_ref op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
         // compute output row
         std::transform(
-            rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), std::greater<int>{});
+            rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), [](int l, int r) {
+                return std::max(l, r);
+            });
         for(int a : sum_axes)
         {
             if(std::find(right.begin(), right.end(), a) == right.end())
