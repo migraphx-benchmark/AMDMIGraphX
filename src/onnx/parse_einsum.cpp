@@ -686,14 +686,15 @@ struct parse_einsum : op_parser<parse_einsum>
         print_matrix(rows);
 #endif
 
-        std::vector<int> left_term, right_term;
-        for(auto i = 0; i < rows[0].size(); ++i)
-            if(rows[0][i] != -1)
-                left_term.push_back(i);
-        for(auto i = 0; i < rows[1].size(); ++i)
-            if(rows[1][i] != -1)
-                right_term.push_back(i);
-        auto common_labels = set_intersection(left_term, right_term);
+        // std::vector<int> left_term, right_term;
+        // for(auto i = 0; i < rows[0].size(); ++i)
+        //     if(rows[0][i] != -1)
+        //         left_term.push_back(i);
+        // for(auto i = 0; i < rows[1].size(); ++i)
+        //     if(rows[1][i] != -1)
+        //         right_term.push_back(i);
+        // auto common_labels = set_intersection(left_term, right_term);
+        auto common_labels = set_union(batch_axes, sum_axes);
 
 #if DEBUG_PRINT == 1
         std::cout << "Left term: " << migraphx::to_string_range(left_term) << std::endl;
