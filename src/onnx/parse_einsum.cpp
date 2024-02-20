@@ -66,9 +66,9 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << "EQUATION: " << equation << std::endl;
 #endif
 
-        auto [terms, unique_labels] = analyze_equation(equation, args);
-        auto mat                    = make_mapping_matrix(terms, unique_labels);
-        auto duplicates             = look_for_duplicates(terms);
+        auto [terms, unique_labels, ellipses_ndim] = analyze_equation(equation, args);
+        auto mat        = make_mapping_matrix(terms, unique_labels, ellipses_ndim);
+        auto duplicates = look_for_duplicates(terms);
 
 #if DEBUG_PRINT == 1
         std::cout << "Mapping matrix: " << std::endl;
@@ -295,6 +295,10 @@ struct parse_einsum : op_parser<parse_einsum>
             new_perm[std::get<1>(perm[p])] = i++;
             p += 1;
         }
+
+        // *ik,kjl->ij*
+        //
+        // term1
 
         if(not is_transpose_identity(new_perm))
         {
@@ -877,17 +881,17 @@ struct parse_einsum : op_parser<parse_einsum>
 
     // EQUATION PARSING
 
-    std::tuple<string_vec, std::string>
+    std::tuple<string_vec, std::string, size_t>
     analyze_equation(std::string_view equation, const std::vector<instruction_ref>& args) const
     {
-        std::tuple<string_vec, std::string> ret;
-        auto& [terms, unique_labels] = ret;
+        std::tuple<string_vec, std::string, size_t> ret;
+        auto& [terms, unique_labels, ellipses_ndim] = ret;
 
         auto [input_terms, output_term, label_count, explicit_form] = parse_equation(equation);
 
-        validate_input_terms(input_terms, args);
+        ellipses_ndim = validate_input_terms(input_terms, args);
         if(not output_term.empty())
-            validate_output_term(output_term, label_count);
+            validate_output_term(output_term, label_count, ellipses_ndim);
         else if(not explicit_form)
             output_term = generate_output_term(label_count);
 
@@ -900,19 +904,32 @@ struct parse_einsum : op_parser<parse_einsum>
     }
 
     std::vector<std::vector<int>> make_mapping_matrix(const string_vec& terms,
-                                                      std::string_view unique_labels) const
+                                                      std::string_view unique_labels,
+                                                      size_t ellipses_ndim) const
     {
         std::map<char, int> label_to_column;
         for(auto i = 0; i < unique_labels.size(); ++i)
             label_to_column[unique_labels[i]] = i;
 
-        std::vector<std::vector<int>> mat = full(terms.size(), unique_labels.size(), -1);
+        std::vector<std::vector<int>> mat =
+            full(terms.size(), unique_labels.size() + ellipses_ndim, -1);
 
         for(auto i = 0; i < terms.size(); ++i)
         {
             const auto& term = terms[i];
+            int col_id       = 0;
             for(auto j = 0; j < term.size(); ++j)
-                mat[i][label_to_column[term[j]]] = j;
+            {
+                if(term[j] == '*')
+                {
+                    std::iota(mat[i].end() - ellipses_ndim, mat[i].end(), col_id);
+                    col_id += ellipses_ndim;
+                }
+                else
+                {
+                    mat[i][label_to_column[term[j]]] = col_id++;
+                }
+            }
         }
 
         return mat;
@@ -1018,16 +1035,27 @@ struct parse_einsum : op_parser<parse_einsum>
         return output_term;
     }
 
-    void validate_output_term(std::string_view output_term, const char_int_map& label_count) const
+    void validate_output_term(std::string_view output_term,
+                              const char_int_map& label_count,
+                              size_t ellipses_ndim) const
     {
         for(const auto label : output_term)
-            if(not contains(label_count, label))
+        {
+            if(not contains(label_count, label) and label != '*')
+            {
                 MIGRAPHX_THROW("Output term contains label " + std::to_string(label) +
                                ", which is not present in any of the input terms");
+            }
+        }
+        if(ellipses_ndim != 0 and not contains(output_term, "*"))
+        {
+            MIGRAPHX_THROW(
+                "Output term does not contain ellipsis (...) even though an input term does");
+        }
     }
 
-    void validate_input_terms(const string_vec& input_terms,
-                              const std::vector<instruction_ref>& args) const
+    size_t validate_input_terms(const string_vec& input_terms,
+                                const std::vector<instruction_ref>& args) const
     {
         if(input_terms.size() != args.size())
             MIGRAPHX_THROW(
@@ -1062,6 +1090,8 @@ struct parse_einsum : op_parser<parse_einsum>
                                term + ") does not match the rank (" + std::to_string(rank) +
                                ") of corresponding input");
         }
+
+        return global_ellipses_dims;
     }
 
     void print_matrix(std::vector<std::vector<int>>& mat) const

@@ -8423,6 +8423,48 @@ def einsum_bilinear_transformation_test():
 
 
 @onnx_test()
+def einsum_ellipsis_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 4, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 4, 2])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='...ik,kj...->ij...')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_ellipsis_multidim_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 2, 3, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 4, 3, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 4, 3, 2])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='...ik,kj...->ij...')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_ellipsis_zero_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [4, 3, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 2, 4])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='...qhd,...khd->...hqk')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
 def einsum_common_1_test():
     x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 2, 2, 2])
     x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 2, 2, 2])
@@ -8474,6 +8516,20 @@ def einsum_common_4_test():
                                  inputs=['x1', 'x2'],
                                  outputs=['y'],
                                  equation='bcxd,bcyd->bcxy')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_common_5_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 2, 3, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [3, 4, 3, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 3, 2, 4])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='...qhd,...khd->...hqk')
 
     return ([node], [x1, x2], [y])
 
