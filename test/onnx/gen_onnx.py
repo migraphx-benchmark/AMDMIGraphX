@@ -8465,6 +8465,34 @@ def einsum_ellipsis_zero_test():
 
 
 @onnx_test()
+def einsum_ellipsis_implicit_form_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 2, 3, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [3, 4, 3, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 4, 2])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='...qhd,...khd')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_ellipsis_scalar_multiplication_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 3])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [2, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='..., ...')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
 def einsum_common_1_test():
     x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 2, 2, 2])
     x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 2, 2, 2])
@@ -8532,6 +8560,33 @@ def einsum_common_5_test():
                                  equation='...qhd,...khd->...hqk')
 
     return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_common_6_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 2, 2])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 2, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 2, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='i...k,k...j->i...j')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
+def einsum_common_7_test():
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [5, 5])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [5])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x'],
+                                 outputs=['y'],
+                                 equation='...j->...')
+
+    return ([node], [x], [y])
 
 
 @onnx_test()

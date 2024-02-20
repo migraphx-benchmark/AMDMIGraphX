@@ -893,7 +893,7 @@ struct parse_einsum : op_parser<parse_einsum>
         if(not output_term.empty())
             validate_output_term(output_term, label_count, ellipses_ndim);
         else if(not explicit_form)
-            output_term = generate_output_term(label_count);
+            output_term = generate_output_term(label_count, ellipses_ndim);
 
         terms = std::move(input_terms);
         terms.emplace_back(std::move(output_term));
@@ -1025,9 +1025,9 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::string generate_output_term(const char_int_map& label_count) const
+    std::string generate_output_term(const char_int_map& label_count, size_t ellipsis_ndim) const
     {
-        std::string output_term;
+        std::string output_term = ellipsis_ndim != 0 ? "*" : "";
         for(const auto [label, count] : label_count)
             if(count == 1)
                 output_term += label;
