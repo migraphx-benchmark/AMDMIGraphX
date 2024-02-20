@@ -8326,7 +8326,7 @@ def einsum_matrix_trace_test():
 def einsum_2d_3d_multiplication_test():
     x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 3])
     x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [3, 4, 5])
-    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [1])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 4, 5])
  
     node = onnx.helper.make_node('Einsum',
                                  inputs=['x1', 'x2'],

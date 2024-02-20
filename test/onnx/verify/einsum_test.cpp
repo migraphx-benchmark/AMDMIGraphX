@@ -27,6 +27,11 @@
 #include <onnx_test.hpp>
 #include <onnx_verify_utils.hpp>
 
+migraphx::shape make_shape(std::vector<size_t> lens)
+{
+    return migraphx::shape{migraphx::shape::float_type, std::move(lens)};
+}
+
 TEST_CASE(einsum_permute_test)
 {
     migraphx::program p = migraphx::parse_onnx("einsum_permute_test.onnx");
@@ -40,6 +45,8 @@ TEST_CASE(einsum_permute_test)
     pm["x"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -61,6 +68,8 @@ TEST_CASE(einsum_summation_test)
     pm["x"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({1}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -81,6 +90,8 @@ TEST_CASE(einsum_column_sum_test)
     pm["x"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -101,6 +112,8 @@ TEST_CASE(einsum_row_sum_test)
     pm["x"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -125,6 +138,8 @@ TEST_CASE(einsum_matrix_vector_multiplication_test)
     pm["v"] = migraphx::argument{v_shape, v_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 1}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -146,6 +161,8 @@ TEST_CASE(einsum_matrix_matrix_multiplication_test)
     pm["x2"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -166,6 +183,8 @@ TEST_CASE(einsum_vector_dot_product_test)
     pm["x2"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({1}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -187,6 +206,8 @@ TEST_CASE(einsum_matrix_dot_product_test)
     pm["x2"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({1}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -208,6 +229,8 @@ TEST_CASE(einsum_hadamard_product_test)
     pm["x2"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -232,6 +255,8 @@ TEST_CASE(einsum_vector_outer_product_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 5}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -279,6 +304,8 @@ TEST_CASE(einsum_matrix_outer_product_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3, 2, 5}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -323,6 +350,8 @@ TEST_CASE(einsum_batch_matrix_multiplication_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 2, 3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -462,6 +491,8 @@ TEST_CASE(einsum_tensor_contraction_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 7, 1, 3, 7}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -598,6 +629,8 @@ TEST_CASE(einsum_2d_3d_multiplication_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 4, 5}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -642,6 +675,8 @@ TEST_CASE(einsum_element_wise_multiplication_and_row_sum_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -665,6 +700,8 @@ TEST_CASE(einsum_broadcast_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -704,6 +741,8 @@ TEST_CASE(einsum_3d_broadcast_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3, 4}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -739,6 +778,8 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3, 4}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -784,6 +825,8 @@ TEST_CASE(einsum_3_inputs_test)
     pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -847,6 +890,8 @@ TEST_CASE(einsum_bilinear_transformation_test)
     pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 5}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -905,6 +950,8 @@ TEST_CASE(einsum_ellipsis_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 4, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -945,6 +992,8 @@ TEST_CASE(einsum_ellipsis_multidim_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 4, 3, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -994,6 +1043,8 @@ TEST_CASE(einsum_ellipsis_zero_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 2, 4}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1038,6 +1089,8 @@ TEST_CASE(einsum_ellipsis_implicit_form_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 4, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1063,6 +1116,8 @@ TEST_CASE(einsum_ellipsis_scalar_multiplication_test)
     pm["x2"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1117,6 +1172,8 @@ TEST_CASE(einsum_common_1_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2, 2, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1185,6 +1242,8 @@ TEST_CASE(einsum_common_2_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1245,6 +1304,8 @@ TEST_CASE(einsum_common_3_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2, 2}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1284,6 +1345,8 @@ TEST_CASE(einsum_common_4_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 2, 3, 4}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1331,6 +1394,8 @@ TEST_CASE(einsum_common_5_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 3, 2, 4}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1387,6 +1452,8 @@ TEST_CASE(einsum_common_6_test)
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 2, 3}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
@@ -1427,6 +1494,8 @@ TEST_CASE(einsum_common_7_test)
     pm["x"] = migraphx::argument{x_shape, x_data.data()};
 
     auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({5}));
+
     std::vector<float> result_vector;
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
