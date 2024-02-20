@@ -8351,6 +8351,20 @@ def einsum_element_wise_multiplication_and_row_sum_test():
 
 
 @onnx_test()
+def einsum_broadcast_test():
+    x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [3, 1])
+    x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 2])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 2])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x1', 'x2'],
+                                 outputs=['y'],
+                                 equation='ij, jk -> ik')
+
+    return ([node], [x1, x2], [y])
+
+
+@onnx_test()
 def einsum_3_inputs_test():
     x1 = helper.make_tensor_value_info('x1', TensorProto.FLOAT, [2, 2, 2])
     x2 = helper.make_tensor_value_info('x2', TensorProto.FLOAT, [2, 2])

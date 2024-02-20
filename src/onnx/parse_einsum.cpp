@@ -26,8 +26,10 @@
 #include <migraphx/ranges.hpp>
 #include <migraphx/instruction.hpp>
 #include <migraphx/make_op.hpp>
+#include <migraphx/common.hpp>
 #include <migraphx/stringutils.hpp>
 
+#define DEBUG_PRINT 0
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 namespace onnx {
@@ -60,10 +62,18 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         std::string equation = info.attributes.at("equation").s();
+#if DEBUG_PRINT == 1
+        std::cout << "EQUATION: " << equation << std::endl;
+#endif
 
         auto [terms, unique_labels] = analyze_equation(equation, args);
         auto mat                    = make_mapping_matrix(terms, unique_labels);
         auto duplicates             = look_for_duplicates(terms);
+
+#if DEBUG_PRINT == 1
+        std::cout << "Mapping matrix: " << std::endl;
+        print_matrix(mat);
+#endif
 
         std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
         int full_dim                   = std::get<1>(mat_shape);
@@ -73,6 +83,9 @@ struct parse_einsum : op_parser<parse_einsum>
         int i = 0;
         for(instruction_ref arg : args)
         {
+#if DEBUG_PRINT == 1
+            std::cout << i << "----------------------------------" << std::endl;
+#endif
             op      = arg;
             rows[1] = mat[i]; // compute output row
 
@@ -93,7 +106,16 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
+#if DEBUG_PRINT == 1
+            std::cout << "Rows before unsqueeze_transpose: " << std::endl;
+            print_matrix(rows);
+#endif
+            // Transpose so the labels in the term are ordered alphabetically
             op = unsqueeze_transpose(info, rows, op, tr_row);
+#if DEBUG_PRINT == 1
+            std::cout << "Rows after unsqueeze_transpose: " << std::endl;
+            print_matrix(rows);
+#endif
 
             // reduction
             std::vector<int> red;
@@ -108,6 +130,9 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(red.size())
             {
+#if DEBUG_PRINT == 1
+                std::cout << "Pre-dot axes for reduction: " << to_string_range(red) << std::endl;
+#endif
                 op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
                 // compute output row
                 for(int r : red)
@@ -118,15 +143,25 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(last_op)
             {
+                // Label is present in current two terms, but not in the remainder of the equation
                 std::vector<int> common_dims;
+                // Label is present in only left term or both terms and somewhere in the remainder
+                // of the equation
                 std::vector<int> left;
+                // Label is present in only right term or both terms and somewhere in the remainder
+                // of the equation
                 std::vector<int> right;
 
                 for(int d = 0; d < full_dim; ++d)
                 {
                     int min = colwise_comp(rows, d, 0, rows.size(), std::less<int>{});
+                    // There is no -1 in the column, for the current two rows
+                    // The label is present in both rows
                     if(min >= 0)
                     {
+                        // There is at least 1 element that is not -1, for the remaining rows of the
+                        // matrix.
+                        // The label is present in at least one of the subsequent rows
                         int max = colwise_comp(mat, d, i + 1, mat.size(), std::greater<int>{});
                         if(max >= 0)
                         {
@@ -138,6 +173,7 @@ struct parse_einsum : op_parser<parse_einsum>
                             common_dims.push_back(d);
                         }
                     }
+                    // The label is missing in one or both of the rows
                     else
                     {
                         if(rows[0][d] >= 0)
@@ -223,7 +259,13 @@ struct parse_einsum : op_parser<parse_einsum>
             s_axes.push_back(std::get<1>(a));
         }
 
+#if DEBUG_PRINT == 1
+        std::cout << "Shape before unsqueeze: " << op->get_shape() << std::endl;
+#endif
         op = info.add_instruction(make_op("unsqueeze", {{"axes", s_axes}}), op);
+#if DEBUG_PRINT == 1
+        std::cout << "Shape after unsqueeze: " << op->get_shape() << std::endl;
+#endif
         // check output row
         for(int s_a : s_axes)
         {
@@ -256,7 +298,13 @@ struct parse_einsum : op_parser<parse_einsum>
 
         if(not is_transpose_identity(new_perm))
         {
+#if DEBUG_PRINT == 1
+            std::cout << "Shape before transpose: " << op->get_shape() << std::endl;
+#endif
             op = info.add_instruction(make_op("transpose", {{"permutation", new_perm}}), op);
+#if DEBUG_PRINT == 1
+            std::cout << "Shape after transpose: " << op->get_shape() << std::endl;
+#endif
             // compute output row
             auto cpy = rows[1];
             i        = 0;
@@ -345,6 +393,15 @@ struct parse_einsum : op_parser<parse_einsum>
                            std::vector<int> left,
                            std::vector<int> right) const
     {
+#if DEBUG_PRINT == 1
+        std::cout << "Matmul" << std::endl;
+        std::cout << "Axes: " << migraphx::to_string_range(axes) << std::endl;
+        std::cout << "Left: " << migraphx::to_string_range(left) << std::endl;
+        std::cout << "Right: " << migraphx::to_string_range(right) << std::endl;
+        std::cout << "Matmul rows:\n";
+        print_matrix(rows);
+#endif
+
         int ndim = rows[0].size();
 
         if(not(set_intersection(axes, left).size() == 0 and
@@ -357,6 +414,9 @@ struct parse_einsum : op_parser<parse_einsum>
         {
             std::vector<int> all_axes = set_union(set_union(left, right), axes);
 
+            // Labels that are both in left and right, and not in all_axes
+            // Given previous context:
+            // Labels present in both terms and somewhere in the remainder of the equation
             std::vector<int> common_axes = set_intersection(left, right);
             for(int i = 0; i < ndim; ++i)
             {
@@ -367,7 +427,13 @@ struct parse_einsum : op_parser<parse_einsum>
             }
             std::sort(common_axes.begin(), common_axes.end());
 
+#if DEBUG_PRINT == 1
+            std::cout << "All axes: " << to_string_range(all_axes) << std::endl;
+            std::cout << "Common axes: " << to_string_range(common_axes) << std::endl;
+#endif
+
             // ReduceSum
+            // All labels present in rows[0]
             std::vector<int> has_dim;
             for(int i = 0; i < rows[0].size(); ++i)
             {
@@ -419,14 +485,17 @@ struct parse_einsum : op_parser<parse_einsum>
             for(int i = 0; i < ndim; ++i)
             {
                 int first;
+                // Label present in both terms and somewhere in the remainder of equation
                 if(std::find(common_axes.begin(), common_axes.end(), i) != common_axes.end())
                 {
                     first = -1;
                 }
+                // Label present ONLY in current two terms
                 else if(std::find(axes.begin(), axes.end(), i) != axes.end())
                 {
                     first = 1;
                 }
+                // Label present only in remainder of equation
                 else
                 {
                     first = 0;
@@ -438,12 +507,15 @@ struct parse_einsum : op_parser<parse_einsum>
                 return std::get<0>(lhs) < std::get<0>(rhs);
             });
 
+            // Label permutation in accordance to their category{-1, 0, 1}
             std::vector<int> perm;
             for(auto _ : i_axes)
             {
                 perm.push_back(std::get<1>(_));
             }
 
+            // Label permutation in accordance to their category that are surely present in the left
+            // term
             std::vector<int> perm_left;
             for(int i = 0; i < perm.size(); ++i)
             {
@@ -453,6 +525,8 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
+            // Label permutation in accordance to their category that are surely present in the
+            // right term
             std::vector<int> perm_right;
             for(int i = 0; i < perm.size(); ++i)
             {
@@ -462,6 +536,13 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
+#if DEBUG_PRINT == 1
+            std::cout << "Perm: " << to_string_range(perm) << std::endl;
+            std::cout << "Perm_left: " << to_string_range(perm_left) << std::endl;
+            std::cout << "Perm_right: " << to_string_range(perm_right) << std::endl;
+#endif
+
+            // Transpose so labels are ordered according to category
             if(!is_transpose_identity(perm))
             {
                 op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
@@ -483,22 +564,32 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
+#if DEBUG_PRINT == 1
+            std::cout << "Rows after transpose before reshape:\n";
+            print_matrix(rows);
+#endif
+
             // Reshape
             std::vector<int> all_axes2(ndim);
             std::iota(all_axes2.begin(), all_axes2.end(), 0);
 
             std::vector<int> new_axes;
+            // Axes = common_dims -> Label present only in current two terms(label category 1)
             if(axes.size() > 0)
             {
                 std::copy(
                     all_axes2.end() - axes.size(), all_axes2.end(), std::back_inserter(new_axes));
             }
 
+            // common_axes -> labels present in both terms and remainder of eq(label category -1)
             std::vector<int> new_common_axes;
             std::copy(all_axes2.begin(),
                       all_axes2.begin() + common_axes.size(),
                       std::back_inserter(new_common_axes));
 
+            // Labels that are not in left or right
+            // common_axes is the intersection of left and right, if a label is in neither of
+            // these, surely it cannot be in common_axes, making the check superfluous?
             std::vector<int> not_in_both;
             for(int i = 0; i < ndim; ++i)
             {
@@ -509,6 +600,12 @@ struct parse_einsum : op_parser<parse_einsum>
                     not_in_both.push_back(i);
                 }
             }
+
+#if DEBUG_PRINT == 1
+            std::cout << "new_axes: " << to_string_range(new_axes) << std::endl;
+            std::cout << "new_common_axes: " << to_string_range(new_common_axes) << std::endl;
+            std::cout << "not_in_both: " << to_string_range(not_in_both) << std::endl;
+#endif
 
             instruction_ref op = batch_dot(
                 info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
@@ -522,6 +619,10 @@ struct parse_einsum : op_parser<parse_einsum>
                 return std::find(left.begin(), left.end(), el) == left.end();
             });
             std::copy(not_in_both.begin(), not_in_both.end(), std::back_inserter(ordered_axes));
+
+#if DEBUG_PRINT == 1
+            std::cout << "ordered_axes: " << to_string_range(ordered_axes) << std::endl;
+#endif
 
             std::vector<std::tuple<int, int>> rev_perm;
             int i = 0;
@@ -542,19 +643,10 @@ struct parse_einsum : op_parser<parse_einsum>
 
             if(not is_transpose_identity(perm))
             {
-                op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
-                // compute output row
-                auto cpy = rows[0];
-                int i    = 0;
-                for(int p : perm)
-                {
-                    rows[0][i++] = cpy[p];
-                }
-
                 op = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op);
                 // compute output row
-                cpy = rows[1];
-                i   = 0;
+                auto cpy = rows[1];
+                int i    = 0;
                 for(int p : perm)
                 {
                     rows[1][i++] = cpy[p];
@@ -583,8 +675,55 @@ struct parse_einsum : op_parser<parse_einsum>
             MIGRAPHX_THROW("batch_dot input tensors need to have the same number of dimensions");
         }
 
+#if DEBUG_PRINT == 1
+        std::cout << "BATCH-DOT" << std::endl;
+        std::cout << "Batch axes: " << migraphx::to_string_range(batch_axes) << std::endl;
+        std::cout << "Keep axes: " << migraphx::to_string_range(keep_axes) << std::endl;
+        std::cout << "Sum axes: " << migraphx::to_string_range(sum_axes) << std::endl;
+        std::cout << "Left: " << migraphx::to_string_range(left) << std::endl;
+        std::cout << "Right: " << migraphx::to_string_range(right) << std::endl;
+        std::cout << "Batch-dot rows:\n";
+        print_matrix(rows);
+#endif
+
+        std::vector<int> left_term, right_term;
+        for(auto i = 0; i < rows[0].size(); ++i)
+            if(rows[0][i] != -1)
+                left_term.push_back(i);
+        for(auto i = 0; i < rows[1].size(); ++i)
+            if(rows[1][i] != -1)
+                right_term.push_back(i);
+        auto common_labels = set_intersection(left_term, right_term);
+
+#if DEBUG_PRINT == 1
+        std::cout << "Left term: " << migraphx::to_string_range(left_term) << std::endl;
+        std::cout << "Right term: " << migraphx::to_string_range(right_term) << std::endl;
+        std::cout << "Common labels: " << migraphx::to_string_range(common_labels) << std::endl;
+#endif
+
         std::vector<std::size_t> op1_shape = op1->get_shape().lens();
         std::vector<std::size_t> op2_shape = op2->get_shape().lens();
+
+        for(auto l : common_labels)
+        {
+#if DEBUG_PRINT == 1
+            std::cout << "Common label: " << l << std::endl;
+#endif
+            if(op1_shape[l] == 1 and op2_shape[l] == 1)
+                continue;
+            if(op1_shape[l] == 1)
+            {
+                op1_shape[l] = op2_shape[l];
+                op1 =
+                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op1_shape}}), op1);
+            }
+            if(op2_shape[l] == 1)
+            {
+                op2_shape[l] = op1_shape[l];
+                op2 =
+                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op2_shape}}), op2);
+            }
+        }
 
         int dim0 = 1;
         for(int i : batch_axes)
@@ -921,6 +1060,19 @@ struct parse_einsum : op_parser<parse_einsum>
                 MIGRAPHX_THROW("Number of labels in " + std::to_string(i + 1) + ". input_term (" +
                                term + ") does not match the rank (" + std::to_string(rank) +
                                ") of corresponding input");
+        }
+    }
+
+    void print_matrix(std::vector<std::vector<int>>& mat) const
+    {
+        for(auto& row : mat)
+        {
+            for(auto e : row)
+            {
+                std::cout.width(2);
+                std::cout << std::right << e << " ";
+            }
+            std::cout << std::endl;
         }
     }
 };

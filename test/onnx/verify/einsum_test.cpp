@@ -649,6 +649,30 @@ TEST_CASE(einsum_element_wise_multiplication_and_row_sum_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
+TEST_CASE(einsum_broadcast_test)
+{
+    migraphx::program p = migraphx::parse_onnx("einsum_broadcast_test.onnx");
+    p.compile(migraphx::make_target("ref"));
+
+    migraphx::shape x1_shape{migraphx::shape::float_type, {3, 1}};
+    std::vector<float> x1_data = {0.39430774, 0.13914788, 0.48328062};
+
+    migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
+    std::vector<float> x2_data = {0.71903989, 0.19490621, 0.56431641, 0.09180231};
+
+    migraphx::parameter_map pm;
+    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+
+    auto result = p.eval(pm).back();
+    std::vector<float> result_vector;
+    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+
+    std::vector<float> gold = {
+        0.50603732, 0.11305139, 0.17857631, 0.03989488, 0.62022123, 0.13856067};
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+}
+
 TEST_CASE(einsum_3_inputs_test)
 {
     migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
