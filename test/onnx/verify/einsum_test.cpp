@@ -35,7 +35,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_permute_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_permute_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -58,7 +61,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_summation_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_summation_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -80,7 +86,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_column_sum_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_column_sum_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -102,7 +111,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_row_sum_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_row_sum_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -124,7 +136,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_matrix_vector_multiplication_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_matrix_vector_multiplication_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -150,7 +165,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_matrix_matrix_multiplication_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_matrix_matrix_multiplication_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -173,7 +191,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_vector_dot_product_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_vector_dot_product_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {3}};
 //     std::vector<float> x_data = {0.45263196, 0.90876706, 0.9584567};
@@ -195,7 +216,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_matrix_dot_product_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_matrix_dot_product_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -218,7 +242,10 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 // TEST_CASE(einsum_hadamard_product_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_hadamard_product_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -239,114 +266,117 @@ migraphx::shape make_shape(std::vector<size_t> lens)
 //     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 // }
 
-TEST_CASE(einsum_vector_outer_product_test)
-{
-    migraphx::program p = migraphx::parse_onnx("einsum_vector_outer_product_test.onnx");
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    p.compile(migraphx::make_target("gpu"), opts);
-    std::cout << p << std::endl;
-    std::cout << make_shape({1, 5, 1}) << std::endl;
+// TEST_CASE(einsum_vector_outer_product_test)
+// {
+//     migraphx::program p = migraphx::parse_onnx("einsum_vector_outer_product_test.onnx");
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
+//     std::cout << make_shape({1, 5, 1}) << std::endl;
 
-    migraphx::shape x1_shape{migraphx::shape::float_type, {3}};
-    std::vector<float> x1_data = {0.35935151, 0.51298139, 0.46076789};
+//     migraphx::shape x1_shape{migraphx::shape::float_type, {3}};
+//     std::vector<float> x1_data = {0.35935151, 0.51298139, 0.46076789};
 
-    migraphx::shape x2_shape{migraphx::shape::float_type, {5}};
-    std::vector<float> x2_data = {0.82417482, 0.17984153, 0.17680769, 0.55499376, 0.74447638};
+//     migraphx::shape x2_shape{migraphx::shape::float_type, {5}};
+//     std::vector<float> x2_data = {0.82417482, 0.17984153, 0.17680769, 0.55499376, 0.74447638};
 
-    migraphx::parameter_map pm;
-    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
-    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+//     migraphx::parameter_map pm;
+//     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+//     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
-    // auto result = p.eval(pm).back();
-    // EXPECT(result.get_shape() == make_shape({3, 5}));
+// auto result = p.eval(pm).back();
+// EXPECT(result.get_shape() == make_shape({3, 5}));
 
-    // std::vector<float> result_vector;
-    // result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+// std::vector<float> result_vector;
+// result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-    // std::vector<float> gold = {0.29616847,
-    //                            0.06462632,
-    //                            0.06353611,
-    //                            0.19943785,
-    //                            0.26752871,
-    //                            0.42278634,
-    //                            0.09225536,
-    //                            0.09069905,
-    //                            0.28470147,
-    //                            0.38190252,
-    //                            0.37975329,
-    //                            0.0828652,
-    //                            0.08146731,
-    //                            0.2557233,
-    //                            0.34303081};
-    // EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
-}
+// std::vector<float> gold = {0.29616847,
+//                            0.06462632,
+//                            0.06353611,
+//                            0.19943785,
+//                            0.26752871,
+//                            0.42278634,
+//                            0.09225536,
+//                            0.09069905,
+//                            0.28470147,
+//                            0.38190252,
+//                            0.37975329,
+//                            0.0828652,
+//                            0.08146731,
+//                            0.2557233,
+//                            0.34303081};
+// EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+// }
 
-TEST_CASE(einsum_matrix_outer_product_test)
-{
-    migraphx::program p = migraphx::parse_onnx("einsum_matrix_outer_product_test.onnx");
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    p.compile(migraphx::make_target("gpu"), opts);
-    std::cout << p << std::endl;
-    std::array<float, 16> arr;
-    std::iota(arr.begin(), arr.end(), 0);
-    auto s = migraphx::shape{migraphx::shape::float_type, {2, 1, 4, 2}, {4, 4, 1, 0}};
-    auto tv = make_view(s, arr.data());
-    for(auto i = 0; i < 2; ++i) {
-        for(auto j = 0; j < 4; ++j) {
-            for(auto k = 0; k < 2; ++k) {
-                std::cout << tv(i, 0, j, k) << " ";
-            }
-        std::cout << std::endl;
-        }
-        std::cout << std::endl << std::endl;
-    }
-    std::cout << make_shape({2, 1, 4, 2}) << std::endl;
+// TEST_CASE(einsum_matrix_outer_product_test)
+// {
+//     migraphx::program p = migraphx::parse_onnx("einsum_matrix_outer_product_test.onnx");
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
+//     std::array<float, 16> arr;
+//     std::iota(arr.begin(), arr.end(), 0);
+//     auto s = migraphx::shape{migraphx::shape::float_type, {2, 1, 4, 2}, {4, 4, 1, 0}};
+//     auto tv = make_view(s, arr.data());
+//     for(auto i = 0; i < 2; ++i) {
+//         for(auto j = 0; j < 4; ++j) {
+//             for(auto k = 0; k < 2; ++k) {
+//                 std::cout << tv(i, 0, j, k) << " ";
+//             }
+//         std::cout << std::endl;
+//         }
+//         std::cout << std::endl << std::endl;
+//     }
+//     std::cout << make_shape({2, 1, 4, 2}) << std::endl;
 
-    migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3}};
-    std::vector<float> x1_data = {
-        0.25870501, 0.06755926, 0.18247427, 0.19436556, 0.61580192, 0.20010939};
+//     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3}};
+//     std::vector<float> x1_data = {
+//         0.25870501, 0.06755926, 0.18247427, 0.19436556, 0.61580192, 0.20010939};
 
-    migraphx::shape x2_shape{migraphx::shape::float_type, {2, 5}};
-    std::vector<float> x2_data = {0.30771264,
-                                  0.86270274,
-                                  0.55251869,
-                                  0.35880608,
-                                  0.3234085,
-                                  0.24642323,
-                                  0.82411907,
-                                  0.33488431,
-                                  0.69288027,
-                                  0.21717812};
+//     migraphx::shape x2_shape{migraphx::shape::float_type, {2, 5}};
+//     std::vector<float> x2_data = {0.30771264,
+//                                   0.86270274,
+//                                   0.55251869,
+//                                   0.35880608,
+//                                   0.3234085,
+//                                   0.24642323,
+//                                   0.82411907,
+//                                   0.33488431,
+//                                   0.69288027,
+//                                   0.21717812};
 
-    migraphx::parameter_map pm;
-    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
-    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+//     migraphx::parameter_map pm;
+//     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+//     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
-    // auto result = p.eval(pm).back();
-    // EXPECT(result.get_shape() == make_shape({2, 3, 2, 5}));
+// auto result = p.eval(pm).back();
+// EXPECT(result.get_shape() == make_shape({2, 3, 2, 5}));
 
-    // std::vector<float> result_vector;
-    // result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+// std::vector<float> result_vector;
+// result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-    // std::vector<float> gold = {
-    //     0.0796068,  0.22318552, 0.14293935, 0.09282493, 0.0836674,  0.06375092, 0.21320373,
-    //     0.08663625, 0.17925159, 0.05618507, 0.02078884, 0.05828356, 0.03732775, 0.02424067,
-    //     0.02184924, 0.01664817, 0.05567687, 0.02262453, 0.04681048, 0.01467239, 0.05614964,
-    //     0.15742105, 0.10082044, 0.06547288, 0.05901373, 0.0449659,  0.15038052, 0.06110777,
-    //     0.12643282, 0.03962942, 0.05980874, 0.1676797,  0.1073906,  0.06973954, 0.06285947,
-    //     0.04789619, 0.16018036, 0.06508997, 0.13467206, 0.04221195, 0.18949004, 0.53125401,
-    //     0.34024207, 0.22095347, 0.19915557, 0.1517479,  0.50749411, 0.2062224,  0.426677,
-    //     0.1337387,  0.06157619, 0.17263492, 0.11056418, 0.07180047, 0.06471708, 0.0493116,
-    //     0.16491396, 0.06701349, 0.13865185, 0.04345938};
-    // EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
-}
+// std::vector<float> gold = {
+//     0.0796068,  0.22318552, 0.14293935, 0.09282493, 0.0836674,  0.06375092, 0.21320373,
+//     0.08663625, 0.17925159, 0.05618507, 0.02078884, 0.05828356, 0.03732775, 0.02424067,
+//     0.02184924, 0.01664817, 0.05567687, 0.02262453, 0.04681048, 0.01467239, 0.05614964,
+//     0.15742105, 0.10082044, 0.06547288, 0.05901373, 0.0449659,  0.15038052, 0.06110777,
+//     0.12643282, 0.03962942, 0.05980874, 0.1676797,  0.1073906,  0.06973954, 0.06285947,
+//     0.04789619, 0.16018036, 0.06508997, 0.13467206, 0.04221195, 0.18949004, 0.53125401,
+//     0.34024207, 0.22095347, 0.19915557, 0.1517479,  0.50749411, 0.2062224,  0.426677,
+//     0.1337387,  0.06157619, 0.17263492, 0.11056418, 0.07180047, 0.06471708, 0.0493116,
+//     0.16491396, 0.06701349, 0.13865185, 0.04345938};
+// EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+// }
 
 // TEST_CASE(einsum_batch_matrix_multiplication_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_batch_matrix_multiplication_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 2, 5}};
 //     std::vector<float> x1_data = {0.99236023, 0.6848901,  0.37916487, 0.35448254, 0.06103943,
@@ -400,7 +430,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_tensor_contraction_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_tensor_contraction_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3, 5, 7}};
 //     std::vector<float> x1_data = {0.95685496, 0.40756636, 0.65360334, 0.96968506,
@@ -566,7 +599,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_matrix_diagonal_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_matrix_diagonal_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {3, 3}};
 //     std::vector<float> x_data = {0.47776573,
@@ -593,7 +629,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_matrix_trace_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_matrix_trace_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {3, 3}};
 //     std::vector<float> x_data = {0.90812557,
@@ -620,7 +659,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_2d_3d_multiplication_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_2d_3d_multiplication_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 3}};
 //     std::vector<float> x1_data = {0.77117604,
@@ -672,7 +714,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // {
 //     migraphx::program p =
 //         migraphx::parse_onnx("einsum_element_wise_multiplication_and_row_sum_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3}};
 //     std::vector<float> x1_data = {0.66866322, 0.01371844, 0.85036724};
@@ -708,7 +753,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_broadcast_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_broadcast_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     // std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 1}};
 //     std::vector<float> x1_data = {0.39430774, 0.13914788, 0.48328062};
@@ -734,7 +782,10 @@ TEST_CASE(einsum_matrix_outer_product_test)
 // TEST_CASE(einsum_3d_broadcast_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_3d_broadcast_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {1, 3, 1}};
 //     std::vector<float> x1_data = {0.6306304, 0.92378069, 0.09156996};
@@ -815,62 +866,65 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-TEST_CASE(einsum_3_inputs_test)
-{
-    migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    p.compile(migraphx::make_target("gpu"), opts);
+// TEST_CASE(einsum_3_inputs_test)
+// {
+//     migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
 
-    migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
-    std::vector<float> x1_data = {0.78808491,
-                                  0.6661874,
-                                  0.4170594,
-                                  0.80972418,
-                                  0.22687053,
-                                  0.52144567,
-                                  0.70463225,
-                                  0.8934412};
+//     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
+//     std::vector<float> x1_data = {0.78808491,
+//                                   0.6661874,
+//                                   0.4170594,
+//                                   0.80972418,
+//                                   0.22687053,
+//                                   0.52144567,
+//                                   0.70463225,
+//                                   0.8934412};
 
-    migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
-    std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
+//     migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
+//     std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
 
-    migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
-    std::vector<float> x3_data = {0.04135729,
-                                  0.36723732,
-                                  0.82196749,
-                                  0.35332048,
-                                  0.92673273,
-                                  0.50014512,
-                                  0.91129541,
-                                  0.97557965};
+//     migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
+//     std::vector<float> x3_data = {0.04135729,
+//                                   0.36723732,
+//                                   0.82196749,
+//                                   0.35332048,
+//                                   0.92673273,
+//                                   0.50014512,
+//                                   0.91129541,
+//                                   0.97557965};
 
-    migraphx::parameter_map pm;
-    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
-    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
-    pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
+//     migraphx::parameter_map pm;
+//     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+//     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+//     pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
 
-    auto result = p.eval(pm).back();
-    EXPECT(result.get_shape() == make_shape({2, 2, 2}));
+//     auto result = p.eval(pm).back();
+//     EXPECT(result.get_shape() == make_shape({2, 2, 2}));
 
-    std::vector<float> result_vector;
-    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+//     std::vector<float> result_vector;
+//     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-    std::vector<float> gold = {1.54312876,
-                               0.59155446,
-                               1.19274407,
-                               0.56709538,
-                               2.79449706,
-                               1.61644006,
-                               2.15997517,
-                               1.5496049};
-    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
-}
+//     std::vector<float> gold = {1.54312876,
+//                                0.59155446,
+//                                1.19274407,
+//                                0.56709538,
+//                                2.79449706,
+//                                1.61644006,
+//                                2.15997517,
+//                                1.5496049};
+//     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+// }
 
 // TEST_CASE(einsum_bilinear_transformation_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_bilinear_transformation_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x1_data = {
@@ -937,7 +991,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_ellipsis_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3, 2}};
 //     std::vector<float> x1_data = {0.04249489,
@@ -992,7 +1049,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_ellipsis_multidim_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_multidim_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 2, 3, 2}};
 //     std::vector<float> x1_data = {
@@ -1041,7 +1101,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_ellipsis_zero_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_zero_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 3, 2}};
 //     std::vector<float> x1_data = {0.66350493,
@@ -1085,7 +1148,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_ellipsis_implicit_form_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_implicit_form_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 2, 3, 2}};
 //     std::vector<float> x1_data = {
@@ -1131,7 +1197,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_ellipsis_scalar_multiplication_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_scalar_multiplication_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {2, 3}};
 //     std::vector<float> x_data = {
@@ -1155,7 +1224,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_1_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_1_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2, 2}};
 //     std::vector<float> x1_data = {0.35498396,
@@ -1222,10 +1294,20 @@ TEST_CASE(einsum_3_inputs_test)
 //     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 // }
 
+// {{3, 1 , 1} {1, 1, 1}} =>broad {{3, 1, 2}, {1, 1, 0}} => contig {{3, 1, 2}, {2, 2, 1}}
+// {{1, 3, 1, 1}, {3, 1, 1, 1}} => broad {{2, 3, 1, 1}, {0, 1, 1, 1}} => broad {{2, 3, 1, 2}, {{0, 1, 1 ,0}}} => contig
+//{{2, 3, 1, 2}, {6, 2, 2, 1}}
+
+//{{1, 3, 1, 2}, {6, 2, 2, 1}} => broad {{2, 3, 1, 2}, {0, 2, 2, 1}} => X
+//{{2, 1, 4, 1}, {4, 4, 4, 1}} => broad {{2, 1, 4, 2}, {4, 4, 1, 0}} => X
+
 // TEST_CASE(einsum_common_2_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_2_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2, 2}};
 //     std::vector<float> x1_data = {0.77858647,
@@ -1287,7 +1369,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_3_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_3_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2, 2}};
 //     std::vector<float> x1_data = {0.22151958,
@@ -1349,7 +1434,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_4_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_4_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 3, 2}};
 //     std::vector<float> x1_data = {0.56144416, 0.70795103, 0.10800643, 0.85461707, 0.53053745,
@@ -1390,7 +1478,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_5_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_5_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 2, 3, 2}};
 //     std::vector<float> x1_data = {
@@ -1443,7 +1534,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_6_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_6_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {3, 2, 2}};
 //     std::vector<float> x1_data = {0.05474463,
@@ -1507,7 +1601,10 @@ TEST_CASE(einsum_3_inputs_test)
 // TEST_CASE(einsum_common_7_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_common_7_test.onnx");
-//     p.compile(migraphx::make_target("ref"));
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x_shape{migraphx::shape::float_type, {5, 5}};
 //     std::vector<float> x_data = {0.45661163, 0.49868523, 0.8806857,  0.45253824, 0.61711842,

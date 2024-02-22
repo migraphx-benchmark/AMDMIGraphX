@@ -43,23 +43,30 @@ static bool try_compute_shape(instruction_ref ins,
 {
     try
     {
+        std::cout << "TRY COMPUTE SHAPE" << std::endl;
+        ins->inputs().front()->debug_print();
+        std::cout << inputs.front() << std::endl;
+        ins->debug_print(); 
         shape new_shape = ins->get_operator().compute_shape(inputs, mods);
 
         // Cannot tell if a dynamic shape will need to be made contiguous
         if(new_shape.dynamic())
         {
+            std::cout << "DYNAMIC" << std::endl;
             return false;
         }
 
         // If the output shape is a standard shape, no need to try its output
         if(new_shape.standard())
         {
+            std::cout << "STANDARD SHAPE: " << std::endl;
             return true;
         }
 
         // if no changes for the shape, the contiguous can also be removed
         if(new_shape == ins->get_shape())
         {
+            std::cout << "EQUAL" << std::endl;
             return true;
         }
 
@@ -69,6 +76,7 @@ static bool try_compute_shape(instruction_ref ins,
         // output shape is different from the case with the contiguous operator
         if(outputs.empty())
         {
+            std::cout << "EMPTY" << std::endl;
             return false;
         }
 
