@@ -678,7 +678,8 @@ struct find_transpose_contiguous_reshaper_unary
         auto trans_ins     = r.instructions["trans_ins"];
         auto cont_ins      = r.instructions["cont_ins"];
         auto unary_op_name = ins->get_operator().name();
-        auto unary_ins     = m.insert_instruction(cont_ins, make_op(unary_op_name), trans_ins);
+        auto unary_ins     = m.insert_instruction(
+            cont_ins, make_op(unary_op_name, ins->get_operator().to_value()), trans_ins);
         // older cont and reshape are removed by deadcode elimination
         m.replace_instruction(ins, reshaper_ins->get_operator(), unary_ins);
     }
