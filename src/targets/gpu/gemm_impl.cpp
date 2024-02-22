@@ -355,6 +355,21 @@ struct gemm_impl
      */
     auto create_strided_batched_args_common(context& ctx, const std::vector<argument>& args) const
     {
+        std::cout << "TransA: " << transa<< std::endl;
+        std::cout << "TransB: " << transb<< std::endl;
+        std::cout << "n: " << n << std::endl;
+        std::cout << "m: " << m << std::endl;
+        std::cout << "k: " << k << std::endl;
+        std::cout << "alpha: " << alpha << std::endl;
+        std::cout << "beta: " << beta << std::endl;
+        std::cout << "a_stride: " << a_stride << std::endl;
+        std::cout << "b_stride: " << b_stride << std::endl;
+        std::cout << "c_stride: " << c_stride << std::endl;
+        std::cout << "lda: " << lda << std::endl;
+        std::cout << "ldb: " << ldb << std::endl;
+        std::cout << "ldc: " << ldc << std::endl;
+        std::cout << "num_matrices: " << num_matrices << std::endl;
+
         return pack(ctx.get_stream().get_rocblas(),
                     transb ? rocblas_operation_transpose : rocblas_operation_none,
                     transa ? rocblas_operation_transpose : rocblas_operation_none,
@@ -394,6 +409,21 @@ struct gemm_impl
      * */
     auto create_gemm_ex_args_common(context& ctx, const std::vector<argument>& args) const
     {
+        std::cout << "TransA: " << transa<< std::endl;
+        std::cout << "TransB: " << transb<< std::endl;
+        std::cout << "n: " << n << std::endl;
+        std::cout << "m: " << m << std::endl;
+        std::cout << "k: " << k << std::endl;
+        std::cout << "alpha: " << alpha << std::endl;
+        std::cout << "beta: " << beta << std::endl;
+        std::cout << "a_stride: " << a_stride << std::endl;
+        std::cout << "b_stride: " << b_stride << std::endl;
+        std::cout << "c_stride: " << c_stride << std::endl;
+        std::cout << "lda: " << lda << std::endl;
+        std::cout << "ldb: " << ldb << std::endl;
+        std::cout << "ldc: " << ldc << std::endl;
+        std::cout << "num_matrices: " << num_matrices << std::endl;
+
         return pack(ctx.get_stream().get_rocblas(),
                     transb ? rocblas_operation_transpose : rocblas_operation_none,
                     transa ? rocblas_operation_transpose : rocblas_operation_none,

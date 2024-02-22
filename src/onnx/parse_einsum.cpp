@@ -775,6 +775,8 @@ struct parse_einsum : op_parser<parse_einsum>
 
         instruction_ref dot;
         op2sh = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh);
+        // op1sh = info.add_instruction(make_op("contiguous"), op1sh);
+        // op2sh = info.add_instruction(make_op("contiguous"), op2sh);
         dot   = info.add_instruction(make_op("dot"), op1sh, op2sh);
 
         std::vector<int> new_shape;
