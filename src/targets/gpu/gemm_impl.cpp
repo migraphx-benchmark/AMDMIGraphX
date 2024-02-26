@@ -129,7 +129,16 @@ auto rocblas_invoke(F f, Pack p, Ts... xs)
     });
 }
 
-static bool is_transposed(const shape& s) { return s.transposed() and s.strides().back() != 1; }
+static bool is_transposed(const shape& s)
+{
+    if(std::all_of(s.strides().rbegin(), s.strides().rbegin() + 2, [](auto i) { return i == 1; }))
+    {
+        std::cout << "Last two are one" << std::endl;
+        const auto ref_shape = shape{s.type(), s.lens()};
+        return not equal(ref_shape.strides(), s.strides());
+    }
+    return s.transposed() and s.strides().back() != 1;
+}
 
 static rocblas_int get_batch_stride(const shape& s)
 {
@@ -183,8 +192,9 @@ struct gemm_impl
             }
         });
 
-        transa     = is_transposed(input_shapes[0]);
+        transa = is_transposed(input_shapes[0]);
         transb     = is_transposed(input_shapes[1]);
+        // transb     = true;
         auto n_dim = output_shape.lens().size();
         auto dim_0 = n_dim - 2;
         auto dim_1 = n_dim - 1;
@@ -355,8 +365,8 @@ struct gemm_impl
      */
     auto create_strided_batched_args_common(context& ctx, const std::vector<argument>& args) const
     {
-        std::cout << "TransA: " << transa<< std::endl;
-        std::cout << "TransB: " << transb<< std::endl;
+        std::cout << "TransA: " << transa << std::endl;
+        std::cout << "TransB: " << transb << std::endl;
         std::cout << "n: " << n << std::endl;
         std::cout << "m: " << m << std::endl;
         std::cout << "k: " << k << std::endl;
@@ -409,8 +419,8 @@ struct gemm_impl
      * */
     auto create_gemm_ex_args_common(context& ctx, const std::vector<argument>& args) const
     {
-        std::cout << "TransA: " << transa<< std::endl;
-        std::cout << "TransB: " << transb<< std::endl;
+        std::cout << "TransA: " << transa << std::endl;
+        std::cout << "TransB: " << transb << std::endl;
         std::cout << "n: " << n << std::endl;
         std::cout << "m: " << m << std::endl;
         std::cout << "k: " << k << std::endl;

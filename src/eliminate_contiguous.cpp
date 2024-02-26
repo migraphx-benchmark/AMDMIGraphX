@@ -58,9 +58,8 @@ static bool try_compute_shape(instruction_ref ins,
         std::cout << ins->name() << std::endl;
         // Outline of a possible solution, don't think AMD will like it
         if(contains(ins->name(), "gemm") and
-           std::any_of(inputs.cbegin(), inputs.cend(), [](const auto& sh) {
-               return contains(sh.strides(), 0);
-           }))
+           std::any_of(
+               inputs.cbegin(), inputs.cend(), [](const auto& sh) { return sh.broadcasted(); }))
         {
             return false;
         }
