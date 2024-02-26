@@ -1113,3 +1113,66 @@ struct parse_einsum : op_parser<parse_einsum>
 } // namespace onnx
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx
+
+// einsum_test.cpp:einsum_3d_opposite_broadcast_test graph without eliminate_contiguous applied
+//
+// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
+// @1 = hip::hip_allocate_memory[shape=int8_type, {224}, {1},id=main:scratch] -> int8_type, {224}, {1}, target_id=0
+// @2 = load[offset=32,end=56](@1) -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// x1 = @param:x1 -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// @5 = load[offset=64,end=96](@1) -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// x2 = @param:x2 -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// @8 = load[offset=0,end=32](@1) -> float_type, {2, 1, 4, 1}, {4, 4, 1, 1}, target_id=0
+// @9 = unsqueeze[axes={1},steps={}](@7) -> float_type, {2, 1, 1, 4}, {4, 4, 4, 1}, target_id=0
+// @10 = transpose[permutation={0, 1, 3, 2}](@9) -> float_type, {2, 1, 4, 1}, {4, 4, 1, 4}, target_id=0
+// @11 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@10,@8) -> float_type, {2, 1, 4, 1}, {4, 4, 1, 1}, target_id=0
+// @12 = load[offset=96,end=144](@1) -> float_type, {2, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @13 = unsqueeze[axes={2},steps={}](@4) -> float_type, {1, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @14 = multibroadcast[out_lens={2, 3, 1, 2},out_dyn_dims={}](@13) -> float_type, {2, 3, 1, 2}, {0, 2, 2, 1}, target_id=0
+// @15 = gpu::code_object[code_object=4176,symbol_name=contiguous_kernel,global=6,local=1024,](@14,@12) -> float_type, {2, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @16 = load[offset=48,end=96](@1) -> float_type, {2, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @17 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=6,local=1024,](@15,@16) -> float_type, {2, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @18 = load[offset=160,end=224](@1) -> float_type, {2, 1, 4, 2}, {8, 8, 2, 1}, target_id=0
+// @19 = multibroadcast[out_lens={2, 1, 4, 2},out_dyn_dims={}](@11) -> float_type, {2, 1, 4, 2}, {4, 4, 1, 0}, target_id=0
+// @20 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=8,local=1024,](@19,@18) -> float_type, {2, 1, 4, 2}, {8, 8, 2, 1}, target_id=0
+// @21 = load[offset=96,end=160](@1) -> float_type, {2, 1, 4, 2}, {8, 8, 2, 1}, target_id=0
+// @22 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=8,local=1024,](@20,@21) -> float_type, {2, 1, 4, 2}, {8, 8, 2, 1}, target_id=0
+// @23 = reshape_lazy[dims={2, -1, 2}](@17) -> float_type, {2, 3, 2}, {6, 2, 1}, target_id=0
+// @24 = load[offset=0,end=48](@1) -> float_type, {2, 3, 2}, {6, 2, 1}, target_id=0
+// @25 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=6,local=1024,](@23,@24) -> float_type, {2, 3, 2}, {6, 2, 1}, target_id=0
+// @26 = load[offset=160,end=224](@1) -> float_type, {2, 4, 2}, {8, 2, 1}, target_id=0
+// @27 = reshape_lazy[dims={2, -1, 2}](@22) -> float_type, {2, 4, 2}, {8, 2, 1}, target_id=0
+// @28 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=8,local=1024,](@27,@26) -> float_type, {2, 4, 2}, {8, 2, 1}, target_id=0
+// @29 = load[offset=48,end=112](@1) -> float_type, {2, 2, 4}, {8, 4, 1}, target_id=0
+// @30 = transpose[permutation={0, 2, 1}](@28) -> float_type, {2, 2, 4}, {8, 1, 2}, target_id=0
+// @31 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=16,local=1024,](@30,@29) -> float_type, {2, 2, 4}, {8, 4, 1}, target_id=0
+// @32 = load[offset=112,end=208](@1) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @33 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@25,@31,@32) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @34 = hip::copy_from_gpu(@33) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @35 = hip::sync_stream(@34) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @36 = @return(@35), target_id=0
+
+// The graph after eliminate_contiguous is applied
+// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
+// @1 = hip::hip_allocate_memory[shape=int8_type, {160}, {1},id=main:scratch] -> int8_type, {160}, {1}, target_id=0
+// @2 = load[offset=96,end=128](@1) -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// x2 = @param:x2 -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// @4 = hip::copy_to_gpu(x2,@2) -> float_type, {2, 1, 4}, {4, 4, 1}, target_id=0
+// @5 = load[offset=128,end=152](@1) -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// x1 = @param:x1 -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// @7 = hip::copy_to_gpu(x1,@5) -> float_type, {1, 3, 2}, {6, 2, 1}, target_id=0
+// @8 = load[offset=0,end=96](@1) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @9 = unsqueeze[axes={2},steps={}](@7) -> float_type, {1, 3, 1, 2}, {6, 2, 2, 1}, target_id=0
+// @10 = multibroadcast[out_lens={2, 3, 1, 2},out_dyn_dims={}](@9) -> float_type, {2, 3, 1, 2}, {0, 2, 2, 1}, target_id=0
+// @11 = reshape_lazy[dims={2, -1, 2}](@10) -> float_type, {2, 3, 2}, {0, 2, 1}, target_id=0
+// @12 = unsqueeze[axes={1},steps={}](@4) -> float_type, {2, 1, 1, 4}, {4, 4, 4, 1}, target_id=0
+// @13 = transpose[permutation={0, 1, 3, 2}](@12) -> float_type, {2, 1, 4, 1}, {4, 4, 1, 4}, target_id=0
+// @14 = multibroadcast[out_lens={2, 1, 4, 2},out_dyn_dims={}](@13) -> float_type, {2, 1, 4, 2}, {4, 4, 1, 0}, target_id=0
+// @15 = reshape_lazy[dims={2, -1, 2}](@14) -> float_type, {2, 4, 2}, {4, 1, 0}, target_id=0
+// @16 = transpose[permutation={0, 2, 1}](@15) -> float_type, {2, 2, 4}, {4, 0, 1}, target_id=0
+// @17 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@11,@16,@8) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @18 = hip::copy_from_gpu(@17) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @19 = hip::sync_stream(@18) -> float_type, {2, 3, 4}, {12, 4, 1}, target_id=0
+// @20 = @return(@19), target_id=0

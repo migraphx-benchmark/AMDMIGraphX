@@ -866,12 +866,26 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
+TEST_CASE(bogged_dot_shape)
+{
+    auto dot = migraphx::make_op("dot");
+    auto sh1 = migraphx::shape{migraphx::shape::float_type, {2, 2, 2}, {4, 2, 1}};
+    auto sh2 = sh1;
+    // Returns {2, 2, 2}, {4, 2, 1}
+    std::cout << dot.compute_shape({sh1, sh2}) << std::endl;
+
+    sh2 = migraphx::shape{migraphx::shape::float_type, {2, 2, 2}, {0, 2, 1}};
+    // Also Returns {2, 2, 2}, {4, 2, 1}
+    std::cout << dot.compute_shape({sh1, sh2}) << std::endl;
+}
+
 // TEST_CASE(einsum_3_inputs_test)
 // {
 //     migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
 //     migraphx::compile_options opts;
 //     opts.offload_copy = true;
 //     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << p << std::endl;
 
 //     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
 //     std::vector<float> x1_data = {0.78808491,
@@ -1196,7 +1210,8 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
 
 // TEST_CASE(einsum_ellipsis_scalar_multiplication_test)
 // {
-//     migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_scalar_multiplication_test.onnx");
+//     migraphx::program p =
+//     migraphx::parse_onnx("einsum_ellipsis_scalar_multiplication_test.onnx");
 //     migraphx::compile_options opts;
 //     opts.offload_copy = true;
 //     p.compile(migraphx::make_target("gpu"), opts);
@@ -1295,7 +1310,8 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
 // }
 
 // {{3, 1 , 1} {1, 1, 1}} =>broad {{3, 1, 2}, {1, 1, 0}} => contig {{3, 1, 2}, {2, 2, 1}}
-// {{1, 3, 1, 1}, {3, 1, 1, 1}} => broad {{2, 3, 1, 1}, {0, 1, 1, 1}} => broad {{2, 3, 1, 2}, {{0, 1, 1 ,0}}} => contig
+// {{1, 3, 1, 1}, {3, 1, 1, 1}} => broad {{2, 3, 1, 1}, {0, 1, 1, 1}} => broad {{2, 3, 1, 2}, {{0,
+// 1, 1 ,0}}} => contig
 //{{2, 3, 1, 2}, {6, 2, 2, 1}}
 
 //{{1, 3, 1, 2}, {6, 2, 2, 1}} => broad {{2, 3, 1, 2}, {0, 2, 2, 1}} => X

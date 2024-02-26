@@ -38,16 +38,37 @@ inline namespace MIGRAPHX_INLINE_NS {
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_TRACE_ELIMINATE_CONTIGUOUS)
 
 static bool try_compute_shape(instruction_ref ins,
+                              const std::string& op_name,
                               const std::vector<shape>& inputs,
-                              const std::vector<module_ref>& mods)
+                              const std::vector<module_ref>& mods,
+                              module& m)
 {
     try
     {
         std::cout << "TRY COMPUTE SHAPE" << std::endl;
-        ins->inputs().front()->debug_print();
-        std::cout << inputs.front() << std::endl;
-        ins->debug_print(); 
+        for(auto& input : ins->inputs())
+        {
+            m.debug_print(input);
+        }
+        std::cout << "INS: " << std::endl;
+        m.debug_print(ins);
+        std::cout << to_string_range(inputs) << std::endl;
         shape new_shape = ins->get_operator().compute_shape(inputs, mods);
+        std::cout << new_shape << std::endl;
+        std::cout << ins->name() << std::endl;
+        // Outline of a possible solution, don't think AMD will like it
+        if(contains(ins->name(), "gemm") and
+           std::any_of(inputs.cbegin(), inputs.cend(), [](const auto& sh) {
+               return contains(sh.strides(), 0);
+           }))
+        {
+            return false;
+        }
+
+        // if(ins->name() == op_name)
+        // {
+        //     return false;
+        // }
 
         // Cannot tell if a dynamic shape will need to be made contiguous
         if(new_shape.dynamic())
@@ -88,7 +109,7 @@ static bool try_compute_shape(instruction_ref ins,
                 return (arg == ins) ? new_shape : arg->get_shape();
             });
 
-            if(not try_compute_shape(output, input_shapes, output->module_inputs()))
+            if(not try_compute_shape(output, op_name, input_shapes, output->module_inputs(), m))
             {
                 return false;
             }
@@ -115,11 +136,13 @@ static bool try_compute_shape(instruction_ref ins,
 }
 
 static bool try_compute_shape(instruction_ref ins,
+                              const std::string& op_name,
                               const std::vector<instruction_ref>& args,
-                              const std::vector<module_ref>& mods)
+                              const std::vector<module_ref>& mods,
+                              module& m)
 {
     auto inputs = to_shapes(args);
-    return try_compute_shape(ins, inputs, mods);
+    return try_compute_shape(ins, op_name, inputs, mods, m);
 }
 
 template <class F>
@@ -149,14 +172,21 @@ static void remove_contiguous(const std::string& op_name, module& m, F f)
         {
             if(arg->name() != op_name)
                 continue;
+            auto prev = arg->inputs().front();
+            // if(contains(prev->get_shape().strides(), 0))
+            //     continue;
             if(enabled(MIGRAPHX_TRACE_ELIMINATE_CONTIGUOUS{}))
             {
                 std::cout << "eliminate_contiguous: ";
                 m.debug_print(ins);
             }
-            auto prev = arg->inputs().front();
             replace(new_args, arg, prev);
-            if(try_compute_shape(ins, new_args, mod_args))
+            std::cout << "oooooooooooooooooooooooooooooooooooo" << std::endl;
+            m.debug_print(prev);
+            m.debug_print(arg);
+            m.debug_print(ins);
+            std::cout << "-------------------------------------" << std::endl;
+            if(try_compute_shape(ins, op_name, new_args, mod_args, m))
             {
                 instruction::replace_argument(ins, arg, prev);
             }
