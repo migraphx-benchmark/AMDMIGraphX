@@ -416,6 +416,10 @@ struct parse_einsum : op_parser<parse_einsum>
 
         if(set_intersection(axes, left).size() == 0 and set_intersection(axes, right).size() == 0)
         {
+            // all_axes / (axes U common_axes)
+            // (left U right U axes) / (axes U common_axes)
+            // (left U right) / common_axes
+            // (left U right) / (left ^ right)
             std::vector<int> all_axes = set_union(set_union(left, right), axes);
 
             // Labels that are both in left and right, and not in all_axes
@@ -485,38 +489,55 @@ struct parse_einsum : op_parser<parse_einsum>
             }
 
             // Transpose
-            std::vector<std::tuple<int, int>> i_axes;
-            for(int i = 0; i < ndim; ++i)
-            {
-                int first;
-                // Label present in both terms and somewhere in the remainder of equation
-                if(contains(common_axes, i))
-                {
-                    first = -1;
-                }
-                // Label present ONLY in current two terms
-                else if(contains(axes, i))
-                {
-                    first = 1;
-                }
-                // Label present only in remainder of equation
-                else
-                {
-                    first = 0;
-                }
-                i_axes.push_back({first, i});
-            }
+            std::vector<int> fuck_them_axes = set_symmetric_difference(left, right);
+            // std::vector<std::tuple<int, int>> i_axes;
+            // for(int i = 0; i < ndim; ++i)
+            // {
+            //     int first;
+            //     // Label present in both terms and somewhere in the remainder of equation
+            //     if(contains(common_axes, i))
+            //     {
+            //         first = -1;
+            //     }
+            //     // Label present ONLY in current two terms
+            //     else if(contains(axes, i))
+            //     {
+            //         first = 1;
+            //     }
+            //     // Label present only in remainder of equation
+            //     // all_axes / (axes U common_axes)
+            //     else
+            //     {
+            //         first = 0;
+            //     }
+            //     i_axes.push_back({first, i});
+            // }
 
-            std::sort(i_axes.begin(), i_axes.end(), [](auto lhs, auto rhs) {
-                return std::get<0>(lhs) < std::get<0>(rhs);
-            });
+            // std::sort(i_axes.begin(), i_axes.end(), [](auto lhs, auto rhs) {
+            //     return std::get<0>(lhs) < std::get<0>(rhs);
+            // });
 
             // Label permutation in accordance to their category{-1, 0, 1}
-            std::vector<int> perm;
-            for(auto _ : i_axes)
-            {
-                perm.push_back(std::get<1>(_));
-            }
+            std::cout << "common_axes: " << to_string_range(common_axes) << std::endl;
+            std::cout << "fuck_them_axes: " << to_string_range(fuck_them_axes) << std::endl;
+            std::cout << "axes: " << to_string_range(axes) << std::endl;
+            std::vector<int> perm           = join_vectors(common_axes, fuck_them_axes, axes);
+            std::vector<int> perm_for_left  = join_vectors(common_axes, fuck_them_axes, axes);
+            std::vector<int> perm_for_right = join_vectors(common_axes, axes, fuck_them_axes);
+            // for(auto _ : i_axes)
+            // {
+            //     perm.push_back(std::get<1>(_));
+            // }
+
+            // std::vector<int> perm_for_left = perm;
+            // std::vector<int> perm_for_right;
+            // std::sort(i_axes.begin() + common_axes.size(), i_axes.end(), [](auto lhs, auto rhs) {
+            //     return std::get<0>(lhs) > std::get<0>(rhs);
+            // });
+            // for(auto t : i_axes)
+            // {
+            //     perm_for_right.push_back(std::get<1>(_));
+            // }
 
             // Label permutation in accordance to their category that are surely present in the left
             // term
@@ -526,6 +547,14 @@ struct parse_einsum : op_parser<parse_einsum>
                 if(std::find(left.begin(), left.end(), perm[i]) != left.end())
                 {
                     perm_left.push_back(i);
+                }
+            }
+            std::vector<int> perm_left_two;
+            for(int i = 0; i < perm_for_left.size(); ++i)
+            {
+                if(contains(left, perm_for_left[i]))
+                {
+                    perm_left_two.push_back(i);
                 }
             }
 
@@ -540,6 +569,15 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
+            std::vector<int> perm_right_two;
+            for(int i = 0; i < perm_for_right.size(); ++i)
+            {
+                if(contains(right, perm_for_right[i]))
+                {
+                    perm_right_two.push_back(i);
+                }
+            }
+
 #if DEBUG_PRINT == 1
             std::cout << "Perm: " << to_string_range(perm) << std::endl;
             std::cout << "Perm_left: " << to_string_range(perm_left) << std::endl;
@@ -547,26 +585,39 @@ struct parse_einsum : op_parser<parse_einsum>
 #endif
 
             // Transpose so labels are ordered according to category
-            if(!is_transpose_identity(perm))
+            std::cout << "perm_for_left: " << to_string_range(perm_for_left) << std::endl;
+            std::cout << "perm_for_right: " << to_string_range(perm_for_right) << std::endl;
+            std::cout << "perm_left_two: " << to_string_range(perm_left_two) << std::endl;
+            std::cout << "perm_right_two: " << to_string_range(perm_right_two) << std::endl;
+            print_matrix(rows);
+            std::cout << "------------------------------" << std::endl;
+            if(!is_transpose_identity(perm_for_left))
             {
-                op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
+                op1 = info.add_instruction(make_op("transpose", {{"permutation", perm_for_left}}),
+                                           op1);
                 // compute output row
                 auto cpy = rows[0];
                 int i    = 0;
-                for(int p : perm)
+                for(int p : perm_for_left)
                 {
                     rows[0][i++] = cpy[p];
                 }
+            }
 
-                op2 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op2);
+            if(!is_transpose_identity(perm_for_right))
+            {
+                op2 = info.add_instruction(make_op("transpose", {{"permutation", perm_for_right}}),
+                                           op2);
                 // compute output row
-                cpy = rows[1];
-                i   = 0;
-                for(int p : perm)
+                auto cpy = rows[1];
+                auto i   = 0;
+                for(int p : perm_for_right)
                 {
                     rows[1][i++] = cpy[p];
                 }
             }
+            print_matrix(rows);
+            std::cout << "------------------------------" << std::endl;
 
 #if DEBUG_PRINT == 1
             std::cout << "Rows after transpose before reshape:\n";
@@ -575,14 +626,18 @@ struct parse_einsum : op_parser<parse_einsum>
 
             std::vector<int> new_axes(axes.size());
             std::iota(new_axes.begin(), new_axes.end(), ndim - axes.size());
+            std::vector<int> new_axes_left(axes.size());
+            std::iota(new_axes_left.begin(), new_axes_left.end(), ndim - axes.size());
+            std::vector<int> new_axes_right(axes.size());
+            std::iota(new_axes_right.begin(), new_axes_right.end(), common_axes.size());
+            std::cout << "new_axes_left: " << to_string_range(new_axes_left) << std::endl;
+            std::cout << "new_axes_right: " << to_string_range(new_axes_right) << std::endl;
 
-            // common_axes -> labels present in both terms and remainder of eq(label category -1)
+            // common_axes -> labels present in both terms and remainder of eq(label category
+            // -1)
             std::vector<int> new_common_axes(common_axes.size());
             std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
 
-            // Labels that are not in left or right
-            // common_axes is the intersection of left and right, if a label is in neither of
-            // these, surely it cannot be in common_axes, making the check superfluous?
             std::vector<int> not_in_both;
             for(int i = 0; i < ndim; ++i)
             {
@@ -599,8 +654,15 @@ struct parse_einsum : op_parser<parse_einsum>
             std::cout << "not_in_both: " << to_string_range(not_in_both) << std::endl;
 #endif
 
-            instruction_ref op = batch_dot(
-                info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
+            instruction_ref op = batch_dot(info,
+                                           rows,
+                                           op1,
+                                           op2,
+                                           new_common_axes,
+                                           new_axes_left,
+                                           new_axes_right,
+                                           perm_left_two,
+                                           perm_right_two);
 
             // Transpose again
             std::vector<int> ordered_axes = common_axes;
@@ -657,11 +719,13 @@ struct parse_einsum : op_parser<parse_einsum>
                               instruction_ref op1,
                               instruction_ref op2,
                               std::vector<int> batch_axes,
-                              std::vector<int> keep_axes,
-                              std::vector<int> sum_axes,
+                              std::vector<int> sum_axes_left,
+                              std::vector<int> sum_axes_right,
                               std::vector<int> left,
                               std::vector<int> right) const
     {
+        print_matrix(rows);
+        std::cout << "-----------------------" << std::endl;
         if(op1->get_shape().ndim() != op2->get_shape().ndim())
         {
             MIGRAPHX_THROW("batch_dot input tensors need to have the same number of dimensions");
@@ -686,7 +750,44 @@ struct parse_einsum : op_parser<parse_einsum>
         //     if(rows[1][i] != -1)
         //         right_term.push_back(i);
         // auto common_labels = set_intersection(left_term, right_term);
-        auto common_labels = set_union(batch_axes, sum_axes);
+        // batch_axes, fuck_them_axes, sum_axes
+        // batch_axes, sum_axes, fuck_them_axes
+        std::vector<std::size_t> op1_shape = op1->get_shape().lens();
+        std::vector<std::size_t> op2_shape = op2->get_shape().lens();
+
+        bool bc_left = false, bc_right = false;
+        auto f = [&](int ll, int lr) {
+            if(op1_shape[ll] == 1 and op2_shape[lr] == 1)
+                return;
+            if(op1_shape[ll] == 1)
+            {
+                bc_left       = true;
+                op1_shape[ll] = op2_shape[lr];
+            }
+            if(op2_shape[lr] == 1)
+            {
+                bc_right      = true;
+                op2_shape[lr] = op1_shape[ll];
+            }
+        };
+
+        for(auto l : batch_axes)
+        {
+            f(l, l);
+        }
+        for(int i = 0; i < sum_axes_left.size(); ++i)
+        {
+            f(sum_axes_left[i], sum_axes_right[i]);
+        }
+        if(bc_left)
+        {
+            op1 = info.add_instruction(make_op("multibroadcast", {{"out_lens", op1_shape}}), op1);
+        }
+        if(bc_right)
+        {
+
+            op2 = info.add_instruction(make_op("multibroadcast", {{"out_lens", op2_shape}}), op2);
+        }
 
 #if DEBUG_PRINT == 1
         std::cout << "Left term: " << migraphx::to_string_range(left_term) << std::endl;
@@ -694,29 +795,26 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << "Common labels: " << migraphx::to_string_range(common_labels) << std::endl;
 #endif
 
-        std::vector<std::size_t> op1_shape = op1->get_shape().lens();
-        std::vector<std::size_t> op2_shape = op2->get_shape().lens();
-
-        for(auto l : common_labels)
-        {
-#if DEBUG_PRINT == 1
-            std::cout << "Common label: " << l << std::endl;
-#endif
-            if(op1_shape[l] == 1 and op2_shape[l] == 1)
-                continue;
-            if(op1_shape[l] == 1)
-            {
-                op1_shape[l] = op2_shape[l];
-                op1 =
-                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op1_shape}}), op1);
-            }
-            if(op2_shape[l] == 1)
-            {
-                op2_shape[l] = op1_shape[l];
-                op2 =
-                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op2_shape}}), op2);
-            }
-        }
+        //         auto common_labels = set_union(batch_axes, sum_axes);
+        //         for(auto l : common_labels)
+        //         {
+        //             if(op1_shape[l] == 1 and op2_shape[l] == 1)
+        //                 continue;
+        //             if(op1_shape[l] == 1)
+        //             {
+        //                 op1_shape[l] = op2_shape[l];
+        //                 op1 =
+        //                     info.add_instruction(make_op("multibroadcast", {{"out_lens",
+        //                     op1_shape}}), op1);
+        //             }
+        //             if(op2_shape[l] == 1)
+        //             {
+        //                 op2_shape[l] = op1_shape[l];
+        //                 op2 =
+        //                     info.add_instruction(make_op("multibroadcast", {{"out_lens",
+        //                     op2_shape}}), op2);
+        //             }
+        //         }
 
         int dim0  = 1;
         int dim0b = 1;
@@ -729,10 +827,14 @@ struct parse_einsum : op_parser<parse_einsum>
         int dimb = -1;
 
         int dim1 = 1;
-        int dim2 = 1;
-        for(int i : sum_axes)
+        // Split in two for left and right
+        for(int i : sum_axes_left)
         {
             dim1 *= op1_shape[i];
+        }
+        int dim2 = 1;
+        for(int i : sum_axes_right)
+        {
             dim2 *= op2_shape[i];
         }
 
@@ -740,13 +842,16 @@ struct parse_einsum : op_parser<parse_einsum>
             info.add_instruction(make_op("reshape", {{"dims", {dim0, dimb, dim1}}}), op1);
 
         instruction_ref op2sh =
-            info.add_instruction(make_op("reshape", {{"dims", {dim0b, dimb, dim2}}}), op2);
+            info.add_instruction(make_op("reshape", {{"dims", {dim0b, dim2, dimb}}}), op2);
 
         instruction_ref dot;
-        op2sh = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh);
+        // op2sh = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh);
         // op1sh = info.add_instruction(make_op("contiguous"), op1sh);
         // op2sh = info.add_instruction(make_op("contiguous"), op2sh);
+        std::cout << "OP1SH: " << op1sh->get_shape() << std::endl;
+        std::cout << "OP2SH: " << op2sh->get_shape() << std::endl;
         dot = info.add_instruction(make_op("dot"), op1sh, op2sh);
+        std::cout << "DOT: " << dot->get_shape() << std::endl;
 
         std::vector<int> new_shape;
         for(int i : batch_axes)
@@ -775,17 +880,37 @@ struct parse_einsum : op_parser<parse_einsum>
 
         instruction_ref op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
         // compute output row
-        std::transform(
-            rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), [](int l, int r) {
-                return std::max(l, r);
-            });
-        for(int a : sum_axes)
+        int ndim = rows[0].size();
+        print_matrix(rows);
+        std::cout << "----------------------" << std::endl;
+        for(auto i = 0; i < batch_axes.size(); ++i)
+        {
+            rows[1][i] = std::max(rows[0][i], rows[1][i]);
+        }
+        for(auto i = batch_axes.size(); i < ndim - sum_axes_left.size(); ++i)
+        {
+            rows[1][i] = std::max(rows[0][i], rows[1][i + sum_axes_left.size()]);
+        }
+        for(auto i = ndim - sum_axes_left.size(); i < ndim; ++i)
+        {
+            rows[1][i] = std::max(rows[0][i],
+                                  rows[1][i - (ndim - (sum_axes_left.size() + batch_axes.size()))]);
+        }
+        // std::transform(
+        //     rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), [](int l, int r) {
+        //         return std::max(l, r);
+        //     });
+        print_matrix(rows);
+        std::cout << "----------------------" << std::endl;
+        for(int a : sum_axes_left)
         {
             if(std::find(right.begin(), right.end(), a) == right.end())
             {
                 rows[1][a] = -1;
             }
         }
+
+        print_matrix(rows);
 
         return op;
     }
@@ -847,6 +972,27 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> ret;
         std::set_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+        return ret;
+    }
+
+    std::vector<int> set_symmetric_difference(std::vector<int> lhs, std::vector<int> rhs) const
+    {
+        std::vector<int> ret;
+        std::set_symmetric_difference(
+            lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+        return ret;
+    }
+
+    template <typename T>
+    std::vector<T>
+    join_vectors(const std::vector<T>& l, const std::vector<T>& m, const std::vector<T>& r) const
+    {
+        std::vector<T> ret;
+        ret.reserve(l.size() + m.size() + r.size());
+        ret.insert(ret.end(), l.begin(), l.end());
+        ret.insert(ret.end(), m.begin(), m.end());
+        ret.insert(ret.end(), r.begin(), r.end());
+
         return ret;
     }
 

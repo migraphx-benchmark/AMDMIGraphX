@@ -131,12 +131,11 @@ auto rocblas_invoke(F f, Pack p, Ts... xs)
 
 static bool is_transposed(const shape& s)
 {
-    if(std::all_of(s.strides().rbegin(), s.strides().rbegin() + 2, [](auto i) { return i == 1; }))
-    {
-        std::cout << "Last two are one" << std::endl;
-        const auto ref_shape = shape{s.type(), s.lens()};
-        return not equal(ref_shape.strides(), s.strides());
-    }
+    // if(std::all_of(s.strides().rbegin(), s.strides().rbegin() + 2, [](auto i) { return i == 1; }))
+    // {
+    //     std::cout << "Last two are one" << std::endl;
+    //     return not equal(s.as_standard().strides(), s.strides());
+    // }
     return s.transposed() and s.strides().back() != 1;
 }
 

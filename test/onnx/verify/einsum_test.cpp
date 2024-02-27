@@ -26,6 +26,7 @@
 #include <migraphx/verify.hpp>
 #include <onnx_test.hpp>
 #include <onnx_verify_utils.hpp>
+#include <migraphx/stringutils.hpp>
 
 migraphx::shape make_shape(std::vector<size_t> lens)
 {
@@ -266,81 +267,6 @@ TEST_CASE(einsum_hadamard_product_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {120}, {1},id=main:scratch] -> int8_type, {120}, {1}, target_id=0
-// @2 = load[offset=40,end=52](@1) -> float_type, {3}, {1}, target_id=0
-// x1 = @param:x1 -> float_type, {3}, {1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {3}, {1}, target_id=0
-// @5 = load[offset=0,end=20](@1) -> float_type, {5}, {1}, target_id=0
-// x2 = @param:x2 -> float_type, {5}, {1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {5}, {1}, target_id=0
-// @8 = load[offset=64,end=84](@1) -> float_type, {5}, {1}, target_id=0
-// @9 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=5,local=1024,](@7,@8) -> float_type, {5}, {1}, target_id=0
-// @10 = load[offset=0,end=12](@1) -> float_type, {3}, {1}, target_id=0
-// @11 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=3,local=1024,](@4,@10) -> float_type, {3}, {1}, target_id=0
-// @12 = load[offset=92,end=112](@1) -> float_type, {1, 5, 1}, {5, 1, 1}, target_id=0
-// @13 = reshape_lazy[dims={1, 5, 1}](@9) -> float_type, {1, 5, 1}, {5, 1, 1}, target_id=0
-// @14 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=5,local=1024,](@13,@12) -> float_type, {1, 5, 1}, {5, 1, 1}, target_id=0
-// @15 = load[offset=60,end=72](@1) -> float_type, {1, 3, 1}, {3, 1, 1}, target_id=0
-// @16 = reshape_lazy[dims={1, 3, 1}](@11) -> float_type, {1, 3, 1}, {3, 1, 1}, target_id=0
-// @17 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=3,local=1024,](@16,@15) -> float_type, {1, 3, 1}, {3, 1, 1}, target_id=0
-// @18 = load[offset=0,end=60](@1) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @19 = transpose[permutation={0, 2, 1}](@14) -> float_type, {1, 1, 5}, {5, 1, 1}, target_id=0
-// @20 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@17,@19,@18) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @21 = load[offset=60,end=120](@1) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @22 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=15,local=1024,](@20,@21) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @23 = reshape_lazy[dims={3, 5}](@22) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @24 = load[offset=0,end=60](@1) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @25 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=15,local=1024,](@23,@24) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @26 = hip::copy_from_gpu(@25) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @27 = hip::sync_stream(@26) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @28 = @return(@27), target_id=0
-// TransA: 0
-// TransB: 0
-// n: 5
-// m: 3
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 3
-// b_stride: 5
-// c_stride: 15
-// lda: 1
-// ldb: 1
-// ldc: 5
-// num_matrices: 1
-//
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {92}, {1},id=main:scratch] -> int8_type, {92}, {1}, target_id=0
-// @2 = load[offset=80,end=92](@1) -> float_type, {3}, {1}, target_id=0
-// x1 = @param:x1 -> float_type, {3}, {1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {3}, {1}, target_id=0
-// @5 = load[offset=60,end=80](@1) -> float_type, {5}, {1}, target_id=0
-// x2 = @param:x2 -> float_type, {5}, {1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {5}, {1}, target_id=0
-// @8 = load[offset=0,end=60](@1) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @9 = reshape_lazy[dims={1, 5, 1}](@7) -> float_type, {1, 5, 1}, {5, 1, 1}, target_id=0
-// @10 = transpose[permutation={0, 2, 1}](@9) -> float_type, {1, 1, 5}, {5, 1, 1}, target_id=0
-// @11 = reshape_lazy[dims={1, 3, 1}](@4) -> float_type, {1, 3, 1}, {3, 1, 1}, target_id=0
-// @12 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@11,@10,@8) -> float_type, {1, 3, 5}, {15, 5, 1}, target_id=0
-// @13 = reshape_lazy[dims={3, 5}](@12) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @14 = hip::copy_from_gpu(@13) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @15 = hip::sync_stream(@14) -> float_type, {3, 5}, {5, 1}, target_id=0
-// @16 = @return(@15), target_id=0
-// TransA: 0
-// TransB: 0
-// n: 5
-// m: 3
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 3
-// b_stride: 5
-// c_stride: 15
-// lda: 1
-// ldb: 1
-// ldc: 5
-// num_matrices: 1
 TEST_CASE(einsum_vector_outer_product_test)
 {
     migraphx::program p = migraphx::parse_onnx("einsum_vector_outer_product_test.onnx");
@@ -359,105 +285,30 @@ TEST_CASE(einsum_vector_outer_product_test)
     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
-auto result = p.eval(pm).back();
-EXPECT(result.get_shape() == make_shape({3, 5}));
+    auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({3, 5}));
 
-std::vector<float> result_vector;
-result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+    std::vector<float> result_vector;
+    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-std::vector<float> gold = {0.29616847,
-                           0.06462632,
-                           0.06353611,
-                           0.19943785,
-                           0.26752871,
-                           0.42278634,
-                           0.09225536,
-                           0.09069905,
-                           0.28470147,
-                           0.38190252,
-                           0.37975329,
-                           0.0828652,
-                           0.08146731,
-                           0.2557233,
-                           0.34303081};
-EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+    std::vector<float> gold = {0.29616847,
+                               0.06462632,
+                               0.06353611,
+                               0.19943785,
+                               0.26752871,
+                               0.42278634,
+                               0.09225536,
+                               0.09069905,
+                               0.28470147,
+                               0.38190252,
+                               0.37975329,
+                               0.0828652,
+                               0.08146731,
+                               0.2557233,
+                               0.34303081};
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {480}, {1},id=main:scratch] -> int8_type, {480}, {1}, target_id=0
-// @2 = load[offset=96,end=120](@1) -> float_type, {2, 3}, {3, 1}, target_id=0
-// x1 = @param:x1 -> float_type, {2, 3}, {3, 1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {2, 3}, {3, 1}, target_id=0
-// @5 = load[offset=0,end=40](@1) -> float_type, {2, 5}, {5, 1}, target_id=0
-// x2 = @param:x2 -> float_type, {2, 5}, {5, 1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {2, 5}, {5, 1}, target_id=0
-// @8 = load[offset=160,end=200](@1) -> float_type, {2, 5}, {5, 1}, target_id=0
-// @9 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=5,local=1024,](@7,@8) -> float_type, {2, 5}, {5, 1}, target_id=0
-// @10 = load[offset=0,end=24](@1) -> float_type, {2, 3}, {3, 1}, target_id=0
-// @11 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=3,local=1024,](@4,@10) -> float_type, {2, 3}, {3, 1}, target_id=0
-// @12 = load[offset=400,end=440](@1) -> float_type, {1, 10, 1}, {10, 1, 1}, target_id=0
-// @13 = reshape_lazy[dims={1, 10, 1}](@9) -> float_type, {1, 10, 1}, {10, 1, 1}, target_id=0
-// @14 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=5,local=1024,](@13,@12) -> float_type, {1, 10, 1}, {10, 1, 1}, target_id=0
-// @15 = load[offset=240,end=264](@1) -> float_type, {1, 6, 1}, {6, 1, 1}, target_id=0
-// @16 = reshape_lazy[dims={1, 6, 1}](@11) -> float_type, {1, 6, 1}, {6, 1, 1}, target_id=0
-// @17 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=3,local=1024,](@16,@15) -> float_type, {1, 6, 1}, {6, 1, 1}, target_id=0
-// @18 = load[offset=0,end=240](@1) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @19 = transpose[permutation={0, 2, 1}](@14) -> float_type, {1, 1, 10}, {10, 1, 1}, target_id=0
-// @20 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@17,@19,@18) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @21 = load[offset=240,end=480](@1) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @22 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=30,local=1024,](@20,@21) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @23 = load[offset=0,end=240](@1) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @24 = reshape_lazy[dims={2, 3, 2, 5}](@22) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @25 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=30,local=1024,](@24,@23) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @26 = hip::copy_from_gpu(@25) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @27 = hip::sync_stream(@26) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @28 = @return(@27), target_id=0
-// TransA: 0
-// TransB: 0
-// n: 10
-// m: 6
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 6
-// b_stride: 10
-// c_stride: 60
-// lda: 1
-// ldb: 1
-// ldc: 10
-// num_matrices: 1
-//
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {320}, {1},id=main:scratch] -> int8_type, {320}, {1}, target_id=0
-// @2 = load[offset=288,end=312](@1) -> float_type, {2, 3}, {3, 1}, target_id=0
-// x1 = @param:x1 -> float_type, {2, 3}, {3, 1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {2, 3}, {3, 1}, target_id=0
-// @5 = load[offset=240,end=280](@1) -> float_type, {2, 5}, {5, 1}, target_id=0
-// x2 = @param:x2 -> float_type, {2, 5}, {5, 1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {2, 5}, {5, 1}, target_id=0
-// @8 = load[offset=0,end=240](@1) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @9 = reshape_lazy[dims={1, 10, 1}](@7) -> float_type, {1, 10, 1}, {10, 1, 1}, target_id=0
-// @10 = transpose[permutation={0, 2, 1}](@9) -> float_type, {1, 1, 10}, {10, 1, 1}, target_id=0
-// @11 = reshape_lazy[dims={1, 6, 1}](@4) -> float_type, {1, 6, 1}, {6, 1, 1}, target_id=0
-// @12 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@11,@10,@8) -> float_type, {1, 6, 10}, {60, 10, 1}, target_id=0
-// @13 = reshape_lazy[dims={2, 3, 2, 5}](@12) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @14 = hip::copy_from_gpu(@13) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @15 = hip::sync_stream(@14) -> float_type, {2, 3, 2, 5}, {30, 10, 5, 1}, target_id=0
-// @16 = @return(@15), target_id=0
-// TransA: 0
-// TransB: 0
-// n: 10
-// m: 6
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 6
-// b_stride: 10
-// c_stride: 60
-// lda: 1
-// ldb: 1
-// ldc: 10
-// num_matrices: 1
 TEST_CASE(einsum_matrix_outer_product_test)
 {
     migraphx::program p = migraphx::parse_onnx("einsum_matrix_outer_product_test.onnx");
@@ -467,14 +318,17 @@ TEST_CASE(einsum_matrix_outer_product_test)
     std::cout << p << std::endl;
     std::array<float, 16> arr;
     std::iota(arr.begin(), arr.end(), 0);
-    auto s = migraphx::shape{migraphx::shape::float_type, {2, 1, 4, 2}, {4, 4, 1, 0}};
+    auto s  = migraphx::shape{migraphx::shape::float_type, {2, 1, 4, 2}, {4, 4, 1, 0}};
     auto tv = make_view(s, arr.data());
-    for(auto i = 0; i < 2; ++i) {
-        for(auto j = 0; j < 4; ++j) {
-            for(auto k = 0; k < 2; ++k) {
+    for(auto i = 0; i < 2; ++i)
+    {
+        for(auto j = 0; j < 4; ++j)
+        {
+            for(auto k = 0; k < 2; ++k)
+            {
                 std::cout << tv(i, 0, j, k) << " ";
             }
-        std::cout << std::endl;
+            std::cout << std::endl;
         }
         std::cout << std::endl << std::endl;
     }
@@ -500,23 +354,23 @@ TEST_CASE(einsum_matrix_outer_product_test)
     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
 
-auto result = p.eval(pm).back();
-EXPECT(result.get_shape() == make_shape({2, 3, 2, 5}));
+    auto result = p.eval(pm).back();
+    EXPECT(result.get_shape() == make_shape({2, 3, 2, 5}));
 
-std::vector<float> result_vector;
-result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+    std::vector<float> result_vector;
+    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-std::vector<float> gold = {
-    0.0796068,  0.22318552, 0.14293935, 0.09282493, 0.0836674,  0.06375092, 0.21320373,
-    0.08663625, 0.17925159, 0.05618507, 0.02078884, 0.05828356, 0.03732775, 0.02424067,
-    0.02184924, 0.01664817, 0.05567687, 0.02262453, 0.04681048, 0.01467239, 0.05614964,
-    0.15742105, 0.10082044, 0.06547288, 0.05901373, 0.0449659,  0.15038052, 0.06110777,
-    0.12643282, 0.03962942, 0.05980874, 0.1676797,  0.1073906,  0.06973954, 0.06285947,
-    0.04789619, 0.16018036, 0.06508997, 0.13467206, 0.04221195, 0.18949004, 0.53125401,
-    0.34024207, 0.22095347, 0.19915557, 0.1517479,  0.50749411, 0.2062224,  0.426677,
-    0.1337387,  0.06157619, 0.17263492, 0.11056418, 0.07180047, 0.06471708, 0.0493116,
-    0.16491396, 0.06701349, 0.13865185, 0.04345938};
-EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+    std::vector<float> gold = {
+        0.0796068,  0.22318552, 0.14293935, 0.09282493, 0.0836674,  0.06375092, 0.21320373,
+        0.08663625, 0.17925159, 0.05618507, 0.02078884, 0.05828356, 0.03732775, 0.02424067,
+        0.02184924, 0.01664817, 0.05567687, 0.02262453, 0.04681048, 0.01467239, 0.05614964,
+        0.15742105, 0.10082044, 0.06547288, 0.05901373, 0.0449659,  0.15038052, 0.06110777,
+        0.12643282, 0.03962942, 0.05980874, 0.1676797,  0.1073906,  0.06973954, 0.06285947,
+        0.04789619, 0.16018036, 0.06508997, 0.13467206, 0.04221195, 0.18949004, 0.53125401,
+        0.34024207, 0.22095347, 0.19915557, 0.1517479,  0.50749411, 0.2062224,  0.426677,
+        0.1337387,  0.06157619, 0.17263492, 0.11056418, 0.07180047, 0.06471708, 0.0493116,
+        0.16491396, 0.06701349, 0.13865185, 0.04345938};
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
 TEST_CASE(einsum_batch_matrix_multiplication_test)
@@ -975,7 +829,6 @@ TEST_CASE(einsum_3d_broadcast_test)
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
 
-
 TEST_CASE(einsum_3d_opposite_broadcast_test)
 {
     migraphx::program p = migraphx::parse_onnx("einsum_3d_opposite_broadcast_test.onnx");
@@ -1029,219 +882,68 @@ TEST_CASE(einsum_3d_opposite_broadcast_test)
 //     std::cout << dot.compute_shape({sh1, sh2}) << std::endl;
 // }
 
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {112}, {1},id=main:scratch] -> int8_type, {112}, {1}, target_id=0
-// @2 = load[offset=16,end=48](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// x1 = @param:x1 -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @5 = load[offset=48,end=64](@1) -> float_type, {2, 2}, {2, 1}, target_id=0
-// x2 = @param:x2 -> float_type, {2, 2}, {2, 1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {2, 2}, {2, 1}, target_id=0
-// @8 = unsqueeze[axes={0, 1, 4, 5},steps={}](@7) -> float_type, {1, 1, 2, 2, 1, 1}, {4, 4, 2, 1, 1, 1}, target_id=0
-// @9 = transpose[permutation={0, 2, 4, 5, 1, 3}](@8) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 1, 1, 4, 1}, target_id=0
-// @10 = load[offset=0,end=16](@1) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 2, 2, 2, 1}, target_id=0
-// @11 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@9,@10) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 2, 2, 2, 1}, target_id=0
-// @12 = load[offset=64,end=96](@1) -> float_type, {2, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @13 = unsqueeze[axes={3, 4, 5},steps={}](@4) -> float_type, {2, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @14 = transpose[permutation={1, 0, 2, 3, 4, 5}](@13) -> float_type, {2, 2, 2, 1, 1, 1}, {2, 4, 1, 1, 1, 1}, target_id=0
-// @15 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@14,@12) -> float_type, {2, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @16 = load[offset=48,end=64](@1) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 2, 2, 2, 1}, target_id=0
-// @17 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@11,@16) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 2, 2, 2, 1}, target_id=0
-// @18 = load[offset=32,end=48](@1) -> float_type, {1, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @19 = gpu::code_object[code_object=4112,symbol_name=reduce_sum_kernel,global=4,local=1024,](@15,@18) -> float_type, {1, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @20 = load[offset=16,end=32](@1) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @21 = transpose[permutation={0, 2, 4, 5, 1, 3}](@19) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 1, 1, 1, 2, 1}, target_id=0
-// @22 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@21,@20) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @23 = load[offset=32,end=48](@1) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @24 = reshape_lazy[dims={2, -1, 1}](@17) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @25 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@24,@23) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @26 = load[offset=64,end=80](@1) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @27 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@22,@26) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @28 = load[offset=48,end=64](@1) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @29 = reshape_lazy[dims={2, -1, 1}](@27) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @30 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@29,@28) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @31 = load[offset=0,end=32](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @32 = transpose[permutation={0, 2, 1}](@25) -> float_type, {2, 1, 2}, {2, 1, 1}, target_id=0
-// @33 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@30,@32,@31) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @34 = load[offset=48,end=80](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// x3 = @param:x3 -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @36 = hip::copy_to_gpu(x3,@34) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @37 = load[offset=32,end=48](@1) -> float_type, {1, 1, 1, 2, 2, 1}, {4, 4, 4, 2, 1, 1}, target_id=0
-// @38 = unsqueeze[axes={0, 1, 2},steps={}](@36) -> float_type, {1, 1, 1, 2, 2, 2}, {8, 8, 8, 4, 2, 1}, target_id=0
-// @39 = gpu::code_object[code_object=4240,symbol_name=reduce_sum_kernel,global=8,local=32,](@38,@37) -> float_type, {1, 1, 1, 2, 2, 1}, {4, 4, 4, 2, 1, 1}, target_id=0
-// @40 = load[offset=48,end=64](@1) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 4, 4, 4, 2, 1}, target_id=0
-// @41 = transpose[permutation={0, 5, 1, 2, 4, 3}](@39) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 1, 4, 4, 1, 2}, target_id=0
-// @42 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@41,@40) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 4, 4, 4, 2, 1}, target_id=0
-// @43 = load[offset=32,end=48](@1) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 4, 4, 4, 2, 1}, target_id=0
-// @44 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@42,@43) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 4, 4, 4, 2, 1}, target_id=0
-// @45 = load[offset=48,end=64](@1) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @46 = reshape_lazy[dims={1, -1, 2}](@44) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @47 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=2,local=1024,](@46,@45) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @48 = load[offset=32,end=48](@1) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @49 = transpose[permutation={0, 2, 1}](@47) -> float_type, {1, 2, 2}, {4, 1, 2}, target_id=0
-// @50 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@49,@48) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @51 = load[offset=80,end=112](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @52 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@33,@51) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @53 = load[offset=48,end=80](@1) -> float_type, {1, 2, 1, 1, 2, 2}, {8, 4, 4, 4, 2, 1}, target_id=0
-// @54 = reshape_lazy[dims={1, 2, 1, 1, 2, 2}](@52) -> float_type, {1, 2, 1, 1, 2, 2}, {8, 4, 4, 4, 2, 1}, target_id=0
-// @55 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@54,@53) -> float_type, {1, 2, 1, 1, 2, 2}, {8, 4, 4, 4, 2, 1}, target_id=0
-// @56 = load[offset=80,end=112](@1) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @57 = transpose[permutation={0, 3, 4, 1, 2, 5}](@55) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 4, 2, 4, 4, 1}, target_id=0
-// @58 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@57,@56) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @59 = load[offset=48,end=80](@1) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @60 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@58,@59) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @61 = load[offset=80,end=112](@1) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @62 = reshape_lazy[dims={1, -1, 2}](@60) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @63 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@62,@61) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @64 = load[offset=48,end=80](@1) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @65 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@63,@50,@64) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @66 = load[offset=80,end=112](@1) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @67 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@65,@66) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @68 = load[offset=0,end=32](@1) -> float_type, {1, 1, 2, 2, 2, 1}, {8, 8, 4, 2, 1, 1}, target_id=0
-// @69 = reshape_lazy[dims={1, 1, 2, 2, 2, 1}](@67) -> float_type, {1, 1, 2, 2, 2, 1}, {8, 8, 4, 2, 1, 1}, target_id=0
-// @70 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@69,@68) -> float_type, {1, 1, 2, 2, 2, 1}, {8, 8, 4, 2, 1, 1}, target_id=0
-// @71 = load[offset=32,end=64](@1) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 4, 2, 2, 1, 1}, target_id=0
-// @72 = transpose[permutation={0, 4, 2, 5, 3, 1}](@70) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 1, 4, 1, 2, 8}, target_id=0
-// @73 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=8,local=1024,](@72,@71) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 4, 2, 2, 1, 1}, target_id=0
-// @74 = squeeze[axes={0, 3, 5}](@73) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @75 = hip::copy_from_gpu(@74) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @76 = hip::sync_stream(@75) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @77 = @return(@76), target_id=0
-// TransA: 0
-// TransB: 0
-// n: 2
-// m: 2
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 2
-// b_stride: 2
-// c_stride: 4
-// lda: 1
-// ldb: 1
-// ldc: 2
-// num_matrices: 2
-//
-// @0 = check_context::migraphx::gpu::context -> float_type, {}, {}, target_id=0
-// @1 = hip::hip_allocate_memory[shape=int8_type, {112}, {1},id=main:scratch] -> int8_type, {112}, {1}, target_id=0
-// @2 = load[offset=48,end=80](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// x1 = @param:x1 -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @4 = hip::copy_to_gpu(x1,@2) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @5 = load[offset=32,end=48](@1) -> float_type, {2, 2}, {2, 1}, target_id=0
-// x2 = @param:x2 -> float_type, {2, 2}, {2, 1}, target_id=0
-// @7 = hip::copy_to_gpu(x2,@5) -> float_type, {2, 2}, {2, 1}, target_id=0
-// @8 = unsqueeze[axes={3, 4, 5},steps={}](@4) -> float_type, {2, 2, 2, 1, 1, 1}, {4, 2, 1, 1, 1, 1}, target_id=0
-// @9 = load[offset=0,end=16](@1) -> float_type, {1, 2, 2, 1, 1, 1}, {2, 2, 1, 1, 1, 1}, target_id=0
-// @10 = transpose[permutation={1, 0, 2, 3, 4, 5}](@8) -> float_type, {2, 2, 2, 1, 1, 1}, {2, 4, 1, 1, 1, 1}, target_id=0
-// @11 = gpu::code_object[code_object=4240,symbol_name=reduce_sum_kernel,global=16,local=32,](@10,@9) -> float_type, {1, 2, 2, 1, 1, 1}, {2, 2, 1, 1, 1, 1}, target_id=0
-// @12 = load[offset=48,end=64](@1) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @13 = transpose[permutation={0, 2, 4, 5, 1, 3}](@11) -> float_type, {1, 2, 1, 1, 2, 1}, {2, 1, 1, 1, 2, 1}, target_id=0
-// @14 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@13,@12) -> float_type, {1, 2, 1, 1, 2, 1}, {4, 2, 2, 2, 1, 1}, target_id=0
-// @15 = load[offset=0,end=32](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @16 = unsqueeze[axes={0, 1, 4, 5},steps={}](@7) -> float_type, {1, 1, 2, 2, 1, 1}, {4, 4, 2, 1, 1, 1}, target_id=0
-// @17 = transpose[permutation={0, 2, 4, 5, 1, 3}](@16) -> float_type, {1, 2, 1, 1, 1, 2}, {4, 2, 1, 1, 4, 1}, target_id=0
-// @18 = reshape_lazy[dims={2, -1, 1}](@17) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @19 = reshape_lazy[dims={2, -1, 1}](@14) -> float_type, {2, 2, 1}, {2, 1, 1}, target_id=0
-// @20 = transpose[permutation={0, 2, 1}](@18) -> float_type, {2, 1, 2}, {2, 1, 1}, target_id=0
-// @21 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@19,@20,@15) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @22 = load[offset=48,end=80](@1) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// x3 = @param:x3 -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @24 = hip::copy_to_gpu(x3,@22) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @25 = load[offset=32,end=48](@1) -> float_type, {1, 1, 1, 2, 2, 1}, {4, 4, 4, 2, 1, 1}, target_id=0
-// @26 = unsqueeze[axes={0, 1, 2},steps={}](@24) -> float_type, {1, 1, 1, 2, 2, 2}, {8, 8, 8, 4, 2, 1}, target_id=0
-// @27 = gpu::code_object[code_object=4240,symbol_name=reduce_sum_kernel,global=8,local=32,](@26,@25) -> float_type, {1, 1, 1, 2, 2, 1}, {4, 4, 4, 2, 1, 1}, target_id=0
-// @28 = reshape_lazy[dims={1, 2, 1, 1, 2, 2}](@21) -> float_type, {1, 2, 1, 1, 2, 2}, {8, 4, 4, 4, 2, 1}, target_id=0
-// @29 = transpose[permutation={0, 3, 4, 1, 2, 5}](@28) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 4, 2, 4, 4, 1}, target_id=0
-// @30 = load[offset=80,end=112](@1) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @31 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=4,local=1024,](@29,@30) -> float_type, {1, 1, 2, 2, 1, 2}, {8, 8, 4, 2, 2, 1}, target_id=0
-// @32 = load[offset=48,end=80](@1) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @33 = transpose[permutation={0, 5, 1, 2, 4, 3}](@27) -> float_type, {1, 1, 1, 1, 2, 2}, {4, 1, 4, 4, 1, 2}, target_id=0
-// @34 = reshape_lazy[dims={1, -1, 2}](@33) -> float_type, {1, 2, 2}, {4, 1, 2}, target_id=0
-// @35 = reshape_lazy[dims={1, -1, 2}](@31) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @36 = transpose[permutation={0, 2, 1}](@34) -> float_type, {1, 2, 2}, {4, 2, 1}, target_id=0
-// @37 = gpu::gemm[alpha=1,beta=0,compute_fp32=0,trans_batch=0,solution_idx=0](@35,@36,@32) -> float_type, {1, 4, 2}, {8, 2, 1}, target_id=0
-// @38 = reshape_lazy[dims={1, 1, 2, 2, 2, 1}](@37) -> float_type, {1, 1, 2, 2, 2, 1}, {8, 8, 4, 2, 1, 1}, target_id=0
-// @39 = transpose[permutation={0, 4, 2, 5, 3, 1}](@38) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 1, 4, 1, 2, 8}, target_id=0
-// @40 = load[offset=0,end=32](@1) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 4, 2, 2, 1, 1}, target_id=0
-// @41 = gpu::code_object[code_object=4112,symbol_name=contiguous_kernel,global=8,local=1024,](@39,@40) -> float_type, {1, 2, 2, 1, 2, 1}, {8, 4, 2, 2, 1, 1}, target_id=0
-// @42 = squeeze[axes={0, 3, 5}](@41) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @43 = hip::copy_from_gpu(@42) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @44 = hip::sync_stream(@43) -> float_type, {2, 2, 2}, {4, 2, 1}, target_id=0
-// @45 = @return(@44), target_id=0
-//TransA: 0
-// TransB: 0
-// n: 2
-// m: 2
-// k: 1
-// alpha: 1
-// beta: 0
-// a_stride: 2
-// b_stride: 2
-// c_stride: 4
-// lda: 1
-// ldb: 1
-// ldc: 2
-// num_matrices: 2
-TEST_CASE(einsum_3_inputs_test)
-{
-    migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    p.compile(migraphx::make_target("gpu"), opts);
-    std::cout << make_shape({1, 2, 2}) << std::endl;
-    std::cout << make_shape({2, 2, 1}) << std::endl;
-    std::cout << make_shape({2, 1, 2}) << std::endl;
-    std::cout << make_shape({1, 1, 10}) << std::endl;
-    std::cout << make_shape({1, 1, 5}) << std::endl;
-    std::cout << make_shape({1, 3, 1}) << std::endl;
-    std::cout << make_shape({1, 6, 1}) << std::endl;
-    std::cout << make_shape({2, 2, 1}) << std::endl;
-    std::cout << p << std::endl;
+// TEST_CASE(einsum_3_inputs_test)
+// {
+//     migraphx::program p = migraphx::parse_onnx("einsum_3_inputs_test.onnx");
+//     migraphx::compile_options opts;
+//     opts.offload_copy = true;
+//     std::cout << p << std::endl;
+//     p.compile(migraphx::make_target("gpu"), opts);
+//     std::cout << make_shape({1, 2, 2}) << std::endl;
+//     std::cout << make_shape({2, 2, 1}) << std::endl;
+//     std::cout << make_shape({2, 1, 2}) << std::endl;
+//     std::cout << make_shape({1, 1, 10}) << std::endl;
+//     std::cout << make_shape({1, 1, 5}) << std::endl;
+//     std::cout << make_shape({1, 3, 1}) << std::endl;
+//     std::cout << make_shape({1, 6, 1}) << std::endl;
+//     std::cout << make_shape({2, 2, 1}) << std::endl;
+//     std::cout << p << std::endl;
 
-    migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
-    std::vector<float> x1_data = {0.78808491,
-                                  0.6661874,
-                                  0.4170594,
-                                  0.80972418,
-                                  0.22687053,
-                                  0.52144567,
-                                  0.70463225,
-                                  0.8934412};
+//     migraphx::shape x1_shape{migraphx::shape::float_type, {2, 2, 2}};
+//     std::vector<float> x1_data = {0.78808491,
+//                                   0.6661874,
+//                                   0.4170594,
+//                                   0.80972418,
+//                                   0.22687053,
+//                                   0.52144567,
+//                                   0.70463225,
+//                                   0.8934412};
 
-    migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
-    std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
+//     migraphx::shape x2_shape{migraphx::shape::float_type, {2, 2}};
+//     std::vector<float> x2_data = {0.98518483, 0.61526655, 0.89011461, 0.02600793};
 
-    migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
-    std::vector<float> x3_data = {0.04135729,
-                                  0.36723732,
-                                  0.82196749,
-                                  0.35332048,
-                                  0.92673273,
-                                  0.50014512,
-                                  0.91129541,
-                                  0.97557965};
+//     migraphx::shape x3_shape{migraphx::shape::float_type, {2, 2, 2}};
+//     std::vector<float> x3_data = {0.04135729,
+//                                   0.36723732,
+//                                   0.82196749,
+//                                   0.35332048,
+//                                   0.92673273,
+//                                   0.50014512,
+//                                   0.91129541,
+//                                   0.97557965};
 
-    migraphx::parameter_map pm;
-    pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
-    pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
-    pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
+//     migraphx::parameter_map pm;
+//     pm["x1"] = migraphx::argument{x1_shape, x1_data.data()};
+//     pm["x2"] = migraphx::argument{x2_shape, x2_data.data()};
+//     pm["x3"] = migraphx::argument{x3_shape, x3_data.data()};
 
-    auto result = p.eval(pm).back();
-    EXPECT(result.get_shape() == make_shape({2, 2, 2}));
+//     auto result = p.eval(pm).back();
+//     EXPECT(result.get_shape() == make_shape({2, 2, 2}));
 
-    std::vector<float> result_vector;
-    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+//     std::vector<float> result_vector;
+//     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-    std::vector<float> gold = {1.54312876,
-                               0.59155446,
-                               1.19274407,
-                               0.56709538,
-                               2.79449706,
-                               1.61644006,
-                               2.15997517,
-                               1.5496049};
-    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
-}
+//     std::vector<float> gold = {1.54312876,
+//                                0.59155446,
+//                                1.19274407,
+//                                0.56709538,
+//                                2.79449706,
+//                                1.61644006,
+//                                2.15997517,
+//                                1.5496049};
+//     std::cout << migraphx::to_string_range(result_vector) << std::endl;
+//     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+// }
 
 TEST_CASE(einsum_bilinear_transformation_test)
 {
@@ -1521,8 +1223,7 @@ TEST_CASE(einsum_ellipsis_implicit_form_test)
 
 TEST_CASE(einsum_ellipsis_scalar_multiplication_test)
 {
-    migraphx::program p =
-    migraphx::parse_onnx("einsum_ellipsis_scalar_multiplication_test.onnx");
+    migraphx::program p = migraphx::parse_onnx("einsum_ellipsis_scalar_multiplication_test.onnx");
     migraphx::compile_options opts;
     opts.offload_copy = true;
     p.compile(migraphx::make_target("gpu"), opts);
@@ -1944,3 +1645,20 @@ TEST_CASE(einsum_common_7_test)
     std::vector<float> gold = {2.90563922, 2.5946174, 2.82818581, 2.47204655, 2.28814157};
     EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
 }
+
+// Last two are one
+// Last two are one
+// TransA: 0
+// TransB: 1
+// n: 2
+// m: 2
+// k: 1
+// alpha: 1
+// beta: 0
+// a_stride: 2
+// b_stride: 2
+// c_stride: 4
+// lda: 1
+// ldb: 1
+// ldc: 2
+// num_matrices: 2

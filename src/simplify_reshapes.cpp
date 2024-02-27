@@ -909,7 +909,11 @@ struct find_reshape_reshape_dot
                                   match::args(match::name("reshape").bind("inp_rsp1"),
                                               match::name("reshape").bind("inp_rsp2")));
     }
-
+//@19, @18
+//@19
+// {1, 2, 1, 1, 2, 1} -> reshape -> {2, 2, 1}
+//@18
+// {1, 2, 1, 1, 1, 2} -> reshape -> {2, 1, 2}
     // Gemm axis should not be altered by the reshape
     auto is_valid_reshape(instruction_ref in, instruction_ref rsp) const
     {
@@ -970,7 +974,7 @@ void simplify_reshapes::apply(module& m) const
                             find_broadcast_transpose{},
                             find_slice_transpose{},
                             find_transpose_contiguous_reshaper_unary{},
-                            find_reshape_reshape_dot{},
+                            // find_reshape_reshape_dot{},
                             find_scalar_multibroadcast_reshape_or_transpose{});
         dead_code_elimination{}.apply(m);
     }
