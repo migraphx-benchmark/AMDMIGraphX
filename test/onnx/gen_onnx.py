@@ -8518,6 +8518,32 @@ def einsum_matrix_diagonal_test():
 
 
 @onnx_test()
+def einsum_batch_matrix_diagonal_test():
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x'],
+                                 outputs=['y'],
+                                 equation='...ii->...i')
+
+    return ([node], [x], [y])
+
+
+@onnx_test()
+def einsum_3d_diagonal_test():
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [1, 3])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x'],
+                                 outputs=['y'],
+                                 equation='iii->i')
+
+    return ([node], [x], [y])
+
+
+@onnx_test()
 def einsum_matrix_trace_test():
     x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3])
     y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [1])
@@ -8526,6 +8552,19 @@ def einsum_matrix_trace_test():
                                  inputs=['x'],
                                  outputs=['y'],
                                  equation='ii->')
+
+    return ([node], [x], [y])
+
+
+@onnx_test()
+def einsum_matrix_trace_implicit_test():
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [1])
+ 
+    node = onnx.helper.make_node('Einsum',
+                                 inputs=['x'],
+                                 outputs=['y'],
+                                 equation='ii')
 
     return ([node], [x], [y])
 

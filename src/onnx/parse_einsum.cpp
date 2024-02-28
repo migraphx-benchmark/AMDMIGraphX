@@ -102,8 +102,10 @@ struct parse_einsum : op_parser<parse_einsum>
                     }
 
                     diag.push_back({v[0], v});
-                    // TODO
                 }
+
+                op = apply_diagonal(info, rows, op, diag);
+                tr_row = rows[1];
             }
 
 #if DEBUG_PRINT == 1
@@ -225,6 +227,150 @@ struct parse_einsum : op_parser<parse_einsum>
             }
 
             op = transpose_squeeze(info, rows, op, mat[args.size()]);
+        }
+
+        return op;
+    }
+
+    instruction_ref apply_diagonal(const onnx_parser::node_info& info,
+                                   std::vector<std::vector<int>>& rows,
+                                   instruction_ref op,
+                                   std::vector<std::tuple<int, std::vector<int>>> diag) const
+    {
+        if(diag.size() != 1)
+        {
+            MIGRAPHX_THROW("Not implemented with more than one duplicated indice");
+        }
+
+        auto diag0 = diag[0];
+
+        auto axis = std::get<0>(diag0);
+        auto axes = std::get<1>(diag0);
+
+        // if(not contains(axes, axis))
+        // {
+        //     MIGRAPHX_THROW("Axis must be in axes");
+        // }
+
+        // std::vector<size_t> shape, new_shape;
+
+        // int i = 0;
+        // for(auto s : op->get_shape().lens())
+        // {
+        //     if(contains(axes, i))
+        //     {
+        //         if(i == axis)
+        //         {
+        //             shape.push_back(s);
+        //             new_shape.push_back(s);
+        //         }
+        //         else
+        //         {
+        //             shape.push_back(1);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         shape.push_back(s);
+        //         new_shape.push_back(s);
+        //     }
+
+        //     i += 1;
+        // }
+
+        auto ndim = rows[0].size();
+
+        std::vector<int> batch_axes;
+        for(int i = 0; i < ndim; ++i)
+        {
+            if(not contains(axes, i))
+            {
+                batch_axes.push_back(i);
+            }
+        }
+
+        auto min_axes = *(std::min_element(axes.begin(), axes.end()));
+        if(not std::all_of(
+               batch_axes.begin(), batch_axes.end(), [=](int ba) { return ba < min_axes; }))
+        {
+            MIGRAPHX_THROW("Currently batch axes have to be partitioned to the left");
+        }
+
+        auto op_shape = op->get_shape().lens();
+
+        if(not std::all_of(axes.begin(), axes.end(), [op_shape, axis](int a) {
+               return op_shape[axis] == op_shape[a];
+           }))
+        {
+            MIGRAPHX_THROW("All duplicated indices have to be the same dimension");
+        }
+
+        auto batch_size = 1;
+        for(auto ba : batch_axes)
+        {
+            batch_size *= op_shape[ba];
+        }
+
+        std::vector<size_t> indices;
+
+        for(int batch = 0; batch < batch_size; ++batch)
+        {
+            for(int i = 0; i < op_shape[axis]; ++i)
+            {
+                std::vector<size_t> index(axes.size(), static_cast<size_t>(i));
+                indices.insert(indices.end(), index.begin(), index.end());
+            }
+        }
+
+        auto indices_arg = info.add_literal(migraphx::literal{
+            migraphx::shape{migraphx::shape::int64_type,
+                            {static_cast<unsigned long>(batch_size), op_shape[axis], axes.size()}},
+            indices});
+
+        std::cout << "INDICES: " << std::endl;
+        for (auto ind : indices) {
+            std::cout << ind << " ";
+        }
+        std::cout << std::endl;
+
+        op = info.add_instruction(
+            migraphx::make_op("gathernd", {{"batch_dims", batch_axes.size()}}), op, indices_arg);
+        // compute output row
+        std::vector<int> to_remove;
+        for(auto [choice, choices] : diag)
+        {
+            for(auto ch : choices)
+            {
+                if(ch != choice)
+                {
+                    to_remove.push_back(ch);
+                }
+            }
+            for(int i = 0; i < rows[1].size(); ++i)
+            {
+                if(contains(choices, rows[1][i]))
+                {
+                    if(rows[1][i] != choice)
+                    {
+                        rows[1][i] = choice;
+                    }
+                }
+            }
+        }
+        std::sort(to_remove.begin(), to_remove.end());
+        for(auto r : to_remove)
+        {
+            for(int i = 0; i < rows[1].size(); ++i)
+            {
+                if(rows[1][i] == r)
+                {
+                    MIGRAPHX_THROW("Unexpected result");
+                }
+                if(rows[1][i] > r)
+                {
+                    rows[1][i] -= 1;
+                }
+            }
         }
 
         return op;
