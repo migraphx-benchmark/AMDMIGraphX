@@ -104,7 +104,7 @@ struct parse_einsum : op_parser<parse_einsum>
                     diag.push_back({v[0], v});
                 }
 
-                op = apply_diagonal(info, rows, op, diag);
+                op     = apply_diagonal(info, rows, op, diag);
                 tr_row = rows[1];
             }
 
@@ -328,7 +328,8 @@ struct parse_einsum : op_parser<parse_einsum>
             indices});
 
         std::cout << "INDICES: " << std::endl;
-        for (auto ind : indices) {
+        for(auto ind : indices)
+        {
             std::cout << ind << " ";
         }
         std::cout << std::endl;
