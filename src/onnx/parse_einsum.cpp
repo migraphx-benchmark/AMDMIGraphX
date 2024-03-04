@@ -80,17 +80,16 @@ struct parse_einsum : op_parser<parse_einsum>
 
         std::vector<std::vector<int>> rows = full(2, full_dim, -1);
 
-        int i = 0;
-        for(instruction_ref arg : args)
+        for(auto arg_idx = 0; arg_idx < args.size(); ++arg_idx)
         {
 #if DEBUG_PRINT == 1
             std::cout << i << "----------------------------------" << std::endl;
 #endif
-            op      = arg;
-            rows[1] = mat[i]; // compute output row
+            op      = args[arg_idx];
+            rows[1] = mat[arg_idx]; // compute output row
 
-            auto tr_row    = mat[i];
-            auto duplicate = duplicates[i];
+            auto tr_row    = mat[arg_idx];
+            auto duplicate = duplicates[arg_idx];
             if(duplicate.size())
             {
                 std::vector<std::tuple<int, std::vector<int>>> diag;
@@ -123,11 +122,9 @@ struct parse_einsum : op_parser<parse_einsum>
             std::vector<int> red;
             for(int d = 0; d < full_dim; ++d)
             {
-                int max = colwise_comp(mat, d, i + 1, mat.size(), std::greater<int>{});
+                int max = colwise_comp(mat, d, arg_idx + 1, mat.size(), std::greater<int>{});
                 if(max == -1 and rows[1][d] != -1 and rows[0][d] == -1)
-                {
                     red.push_back(d);
-                }
             }
 
             if(red.size())
@@ -138,9 +135,7 @@ struct parse_einsum : op_parser<parse_einsum>
                 op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
                 // compute output row
                 for(int r : red)
-                {
                     rows[1][r] = -1;
-                }
             }
 
             if(last_op)
@@ -164,28 +159,23 @@ struct parse_einsum : op_parser<parse_einsum>
                         // There is at least 1 element that is not -1, for the remaining rows of the
                         // matrix.
                         // The label is present in at least one of the subsequent rows
-                        int max = colwise_comp(mat, d, i + 1, mat.size(), std::greater<int>{});
+                        int max =
+                            colwise_comp(mat, d, arg_idx + 1, mat.size(), std::greater<int>{});
                         if(max >= 0)
                         {
                             left.push_back(d);
                             right.push_back(d);
                         }
                         else
-                        {
                             common_dims.push_back(d);
-                        }
                     }
                     // The label is missing in one or both of the rows
                     else
                     {
                         if(rows[0][d] >= 0)
-                        {
                             left.push_back(d);
-                        }
                         if(rows[1][d] >= 0)
-                        {
                             right.push_back(d);
-                        }
                     }
                 }
 
@@ -194,8 +184,6 @@ struct parse_einsum : op_parser<parse_einsum>
 
             last_op = op;
             rows[0] = rows[1];
-
-            i += 1;
         }
 
         // finalize output
@@ -383,28 +371,22 @@ struct parse_einsum : op_parser<parse_einsum>
                                         std::vector<int> row) const
     {
         std::vector<std::tuple<int, int>> axes;
-        int p = 0;
         std::vector<std::tuple<int, int>> perm;
 
-        int i = 0;
-        for(int r : row)
+        for(auto i = 0, p = 0; i < row.size(); ++i)
         {
-            if(r == -1)
-            {
-                axes.push_back({p, i++});
-            }
+            if(row[i] == -1)
+                axes.push_back({p, i});
             else
             {
-                p += 1;
-                perm.push_back({r, i++});
+                ++p;
+                perm.push_back({row[i], i});
             }
         }
 
         std::vector<int> s_axes;
         for(auto a : axes)
-        {
             s_axes.push_back(std::get<1>(a));
-        }
 
 #if DEBUG_PRINT == 1
         std::cout << "Shape before unsqueeze: " << op->get_shape() << std::endl;
@@ -415,32 +397,22 @@ struct parse_einsum : op_parser<parse_einsum>
 #endif
         // check output row
         for(int s_a : s_axes)
-        {
             if(rows[1][s_a] != -1)
-            {
                 MIGRAPHX_THROW("Dimensions should be -1 in output row");
-            }
-        }
 
         std::sort(perm.begin(), perm.end(), [](auto lhs, auto rhs) {
             return std::get<0>(lhs) < std::get<0>(rhs);
         });
-        p = 0;
 
         std::vector<int> new_perm(row.size());
         std::iota(new_perm.begin(), new_perm.end(), 0);
 
-        i = 0;
-        for(int r : row)
+        for(auto i = 0, p = 0; i < row.size(); ++i)
         {
-            if(r == -1)
-            {
-                i += 1;
+            if(row[i] == -1)
                 continue;
-            }
 
-            new_perm[std::get<1>(perm[p])] = i++;
-            p += 1;
+            new_perm[std::get<1>(perm[p++])] = i;
         }
 
         op = apply_transpose_op(info, op, new_perm, rows[1]);
@@ -456,17 +428,12 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<std::tuple<int, int>> perm;
         std::vector<int> sq;
 
-        int i = 0;
-        for(int d : row_output)
+        for(auto i = 0; i < row_output.size(); ++i)
         {
-            if(d == -1)
-            {
-                sq.push_back(i++);
-            }
+            if(row_output[i] == -1)
+                sq.push_back(i);
             else
-            {
-                perm.push_back({d, i++});
-            }
+                perm.push_back({row_output[i], i});
         }
 
         std::sort(perm.begin(), perm.end(), [](auto lhs, auto rhs) {
@@ -476,19 +443,12 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> new_perm(rows[1].size());
         std::iota(new_perm.begin(), new_perm.end(), 0);
 
-        int p = 0;
-
-        i = 0;
-        for(int d : row_output)
+        for(auto i = 0, p = 0; i < row_output.size(); ++i)
         {
-            if(d == -1)
-            {
-                i += 1;
+            if(row_output[i] == -1)
                 continue;
-            }
 
-            new_perm[i++] = std::get<1>(perm[p]);
-            p += 1;
+            new_perm[i] = std::get<1>(perm[p++]);
         }
 
         op = apply_transpose_op(info, op, new_perm, rows[1]);
@@ -498,9 +458,7 @@ struct parse_einsum : op_parser<parse_einsum>
             op = info.add_instruction(make_op("squeeze", {{"axes", sq}}), op);
             // compute output row
             for(int a : sq)
-            {
                 rows[1][a] = -1;
-            }
         }
 
         return op;
@@ -525,179 +483,144 @@ struct parse_einsum : op_parser<parse_einsum>
 
         int ndim = rows[0].size();
 
-        if(not(set_intersection(axes, left).size() == 0 and
-               set_intersection(axes, right).size() == 0))
+        if(set_intersection(axes, left).size() != 0 or set_intersection(axes, right).size() != 0)
+            MIGRAPHX_THROW("axes and right or left have axes in common");
+
+        std::vector<int> all_axes = set_union(set_union(left, right), axes);
+
+        // Labels that are both in left and right, and not in all_axes
+        // Given previous context:
+        // Labels present in both terms and somewhere in the remainder of the equation
+        std::vector<int> common_axes = set_intersection(left, right);
+        for(int i = 0; i < ndim; ++i)
+            if(not contains(all_axes, i))
+                common_axes.push_back(i);
+        std::sort(common_axes.begin(), common_axes.end());
+
+#if DEBUG_PRINT == 1
+        std::cout << "All axes: " << to_string_range(all_axes) << std::endl;
+        std::cout << "Common axes: " << to_string_range(common_axes) << std::endl;
+#endif
+
+        // ReduceSum
+        // All labels present in rows[0]
+        std::vector<int> has_dim;
+        for(int i = 0; i < rows[0].size(); ++i)
+            if(rows[0][i] >= 0)
+                has_dim.push_back(i);
+
+        std::vector<int> right_no_left = set_difference(
+            set_intersection(right, has_dim), set_intersection(right, set_union(left, axes)));
+
+        if(right_no_left.size())
         {
-            MIGRAPHX_THROW("Not implemented");
+            std::sort(right_no_left.begin(), right_no_left.end());
+            op1 = info.add_instruction(make_op("reduce_sum", {{"axes", right_no_left}}), op1);
+            // compute output row
+            for(int r : right_no_left)
+                rows[0][r] = -1;
         }
 
-        if(set_intersection(axes, left).size() == 0 and set_intersection(axes, right).size() == 0)
+        has_dim.clear();
+        for(int i = 0; i < rows[1].size(); ++i)
+            if(rows[1][i] >= 0)
+                has_dim.push_back(i);
+
+        std::vector<int> left_no_right = set_difference(
+            set_intersection(left, has_dim), set_intersection(left, set_union(right, axes)));
+
+        if(left_no_right.size())
         {
-            std::vector<int> all_axes = set_union(set_union(left, right), axes);
-
-            // Labels that are both in left and right, and not in all_axes
-            // Given previous context:
-            // Labels present in both terms and somewhere in the remainder of the equation
-            std::vector<int> common_axes = set_intersection(left, right);
-            for(int i = 0; i < ndim; ++i)
-            {
-                if(std::find(all_axes.begin(), all_axes.end(), i) == all_axes.end())
-                {
-                    common_axes.push_back(i);
-                }
-            }
-            std::sort(common_axes.begin(), common_axes.end());
-
-#if DEBUG_PRINT == 1
-            std::cout << "All axes: " << to_string_range(all_axes) << std::endl;
-            std::cout << "Common axes: " << to_string_range(common_axes) << std::endl;
-#endif
-
-            // ReduceSum
-            // All labels present in rows[0]
-            std::vector<int> has_dim;
-            for(int i = 0; i < rows[0].size(); ++i)
-            {
-                if(rows[0][i] >= 0)
-                {
-                    has_dim.push_back(i);
-                }
-            }
-
-            std::vector<int> right_no_left = set_difference(
-                set_intersection(right, has_dim), set_intersection(right, set_union(left, axes)));
-
-            if(right_no_left.size())
-            {
-                std::sort(right_no_left.begin(), right_no_left.end());
-                op1 = info.add_instruction(make_op("reduce_sum", {{"axes", right_no_left}}), op1);
-                // compute output row
-                for(int r : right_no_left)
-                {
-                    rows[0][r] = -1;
-                }
-            }
-
-            has_dim.clear();
-            for(int i = 0; i < rows[1].size(); ++i)
-            {
-                if(rows[1][i] >= 0)
-                {
-                    has_dim.push_back(i);
-                }
-            }
-
-            std::vector<int> left_no_right = set_difference(
-                set_intersection(left, has_dim), set_intersection(left, set_union(right, axes)));
-
-            if(left_no_right.size())
-            {
-                std::sort(left_no_right.begin(), left_no_right.end());
-                op2 = info.add_instruction(make_op("reduce_sum", {{"axes", left_no_right}}), op2);
-                // compute output row
-                for(int r : left_no_right)
-                {
-                    rows[1][r] = -1;
-                }
-            }
-
-            const auto ignore_axes = set_symmetric_difference(left, right);
-            auto perm              = concat_vectors(common_axes, ignore_axes, axes);
-
-            const auto perm_for_side = [&](const auto& labels) {
-                std::vector<int> ret;
-                for(int i = 0; i < perm.size(); ++i)
-                    if(contains(labels, perm[i]))
-                        ret.push_back(i);
-                return ret;
-            };
-            const auto perm_left  = perm_for_side(left);
-            const auto perm_right = perm_for_side(right);
-
-#if DEBUG_PRINT == 1
-            std::cout << "Perm: " << to_string_range(perm) << std::endl;
-            std::cout << "Perm_left: " << to_string_range(perm_left) << std::endl;
-            std::cout << "Perm_right: " << to_string_range(perm_right) << std::endl;
-#endif
-
-            // Transpose so labels are ordered according to category
-            op1 = apply_transpose_op(info, op1, perm, rows[0]);
-            op2 = apply_transpose_op(info, op2, perm, rows[1]);
-
-#if DEBUG_PRINT == 1
-            std::cout << "Rows after transpose before reshape:\n";
-            print_matrix(rows);
-#endif
-
-            // Axes = common_dims -> Label present only in current two terms(label category 1)
-            std::vector<int> new_axes(axes.size());
-            std::iota(new_axes.begin(), new_axes.end(), ndim - axes.size());
-
-            // common_axes -> labels present in both terms and remainder of eq(label category -1)
-            std::vector<int> new_common_axes(common_axes.size());
-            std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
-
-            // Labels that are not in left or right
-            // common_axes is the intersection of left and right, if a label is in neither of
-            // these, surely it cannot be in common_axes, making the check superfluous?
-            std::vector<int> not_in_both;
-            for(int i = 0; i < ndim; ++i)
-            {
-                if(std::find(left.begin(), left.end(), i) == left.end() and
-                   std::find(right.begin(), right.end(), i) == right.end() and
-                   std::find(common_axes.begin(), common_axes.end(), i) == common_axes.end())
-                {
-                    not_in_both.push_back(i);
-                }
-            }
-
-#if DEBUG_PRINT == 1
-            std::cout << "new_axes: " << to_string_range(new_axes) << std::endl;
-            std::cout << "new_common_axes: " << to_string_range(new_common_axes) << std::endl;
-            std::cout << "not_in_both: " << to_string_range(not_in_both) << std::endl;
-#endif
-
-            instruction_ref op = batch_dot(
-                info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
-
-            // Transpose again
-            std::vector<int> ordered_axes = common_axes;
-            std::copy_if(left.begin(), left.end(), std::back_inserter(ordered_axes), [=](int el) {
-                return std::find(right.begin(), right.end(), el) == right.end();
-            });
-            std::copy_if(right.begin(), right.end(), std::back_inserter(ordered_axes), [=](int el) {
-                return std::find(left.begin(), left.end(), el) == left.end();
-            });
-            std::copy(not_in_both.begin(), not_in_both.end(), std::back_inserter(ordered_axes));
-
-#if DEBUG_PRINT == 1
-            std::cout << "ordered_axes: " << to_string_range(ordered_axes) << std::endl;
-#endif
-
-            std::vector<std::tuple<int, int>> rev_perm;
-            int i = 0;
-            for(int a : ordered_axes)
-            {
-                rev_perm.push_back({a, i++});
-            }
-
-            std::sort(rev_perm.begin(), rev_perm.end(), [](auto lhs, auto rhs) {
-                return std::get<0>(lhs) < std::get<0>(rhs);
-            });
-
-            perm.clear();
-            for(auto p : rev_perm)
-            {
-                perm.push_back(std::get<1>(p));
-            }
-
-            op = apply_transpose_op(info, op, perm, rows[1]);
-
-            return op;
+            std::sort(left_no_right.begin(), left_no_right.end());
+            op2 = info.add_instruction(make_op("reduce_sum", {{"axes", left_no_right}}), op2);
+            // compute output row
+            for(int r : left_no_right)
+                rows[1][r] = -1;
         }
 
-        // TODO
-        MIGRAPHX_THROW("axes and right or left have axes in common");
+        const auto ignore_axes = set_symmetric_difference(left, right);
+        auto perm              = concat_vectors(common_axes, ignore_axes, axes);
+
+        const auto perm_for_side = [&](const auto& labels) {
+            std::vector<int> ret;
+            for(int i = 0; i < perm.size(); ++i)
+                if(contains(labels, perm[i]))
+                    ret.push_back(i);
+            return ret;
+        };
+        const auto perm_left  = perm_for_side(left);
+        const auto perm_right = perm_for_side(right);
+
+#if DEBUG_PRINT == 1
+        std::cout << "Perm: " << to_string_range(perm) << std::endl;
+        std::cout << "Perm_left: " << to_string_range(perm_left) << std::endl;
+        std::cout << "Perm_right: " << to_string_range(perm_right) << std::endl;
+#endif
+
+        // Transpose so labels are ordered according to category
+        op1 = apply_transpose_op(info, op1, perm, rows[0]);
+        op2 = apply_transpose_op(info, op2, perm, rows[1]);
+
+#if DEBUG_PRINT == 1
+        std::cout << "Rows after transpose before reshape:\n";
+        print_matrix(rows);
+#endif
+
+        // Axes = common_dims -> Label present only in current two terms(label category 1)
+        std::vector<int> new_axes(axes.size());
+        std::iota(new_axes.begin(), new_axes.end(), ndim - axes.size());
+
+        // common_axes -> labels present in both terms and remainder of eq(label category -1)
+        std::vector<int> new_common_axes(common_axes.size());
+        std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
+
+        // Labels that are not in left or right
+        // common_axes is the intersection of left and right, if a label is in neither of
+        // these, surely it cannot be in common_axes, making the check superfluous?
+        std::vector<int> not_in_both;
+        for(int i = 0; i < ndim; ++i)
+        {
+            if(not contains(left, i) and not contains(right, i) and not contains(common_axes, i))
+                not_in_both.push_back(i);
+        }
+
+#if DEBUG_PRINT == 1
+        std::cout << "new_axes: " << to_string_range(new_axes) << std::endl;
+        std::cout << "new_common_axes: " << to_string_range(new_common_axes) << std::endl;
+        std::cout << "not_in_both: " << to_string_range(not_in_both) << std::endl;
+#endif
+
+        instruction_ref op =
+            batch_dot(info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
+
+        // Transpose again
+        std::vector<int> ordered_axes = common_axes;
+        std::copy_if(left.begin(), left.end(), std::back_inserter(ordered_axes), [=](int el) {
+            return not contains(right, el);
+        });
+        std::copy_if(right.begin(), right.end(), std::back_inserter(ordered_axes), [=](int el) {
+            return not contains(left, el);
+        });
+        std::copy(not_in_both.begin(), not_in_both.end(), std::back_inserter(ordered_axes));
+
+#if DEBUG_PRINT == 1
+        std::cout << "ordered_axes: " << to_string_range(ordered_axes) << std::endl;
+#endif
+        std::vector<std::tuple<int, int>> rev_perm;
+        for(auto i = 0; i < ordered_axes.size(); ++i)
+            rev_perm.push_back({ordered_axes[i], i});
+
+        std::sort(rev_perm.begin(), rev_perm.end(), [](auto lhs, auto rhs) {
+            return std::get<0>(lhs) < std::get<0>(rhs);
+        });
+
+        perm.clear();
+        for(auto p : rev_perm)
+            perm.push_back(std::get<1>(p));
+
+        op = apply_transpose_op(info, op, perm, rows[1]);
+
+        return op;
     }
 
     instruction_ref batch_dot(const onnx_parser::node_info& info,
@@ -726,22 +649,10 @@ struct parse_einsum : op_parser<parse_einsum>
         print_matrix(rows);
 #endif
 
-        // std::vector<int> left_term, right_term;
-        // for(auto i = 0; i < rows[0].size(); ++i)
-        //     if(rows[0][i] != -1)
-        //         left_term.push_back(i);
-        // for(auto i = 0; i < rows[1].size(); ++i)
-        //     if(rows[1][i] != -1)
-        //         right_term.push_back(i);
-        // auto common_labels = set_intersection(left_term, right_term);
         auto common_labels = set_union(batch_axes, sum_axes);
-
 #if DEBUG_PRINT == 1
-        std::cout << "Left term: " << migraphx::to_string_range(left_term) << std::endl;
-        std::cout << "Right term: " << migraphx::to_string_range(right_term) << std::endl;
         std::cout << "Common labels: " << migraphx::to_string_range(common_labels) << std::endl;
 #endif
-
         std::tie(op1, op2) = apply_broadcast_op(info, op1, op2, common_labels);
 
         auto op1_shape = op1->get_shape().lens();
@@ -751,7 +662,6 @@ struct parse_einsum : op_parser<parse_einsum>
             return std::accumulate(
                 axes.begin(), axes.end(), 1, [&](auto acc, auto l) { return acc *= lens[l]; });
         };
-
         std::array<int, 3> dims1{
             calc_dim(batch_axes, op1_shape), -1, calc_dim(sum_axes, op1_shape)};
         std::array<int, 3> dims2{
@@ -764,42 +674,29 @@ struct parse_einsum : op_parser<parse_einsum>
 
         std::vector<int> new_shape;
         for(int i : batch_axes)
-        {
             new_shape.push_back(std::max(op1_shape[i], op2_shape[i]));
-        }
+
         for(int i : left)
-        {
-            if(std::find(batch_axes.begin(), batch_axes.end(), i) == batch_axes.end())
-            {
+            if(not contains(batch_axes, i))
                 new_shape.push_back(op1_shape[i]);
-            }
-        }
+
         for(int i : right)
-        {
-            if(std::find(batch_axes.begin(), batch_axes.end(), i) == batch_axes.end())
-            {
+            if(not contains(batch_axes, i))
                 new_shape.push_back(op2_shape[i]);
-            }
-        }
 
         while(new_shape.size() < op1_shape.size())
-        {
             new_shape.push_back(1);
-        }
 
-        instruction_ref op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
+        auto op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
         // compute output row
         std::transform(
             rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), [](int l, int r) {
                 return std::max(l, r);
             });
+
         for(int a : sum_axes)
-        {
-            if(std::find(right.begin(), right.end(), a) == right.end())
-            {
+            if(not contains(right, a))
                 rows[1][a] = -1;
-            }
-        }
 
         return op;
     }
@@ -807,10 +704,9 @@ struct parse_einsum : op_parser<parse_einsum>
     bool is_transpose_identity(std::vector<int> perm) const
     {
         for(auto i = 0u; i < perm.size(); ++i)
-        {
             if(perm[i] != i)
                 return false;
-        }
+
         return true;
     }
 
@@ -818,12 +714,9 @@ struct parse_einsum : op_parser<parse_einsum>
     {
         std::vector<std::vector<int>> ret(rows);
         for(auto& row : ret)
-        {
             for(int i = 0; i < cols; ++i)
-            {
                 row.push_back(fill_value);
-            }
-        }
+
         return ret;
     }
 
@@ -835,12 +728,9 @@ struct parse_einsum : op_parser<parse_einsum>
     {
         int ret = mat[begin][col];
         for(int i = begin + 1; i < end; ++i)
-        {
             if(pred(mat[i][col], ret))
-            {
                 ret = mat[i][col];
-            }
-        }
+
         return ret;
     }
 
@@ -848,6 +738,7 @@ struct parse_einsum : op_parser<parse_einsum>
     {
         std::vector<int> ret;
         std::set_union(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+
         return ret;
     }
 
@@ -857,6 +748,7 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> ret;
         std::set_intersection(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+
         return ret;
     }
 
@@ -865,6 +757,7 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> ret;
         std::set_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+
         return ret;
     }
 
@@ -874,6 +767,7 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> ret;
         std::set_symmetric_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+
         return ret;
     }
 
@@ -889,6 +783,7 @@ struct parse_einsum : op_parser<parse_einsum>
         ([&](auto&& vec) { ret.insert(ret.end(), vec.begin(), vec.end()); }(
              std::forward<Vecs>(vecs)),
          ...);
+
         return ret;
     }
 
@@ -937,9 +832,7 @@ struct parse_einsum : op_parser<parse_einsum>
                     col_id += ellipses_ndim;
                 }
                 else
-                {
                     mat[i][label_to_column[term[j]]] = col_id++;
-                }
             }
         }
 
@@ -987,13 +880,10 @@ struct parse_einsum : op_parser<parse_einsum>
             case ' ': break;
             case '-':
                 if(explicit_form)
-                {
                     MIGRAPHX_THROW("Einsum equation has multiple '->' symbols");
-                }
                 if(i + 1 >= equation.size() || equation[i + 1] != '>')
-                {
                     MIGRAPHX_THROW("Invalid '->' in einsum equation");
-                }
+
                 ++i;
                 explicit_form = true;
                 [[fallthrough]];
@@ -1004,24 +894,21 @@ struct parse_einsum : op_parser<parse_einsum>
                 break;
             case '.':
                 if(has_ellipsis)
-                {
                     MIGRAPHX_THROW("Ellipsis can only appear once per einsum equation term");
-                }
+
                 if(i + 2 >= equation.size() || equation[i + 1] != '.' || equation[i + 2] != '.')
-                {
                     MIGRAPHX_THROW("Incomplete ellipsis in einsum equation " +
                                    std::string(equation));
-                }
+
                 i += 2;
                 has_ellipsis = true;
                 term += '*';
                 break;
             default:
                 if(!std::isalpha(c))
-                {
                     MIGRAPHX_THROW(std::string("Invalid character '") + c +
                                    "' in einsum equation term");
-                }
+
                 term += c;
                 if(not explicit_form)
                     ++label_count[c];
@@ -1051,18 +938,13 @@ struct parse_einsum : op_parser<parse_einsum>
                               size_t ellipses_ndim) const
     {
         for(const auto label : output_term)
-        {
             if(not contains(label_count, label) and label != '*')
-            {
                 MIGRAPHX_THROW("Output term contains label " + std::to_string(label) +
                                ", which is not present in any of the input terms");
-            }
-        }
+
         if(ellipses_ndim != 0 and not contains(output_term, "*"))
-        {
             MIGRAPHX_THROW(
                 "Output term does not contain ellipsis (...) even though an input term does");
-        }
     }
 
     size_t validate_input_terms(const string_vec& input_terms,
