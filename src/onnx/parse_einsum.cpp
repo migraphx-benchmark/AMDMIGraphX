@@ -443,27 +443,7 @@ struct parse_einsum : op_parser<parse_einsum>
             p += 1;
         }
 
-        // *ik,kjl->ij*
-        //
-        // term1
-
-        if(not is_transpose_identity(new_perm))
-        {
-#if DEBUG_PRINT == 1
-            std::cout << "Shape before transpose: " << op->get_shape() << std::endl;
-#endif
-            op = info.add_instruction(make_op("transpose", {{"permutation", new_perm}}), op);
-#if DEBUG_PRINT == 1
-            std::cout << "Shape after transpose: " << op->get_shape() << std::endl;
-#endif
-            // compute output row
-            auto cpy = rows[1];
-            i        = 0;
-            for(int np : new_perm)
-            {
-                rows[1][i++] = cpy[np];
-            }
-        }
+        op = apply_transpose_op(info, op, new_perm, rows[1]);
 
         return op;
     }
@@ -511,17 +491,7 @@ struct parse_einsum : op_parser<parse_einsum>
             p += 1;
         }
 
-        if(not is_transpose_identity(new_perm))
-        {
-            op = info.add_instruction(make_op("transpose", {{"permutation", new_perm}}), op);
-            // compute output row
-            auto cpy = rows[1];
-            i        = 0;
-            for(int np : new_perm)
-            {
-                rows[1][i++] = cpy[np];
-            }
-        }
+        op = apply_transpose_op(info, op, new_perm, rows[1]);
 
         if(sq.size())
         {
@@ -631,61 +601,18 @@ struct parse_einsum : op_parser<parse_einsum>
                 }
             }
 
-            // Transpose
-            std::vector<std::tuple<int, int>> i_axes;
-            for(int i = 0; i < ndim; ++i)
-            {
-                int first;
-                // Label present in both terms and somewhere in the remainder of equation
-                if(std::find(common_axes.begin(), common_axes.end(), i) != common_axes.end())
-                {
-                    first = -1;
-                }
-                // Label present ONLY in current two terms
-                else if(std::find(axes.begin(), axes.end(), i) != axes.end())
-                {
-                    first = 1;
-                }
-                // Label present only in remainder of equation
-                else
-                {
-                    first = 0;
-                }
-                i_axes.push_back({first, i});
-            }
+            const auto ignore_axes = set_symmetric_difference(left, right);
+            auto perm              = concat_vectors(common_axes, ignore_axes, axes);
 
-            std::sort(i_axes.begin(), i_axes.end(), [](auto lhs, auto rhs) {
-                return std::get<0>(lhs) < std::get<0>(rhs);
-            });
-
-            // Label permutation in accordance to their category{-1, 0, 1}
-            std::vector<int> perm;
-            for(auto _ : i_axes)
-            {
-                perm.push_back(std::get<1>(_));
-            }
-
-            // Label permutation in accordance to their category that are surely present in the left
-            // term
-            std::vector<int> perm_left;
-            for(int i = 0; i < perm.size(); ++i)
-            {
-                if(std::find(left.begin(), left.end(), perm[i]) != left.end())
-                {
-                    perm_left.push_back(i);
-                }
-            }
-
-            // Label permutation in accordance to their category that are surely present in the
-            // right term
-            std::vector<int> perm_right;
-            for(int i = 0; i < perm.size(); ++i)
-            {
-                if(std::find(right.begin(), right.end(), perm[i]) != right.end())
-                {
-                    perm_right.push_back(i);
-                }
-            }
+            const auto perm_for_side = [&](const auto& labels) {
+                std::vector<int> ret;
+                for(int i = 0; i < perm.size(); ++i)
+                    if(contains(labels, perm[i]))
+                        ret.push_back(i);
+                return ret;
+            };
+            const auto perm_left  = perm_for_side(left);
+            const auto perm_right = perm_for_side(right);
 
 #if DEBUG_PRINT == 1
             std::cout << "Perm: " << to_string_range(perm) << std::endl;
@@ -694,49 +621,21 @@ struct parse_einsum : op_parser<parse_einsum>
 #endif
 
             // Transpose so labels are ordered according to category
-            if(!is_transpose_identity(perm))
-            {
-                op1 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op1);
-                // compute output row
-                auto cpy = rows[0];
-                int i    = 0;
-                for(int p : perm)
-                {
-                    rows[0][i++] = cpy[p];
-                }
-
-                op2 = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op2);
-                // compute output row
-                cpy = rows[1];
-                i   = 0;
-                for(int p : perm)
-                {
-                    rows[1][i++] = cpy[p];
-                }
-            }
+            op1 = apply_transpose_op(info, op1, perm, rows[0]);
+            op2 = apply_transpose_op(info, op2, perm, rows[1]);
 
 #if DEBUG_PRINT == 1
             std::cout << "Rows after transpose before reshape:\n";
             print_matrix(rows);
 #endif
 
-            // Reshape
-            std::vector<int> all_axes2(ndim);
-            std::iota(all_axes2.begin(), all_axes2.end(), 0);
-
-            std::vector<int> new_axes;
             // Axes = common_dims -> Label present only in current two terms(label category 1)
-            if(axes.size() > 0)
-            {
-                std::copy(
-                    all_axes2.end() - axes.size(), all_axes2.end(), std::back_inserter(new_axes));
-            }
+            std::vector<int> new_axes(axes.size());
+            std::iota(new_axes.begin(), new_axes.end(), ndim - axes.size());
 
             // common_axes -> labels present in both terms and remainder of eq(label category -1)
-            std::vector<int> new_common_axes;
-            std::copy(all_axes2.begin(),
-                      all_axes2.begin() + common_axes.size(),
-                      std::back_inserter(new_common_axes));
+            std::vector<int> new_common_axes(common_axes.size());
+            std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
 
             // Labels that are not in left or right
             // common_axes is the intersection of left and right, if a label is in neither of
@@ -792,17 +691,7 @@ struct parse_einsum : op_parser<parse_einsum>
                 perm.push_back(std::get<1>(p));
             }
 
-            if(not is_transpose_identity(perm))
-            {
-                op = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op);
-                // compute output row
-                auto cpy = rows[1];
-                int i    = 0;
-                for(int p : perm)
-                {
-                    rows[1][i++] = cpy[p];
-                }
-            }
+            op = apply_transpose_op(info, op, perm, rows[1]);
 
             return op;
         }
@@ -853,76 +742,25 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << "Common labels: " << migraphx::to_string_range(common_labels) << std::endl;
 #endif
 
-        std::vector<std::size_t> op1_shape = op1->get_shape().lens();
-        std::vector<std::size_t> op2_shape = op2->get_shape().lens();
+        std::tie(op1, op2) = apply_broadcast_op(info, op1, op2, common_labels);
 
-        for(auto l : common_labels)
-        {
-#if DEBUG_PRINT == 1
-            std::cout << "Common label: " << l << std::endl;
-#endif
-            if(op1_shape[l] == 1 and op2_shape[l] == 1)
-                continue;
-            if(op1_shape[l] == 1)
-            {
-                op1_shape[l] = op2_shape[l];
-                op1 =
-                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op1_shape}}), op1);
-            }
-            if(op2_shape[l] == 1)
-            {
-                op2_shape[l] = op1_shape[l];
-                op2 =
-                    info.add_instruction(make_op("multibroadcast", {{"out_lens", op2_shape}}), op2);
-            }
-        }
+        auto op1_shape = op1->get_shape().lens();
+        auto op2_shape = op2->get_shape().lens();
 
-        int dim0 = 1;
-        for(int i : batch_axes)
-        {
-            dim0 *= op1_shape[i];
-        }
+        auto calc_dim = [](const auto& axes, const auto& lens) {
+            return std::accumulate(
+                axes.begin(), axes.end(), 1, [&](auto acc, auto l) { return acc *= lens[l]; });
+        };
 
-        int dim0b = 1;
-        for(int i : batch_axes)
-        {
-            dim0b *= op2_shape[i];
-        }
+        std::array<int, 3> dims1{
+            calc_dim(batch_axes, op1_shape), -1, calc_dim(sum_axes, op1_shape)};
+        std::array<int, 3> dims2{
+            calc_dim(batch_axes, op2_shape), -1, calc_dim(sum_axes, op2_shape)};
 
-        int dimb = 1;
-        if(keep_axes.empty())
-        {
-            dimb = -1;
-        }
-        else
-        {
-            for(int i : keep_axes)
-            {
-                dimb *= op1_shape[i];
-            }
-        }
-
-        int dim1 = 1;
-        for(int i : sum_axes)
-        {
-            dim1 *= op1_shape[i];
-        }
-
-        int dim2 = 1;
-        for(int i : sum_axes)
-        {
-            dim2 *= op2_shape[i];
-        }
-
-        instruction_ref op1sh =
-            info.add_instruction(make_op("reshape", {{"dims", {dim0, dimb, dim1}}}), op1);
-
-        instruction_ref op2sh =
-            info.add_instruction(make_op("reshape", {{"dims", {dim0b, dimb, dim2}}}), op2);
-
-        instruction_ref dot;
-        op2sh = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2sh);
-        dot   = info.add_instruction(make_op("dot"), op1sh, op2sh);
+        op1 = info.add_instruction(make_op("reshape", {{"dims", dims1}}), op1);
+        op2 = info.add_instruction(make_op("reshape", {{"dims", dims2}}), op2);
+        op2 = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2);
+        instruction_ref dot = info.add_instruction(make_op("dot"), op1, op2);
 
         std::vector<int> new_shape;
         for(int i : batch_axes)
@@ -968,9 +806,12 @@ struct parse_einsum : op_parser<parse_einsum>
 
     bool is_transpose_identity(std::vector<int> perm) const
     {
-        std::vector<int> range(perm.size());
-        std::iota(range.begin(), range.end(), 0);
-        return perm == range;
+        for(auto i = 0u; i < perm.size(); ++i)
+        {
+            if(perm[i] != i)
+                return false;
+        }
+        return true;
     }
 
     std::vector<std::vector<int>> full(int rows, int cols, int fill_value) const
@@ -1003,14 +844,15 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::vector<int> set_union(std::vector<int> lhs, std::vector<int> rhs) const
+    std::vector<int> set_union(const std::vector<int>& lhs, const std::vector<int>& rhs) const
     {
         std::vector<int> ret;
         std::set_union(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
         return ret;
     }
 
-    std::vector<int> set_intersection(std::vector<int> lhs, std::vector<int> rhs) const
+    std::vector<int> set_intersection(const std::vector<int>& lhs,
+                                      const std::vector<int>& rhs) const
     {
         std::vector<int> ret;
         std::set_intersection(
@@ -1018,7 +860,7 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::vector<int> set_difference(std::vector<int> lhs, std::vector<int> rhs) const
+    std::vector<int> set_difference(const std::vector<int>& lhs, const std::vector<int>& rhs) const
     {
         std::vector<int> ret;
         std::set_difference(
@@ -1026,7 +868,29 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    // EQUATION PARSING
+    std::vector<int> set_symmetric_difference(const std::vector<int>& lhs,
+                                              const std::vector<int>& rhs) const
+    {
+        std::vector<int> ret;
+        std::set_symmetric_difference(
+            lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
+        return ret;
+    }
+
+    template <typename... Vecs>
+    std::decay_t<std::tuple_element_t<0, std::tuple<Vecs...>>> concat_vectors(Vecs&&... vecs) const
+    {
+        size_t reserve_size = 0u;
+        ([&](auto&& vec) { reserve_size += vec.size(); }(std::forward<Vecs>(vecs)), ...);
+
+        std::decay_t<std::tuple_element_t<0, std::tuple<Vecs...>>> ret;
+        ret.reserve(reserve_size);
+
+        ([&](auto&& vec) { ret.insert(ret.end(), vec.begin(), vec.end()); }(
+             std::forward<Vecs>(vecs)),
+         ...);
+        return ret;
+    }
 
     std::tuple<string_vec, std::string, size_t>
     analyze_equation(std::string_view equation, const std::vector<instruction_ref>& args) const
@@ -1239,6 +1103,64 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         return global_ellipses_dims;
+    }
+
+    std::pair<instruction_ref, instruction_ref>
+    apply_broadcast_op(const onnx_parser::node_info& info,
+                       instruction_ref opl,
+                       instruction_ref opr,
+                       const std::vector<int>& common_labels) const
+    {
+        std::pair<instruction_ref, instruction_ref> ret;
+
+        auto llens = opl->get_shape().lens();
+        auto rlens = opr->get_shape().lens();
+
+        bool lbc = false;
+        bool rbc = false;
+        for(auto l : common_labels)
+        {
+            if(llens[l] == 1 and rlens[l] == 1)
+                continue;
+
+            if(llens[l] == 1)
+            {
+                lbc      = true;
+                llens[l] = rlens[l];
+            }
+
+            if(rlens[l] == 1)
+            {
+                rbc      = true;
+                rlens[l] = llens[l];
+            }
+        }
+
+        if(lbc)
+            opl = info.add_instruction(make_op("multibroadcast", {{"out_lens", llens}}), opl);
+        if(rbc)
+            opr = info.add_instruction(make_op("multibroadcast", {{"out_lens", rlens}}), opr);
+
+        ret.first  = opl;
+        ret.second = opr;
+        return ret;
+    }
+
+    instruction_ref apply_transpose_op(const onnx_parser::node_info& info,
+                                       instruction_ref op,
+                                       const std::vector<int>& perm,
+                                       std::vector<int>& row) const
+    {
+        if(is_transpose_identity(perm))
+            return op;
+
+        op = info.add_instruction(make_op("transpose", {{"permutation", perm}}), op);
+        // compute output row
+        auto cpy = row;
+        for(auto i = 0u; i < perm.size(); ++i)
+            row[i] = cpy[perm[i]];
+
+        return op;
     }
 
     void print_matrix(std::vector<std::vector<int>>& mat) const
