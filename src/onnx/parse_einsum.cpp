@@ -68,7 +68,6 @@ struct parse_einsum : op_parser<parse_einsum>
 
         std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
         int full_dim                   = std::get<1>(mat_shape);
-
         std::vector<std::vector<int>> rows = full(2, full_dim, -1);
 
         for(auto arg_idx = 0; arg_idx < args.size(); ++arg_idx)
@@ -604,20 +603,6 @@ struct parse_einsum : op_parser<parse_einsum>
         for(auto& row : ret)
             for(int i = 0; i < cols; ++i)
                 row.push_back(fill_value);
-
-        return ret;
-    }
-
-    int colwise_comp(std::vector<std::vector<int>> mat,
-                     int col,
-                     int begin,
-                     int end,
-                     std::function<bool(int, int)> pred) const
-    {
-        int ret = mat[begin][col];
-        for(int i = begin + 1; i < end; ++i)
-            if(pred(mat[i][col], ret))
-                ret = mat[i][col];
 
         return ret;
     }
