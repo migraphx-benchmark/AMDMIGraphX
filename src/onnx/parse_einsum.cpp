@@ -61,19 +61,10 @@ struct parse_einsum : op_parser<parse_einsum>
             MIGRAPHX_THROW("Equation attribute is required");
         }
 
-        std::string equation = info.attributes.at("equation").s();
-#if DEBUG_PRINT == 1
-        std::cout << "EQUATION: " << equation << std::endl;
-#endif
-
+        std::string equation                       = info.attributes.at("equation").s();
         auto [terms, unique_labels, ellipses_ndim] = analyze_equation(equation, args);
         auto mat        = make_mapping_matrix(terms, unique_labels, ellipses_ndim);
         auto duplicates = look_for_duplicates(terms);
-
-#if DEBUG_PRINT == 1
-        std::cout << "Mapping matrix: " << std::endl;
-        print_matrix(mat);
-#endif
 
         std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
         int full_dim                   = std::get<1>(mat_shape);
@@ -82,13 +73,9 @@ struct parse_einsum : op_parser<parse_einsum>
 
         for(auto arg_idx = 0; arg_idx < args.size(); ++arg_idx)
         {
-#if DEBUG_PRINT == 1
-            std::cout << i << "----------------------------------" << std::endl;
-#endif
             op      = args[arg_idx];
             rows[1] = mat[arg_idx]; // compute output row
 
-            auto tr_row    = mat[arg_idx];
             auto duplicate = duplicates[arg_idx];
             if(duplicate.size())
             {
@@ -96,47 +83,26 @@ struct parse_einsum : op_parser<parse_einsum>
                 for(auto [_, v] : duplicate)
                 {
                     if(v.size() == 1)
-                    {
                         continue;
-                    }
 
                     diag.push_back({v[0], v});
                 }
 
-                op     = apply_diagonal(info, rows, op, diag);
-                tr_row = rows[1];
+                op = apply_diagonal(info, rows, op, diag);
             }
 
-#if DEBUG_PRINT == 1
-            std::cout << "Rows before unsqueeze_transpose: " << std::endl;
-            print_matrix(rows);
-#endif
             // Transpose so the labels in the term are ordered alphabetically
-            op = unsqueeze_transpose(info, rows, op, tr_row);
-#if DEBUG_PRINT == 1
-            std::cout << "Rows after unsqueeze_transpose: " << std::endl;
-            print_matrix(rows);
-#endif
+            op = unsqueeze_transpose(info, rows, op);
 
-            // reduction
             std::vector<int> red;
             for(int d = 0; d < full_dim; ++d)
             {
-                int max = colwise_comp(mat, d, arg_idx + 1, mat.size(), std::greater<int>{});
-                if(max == -1 and rows[1][d] != -1 and rows[0][d] == -1)
+                bool all_neg_one = all_of(extract_column(mat, d, arg_idx + 1, mat.size()),
+                                          [](auto i) { return i == -1; });
+                if(all_neg_one and rows[1][d] != -1 and rows[0][d] == -1)
                     red.push_back(d);
             }
-
-            if(red.size())
-            {
-#if DEBUG_PRINT == 1
-                std::cout << "Pre-dot axes for reduction: " << to_string_range(red) << std::endl;
-#endif
-                op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
-                // compute output row
-                for(int r : red)
-                    rows[1][r] = -1;
-            }
+            op = apply_reduce_sum_op(info, op, red, rows[1]);
 
             if(not last_op)
             {
@@ -153,18 +119,17 @@ struct parse_einsum : op_parser<parse_einsum>
             // of the equation
             std::vector<int> right;
 
+            auto not_neg_one = [](auto i) { return i != -1; };
             for(int d = 0; d < full_dim; ++d)
             {
-                int min = colwise_comp(rows, d, 0, rows.size(), std::less<int>{});
                 // There is no -1 in the column, for the current two rows
                 // The label is present in both rows
-                if(min >= 0)
+                if(all_of(extract_column(rows, d, 0, rows.size()), not_neg_one))
                 {
                     // There is at least 1 element that is not -1, for the remaining rows of the
                     // matrix.
                     // The label is present in at least one of the subsequent rows
-                    int max = colwise_comp(mat, d, arg_idx + 1, mat.size(), std::greater<int>{});
-                    if(max >= 0)
+                    if(any_of(extract_column(mat, d, arg_idx + 1, mat.size()), not_neg_one))
                     {
                         left.push_back(d);
                         right.push_back(d);
@@ -197,25 +162,12 @@ struct parse_einsum : op_parser<parse_einsum>
             for(int d = 0; d < full_dim; ++d)
             {
                 if(rows[0][d] > 0 and rows[1][d] == -1)
-                {
                     red.push_back(d);
-                }
                 else if(rows[0][d] == -1 && rows[1][d] >= 0)
-                {
                     MIGRAPHX_THROW("Issue in equation");
-                }
             }
 
-            if(red.size())
-            {
-                op = info.add_instruction(make_op("reduce_sum", {{"axes", red}}), op);
-                // compute output row
-                for(int r : red)
-                {
-                    rows[1][r] = -1;
-                }
-            }
-
+            op = apply_reduce_sum_op(info, op, red, rows[1]);
             op = transpose_squeeze(info, rows, op, mat[args.size()]);
         }
 
@@ -369,20 +321,19 @@ struct parse_einsum : op_parser<parse_einsum>
 
     instruction_ref unsqueeze_transpose(const onnx_parser::node_info& info,
                                         std::vector<std::vector<int>>& rows,
-                                        instruction_ref op,
-                                        std::vector<int> row) const
+                                        instruction_ref op) const
     {
         std::vector<std::tuple<int, int>> axes;
         std::vector<std::tuple<int, int>> perm;
 
-        for(auto i = 0, p = 0; i < row.size(); ++i)
+        for(auto i = 0, p = 0; i < rows[1].size(); ++i)
         {
-            if(row[i] == -1)
+            if(rows[1][i] == -1)
                 axes.push_back({p, i});
             else
             {
                 ++p;
-                perm.push_back({row[i], i});
+                perm.push_back({rows[1][i], i});
             }
         }
 
@@ -397,21 +348,17 @@ struct parse_einsum : op_parser<parse_einsum>
 #if DEBUG_PRINT == 1
         std::cout << "Shape after unsqueeze: " << op->get_shape() << std::endl;
 #endif
-        // check output row
-        for(int s_a : s_axes)
-            if(rows[1][s_a] != -1)
-                MIGRAPHX_THROW("Dimensions should be -1 in output row");
 
         std::sort(perm.begin(), perm.end(), [](auto lhs, auto rhs) {
             return std::get<0>(lhs) < std::get<0>(rhs);
         });
 
-        std::vector<int> new_perm(row.size());
+        std::vector<int> new_perm(rows[1].size());
         std::iota(new_perm.begin(), new_perm.end(), 0);
 
-        for(auto i = 0, p = 0; i < row.size(); ++i)
+        for(auto i = 0, p = 0; i < rows[1].size(); ++i)
         {
-            if(row[i] == -1)
+            if(rows[1][i] == -1)
                 continue;
 
             new_perm[std::get<1>(perm[p++])] = i;
@@ -552,7 +499,7 @@ struct parse_einsum : op_parser<parse_einsum>
 #endif
 
         instruction_ref op =
-            batch_dot(info, rows, op1, op2, new_common_axes, {}, new_axes, perm_left, perm_right);
+            batch_dot(info, rows, op1, op2, new_common_axes, new_axes, perm_left, perm_right);
 
         auto ordered_axes = concat_vectors(
             common_axes, set_difference(left, right), set_difference(right, left), axes);
@@ -560,7 +507,7 @@ struct parse_einsum : op_parser<parse_einsum>
         std::cout << "ordered_axes: " << to_string_range(ordered_axes) << std::endl;
 #endif
         perm = make_ordered_permutation(ordered_axes);
-        op = apply_transpose_op(info, op, perm, rows[1]);
+        op   = apply_transpose_op(info, op, perm, rows[1]);
 
         return op;
     }
@@ -570,7 +517,6 @@ struct parse_einsum : op_parser<parse_einsum>
                               instruction_ref op1,
                               instruction_ref op2,
                               std::vector<int> batch_axes,
-                              std::vector<int> keep_axes,
                               std::vector<int> sum_axes,
                               std::vector<int> left,
                               std::vector<int> right) const
@@ -672,6 +618,18 @@ struct parse_einsum : op_parser<parse_einsum>
         for(int i = begin + 1; i < end; ++i)
             if(pred(mat[i][col], ret))
                 ret = mat[i][col];
+
+        return ret;
+    }
+
+    std::vector<int>
+    extract_column(std::vector<std::vector<int>> mat, int col_idx, int row_begin, int row_end) const
+    {
+        std::vector<int> ret;
+        ret.reserve(row_end - row_begin);
+
+        for(int i = row_begin; i < row_end; ++i)
+            ret.push_back(mat[i][col_idx]);
 
         return ret;
     }
@@ -985,6 +943,20 @@ struct parse_einsum : op_parser<parse_einsum>
             row[i] = cpy[perm[i]];
 
         return op;
+    }
+
+    instruction_ref apply_reduce_sum_op(const onnx_parser::node_info& info,
+                                        instruction_ref op,
+                                        const std::vector<int>& axes,
+                                        std::vector<int>& row) const
+    {
+        if(axes.empty())
+            return op;
+
+        for(int a : axes)
+            row[a] = -1;
+
+        return info.add_instruction(make_op("reduce_sum", {{"axes", axes}}), op);
     }
 
     std::vector<int> make_ordered_permutation(const std::vector<int>& axes) const
