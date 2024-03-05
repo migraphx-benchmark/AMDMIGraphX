@@ -29,7 +29,6 @@
 #include <migraphx/common.hpp>
 #include <migraphx/stringutils.hpp>
 
-#define DEBUG_PRINT 0
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 namespace onnx {
@@ -66,8 +65,8 @@ struct parse_einsum : op_parser<parse_einsum>
         auto mat        = make_mapping_matrix(terms, unique_labels, ellipses_ndim);
         auto duplicates = look_for_duplicates(terms);
 
-        std::tuple<int, int> mat_shape = {mat.size(), mat[0].size()};
-        int full_dim                   = std::get<1>(mat_shape);
+        std::tuple<int, int> mat_shape     = {mat.size(), mat[0].size()};
+        int full_dim                       = std::get<1>(mat_shape);
         std::vector<std::vector<int>> rows = full(2, full_dim, -1);
 
         for(auto arg_idx = 0; arg_idx < args.size(); ++arg_idx)
@@ -153,7 +152,7 @@ struct parse_einsum : op_parser<parse_einsum>
         }
 
         // finalize output
-        if(*(std::max_element(mat[args.size()].begin(), mat[args.size()].end())) >= 0)
+        if(any_of(mat[args.size()], [](auto i) { return i >= 0; }))
         {
             rows[1] = mat[args.size()];
 
@@ -162,13 +161,14 @@ struct parse_einsum : op_parser<parse_einsum>
             {
                 if(rows[0][d] > 0 and rows[1][d] == -1)
                     red.push_back(d);
-                else if(rows[0][d] == -1 && rows[1][d] >= 0)
+                else if(rows[0][d] == -1 and rows[1][d] >= 0)
                     MIGRAPHX_THROW("Issue in equation");
             }
 
             op = apply_reduce_sum_op(info, op, red, rows[1]);
-            op = transpose_squeeze(info, rows, op, mat[args.size()]);
         }
+
+        op = transpose_squeeze(info, rows, op, mat[args.size()]);
 
         return op;
     }
@@ -246,7 +246,7 @@ struct parse_einsum : op_parser<parse_einsum>
             MIGRAPHX_THROW("All duplicated indices have to be the same dimension");
         }
 
-        auto batch_size = 1;
+        size_t batch_size = 1;
         for(auto ba : batch_axes)
         {
             batch_size *= op_shape[ba];
@@ -263,17 +263,12 @@ struct parse_einsum : op_parser<parse_einsum>
             }
         }
 
-        auto indices_arg = info.add_literal(migraphx::literal{
-            migraphx::shape{migraphx::shape::int64_type,
-                            {static_cast<unsigned long>(batch_size), op_shape[axis], axes.size()}},
-            indices});
+        std::vector<size_t> lens{op_shape[axis], axes.size()};
+        if(batch_size > 1)
+            lens.insert(lens.begin(), batch_size);
 
-        std::cout << "INDICES: " << std::endl;
-        for(auto ind : indices)
-        {
-            std::cout << ind << " ";
-        }
-        std::cout << std::endl;
+        auto indices_arg = info.add_literal(
+            migraphx::literal{migraphx::shape{migraphx::shape::int64_type, lens}, indices});
 
         op = info.add_instruction(
             migraphx::make_op("gathernd", {{"batch_dims", batch_axes.size()}}), op, indices_arg);
@@ -322,31 +317,18 @@ struct parse_einsum : op_parser<parse_einsum>
                                         std::vector<std::vector<int>>& rows,
                                         instruction_ref op) const
     {
-        std::vector<std::tuple<int, int>> axes;
+        std::vector<int> unsq_axes;
         std::vector<std::tuple<int, int>> perm;
 
-        for(auto i = 0, p = 0; i < rows[1].size(); ++i)
+        for(auto i = 0; i < rows[1].size(); ++i)
         {
             if(rows[1][i] == -1)
-                axes.push_back({p, i});
+                unsq_axes.push_back(i);
             else
-            {
-                ++p;
                 perm.push_back({rows[1][i], i});
-            }
         }
 
-        std::vector<int> s_axes;
-        for(auto a : axes)
-            s_axes.push_back(std::get<1>(a));
-
-#if DEBUG_PRINT == 1
-        std::cout << "Shape before unsqueeze: " << op->get_shape() << std::endl;
-#endif
-        op = info.add_instruction(make_op("unsqueeze", {{"axes", s_axes}}), op);
-#if DEBUG_PRINT == 1
-        std::cout << "Shape after unsqueeze: " << op->get_shape() << std::endl;
-#endif
+        op = info.add_instruction(make_op("unsqueeze", {{"axes", unsq_axes}}), op);
 
         std::sort(perm.begin(), perm.end(), [](auto lhs, auto rhs) {
             return std::get<0>(lhs) < std::get<0>(rhs);
@@ -420,15 +402,6 @@ struct parse_einsum : op_parser<parse_einsum>
                            std::vector<int> left,
                            std::vector<int> right) const
     {
-#if DEBUG_PRINT == 1
-        std::cout << "Matmul" << std::endl;
-        std::cout << "Axes: " << migraphx::to_string_range(axes) << std::endl;
-        std::cout << "Left: " << migraphx::to_string_range(left) << std::endl;
-        std::cout << "Right: " << migraphx::to_string_range(right) << std::endl;
-        std::cout << "Matmul rows:\n";
-        print_matrix(rows);
-#endif
-
         int ndim = rows[0].size();
 
         // TODO remove this check
@@ -445,11 +418,6 @@ struct parse_einsum : op_parser<parse_einsum>
             if(not contains(all_axes, i))
                 common_axes.push_back(i);
         std::sort(common_axes.begin(), common_axes.end());
-
-#if DEBUG_PRINT == 1
-        std::cout << "All axes: " << to_string_range(all_axes) << std::endl;
-        std::cout << "Common axes: " << to_string_range(common_axes) << std::endl;
-#endif
 
         // axes -> only in left_term and right_term
         // left -> only in left_term, in left_term and rem., in left_term and right_term and rem
@@ -469,20 +437,9 @@ struct parse_einsum : op_parser<parse_einsum>
         const auto perm_left  = perm_for_side(left);
         const auto perm_right = perm_for_side(right);
 
-#if DEBUG_PRINT == 1
-        std::cout << "Perm: " << to_string_range(perm) << std::endl;
-        std::cout << "Perm_left: " << to_string_range(perm_left) << std::endl;
-        std::cout << "Perm_right: " << to_string_range(perm_right) << std::endl;
-#endif
-
         // Transpose so labels are ordered according to category
         op1 = apply_transpose_op(info, op1, perm, rows[0]);
         op2 = apply_transpose_op(info, op2, perm, rows[1]);
-
-#if DEBUG_PRINT == 1
-        std::cout << "Rows after transpose before reshape:\n";
-        print_matrix(rows);
-#endif
 
         // Axes = common_dims -> Label present only in current two terms(label category 1)
         std::vector<int> new_axes(axes.size());
@@ -492,19 +449,11 @@ struct parse_einsum : op_parser<parse_einsum>
         std::vector<int> new_common_axes(common_axes.size());
         std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
 
-#if DEBUG_PRINT == 1
-        std::cout << "new_axes: " << to_string_range(new_axes) << std::endl;
-        std::cout << "new_common_axes: " << to_string_range(new_common_axes) << std::endl;
-#endif
-
         instruction_ref op =
             batch_dot(info, rows, op1, op2, new_common_axes, new_axes, perm_left, perm_right);
 
         auto ordered_axes = concat_vectors(
             common_axes, set_difference(left, right), set_difference(right, left), axes);
-#if DEBUG_PRINT == 1
-        std::cout << "ordered_axes: " << to_string_range(ordered_axes) << std::endl;
-#endif
         perm = make_ordered_permutation(ordered_axes);
         op   = apply_transpose_op(info, op, perm, rows[1]);
 
@@ -525,21 +474,7 @@ struct parse_einsum : op_parser<parse_einsum>
             MIGRAPHX_THROW("batch_dot input tensors need to have the same number of dimensions");
         }
 
-#if DEBUG_PRINT == 1
-        std::cout << "BATCH-DOT" << std::endl;
-        std::cout << "Batch axes: " << migraphx::to_string_range(batch_axes) << std::endl;
-        std::cout << "Keep axes: " << migraphx::to_string_range(keep_axes) << std::endl;
-        std::cout << "Sum axes: " << migraphx::to_string_range(sum_axes) << std::endl;
-        std::cout << "Left: " << migraphx::to_string_range(left) << std::endl;
-        std::cout << "Right: " << migraphx::to_string_range(right) << std::endl;
-        std::cout << "Batch-dot rows:\n";
-        print_matrix(rows);
-#endif
-
         auto common_labels = set_union(batch_axes, sum_axes);
-#if DEBUG_PRINT == 1
-        std::cout << "Common labels: " << migraphx::to_string_range(common_labels) << std::endl;
-#endif
         std::tie(op1, op2) = apply_broadcast_op(info, op1, op2, common_labels);
 
         auto op1_shape = op1->get_shape().lens();
