@@ -45,119 +45,130 @@ struct parse_einsum : op_parser<parse_einsum>
                           const onnx_parser::node_info& info,
                           const std::vector<instruction_ref>& args) const
     {
-        return decompose_equation(info, args);
-    }
-
-    private:
-    instruction_ref decompose_equation(const onnx_parser::node_info& info,
-                                       const std::vector<instruction_ref>& args) const
-    {
-        instruction_ref op;
-        std::optional<instruction_ref> last_op;
-
         if(not contains(info.attributes, "equation"))
-        {
             MIGRAPHX_THROW("Equation attribute is required");
-        }
-
         std::string equation                       = info.attributes.at("equation").s();
+
+        // PREPROCESS EQUATION
         auto [terms, unique_labels, ellipses_ndim] = analyze_equation(equation, args);
         auto mat        = make_mapping_matrix(terms, unique_labels, ellipses_ndim);
         auto duplicates = look_for_duplicates(terms);
+        std::vector<std::vector<int>> rows = full(2, mat[0].size(), -1);
+        // PREPROCESS EQUATION
 
-        std::tuple<int, int> mat_shape     = {mat.size(), mat[0].size()};
-        int full_dim                       = std::get<1>(mat_shape);
-        std::vector<std::vector<int>> rows = full(2, full_dim, -1);
-
+        instruction_ref op;
+        std::optional<instruction_ref> last_op;
         for(auto arg_idx = 0; arg_idx < args.size(); ++arg_idx)
         {
             op      = args[arg_idx];
-            rows[1] = mat[arg_idx]; // compute output row
+            rows[1] = mat[arg_idx];
 
             auto duplicate = duplicates[arg_idx];
-            if(duplicate.size())
-            {
-                std::vector<std::tuple<int, std::vector<int>>> diag;
-                for(auto [_, v] : duplicate)
-                {
-                    if(v.size() == 1)
-                        continue;
+            op             = preprocess_input(info, op, duplicate, mat, arg_idx, rows);
 
-                    diag.push_back({v[0], v});
-                }
-
-                op = apply_diagonal(info, rows, op, diag);
-            }
-
-            // Transpose so the labels in the term are ordered alphabetically
-            op = unsqueeze_transpose(info, rows, op);
-
-            std::vector<int> red;
-            for(int d = 0; d < full_dim; ++d)
-            {
-                bool all_neg_one = all_of(extract_column(mat, d, arg_idx + 1, mat.size()),
-                                          [](auto i) { return i == -1; });
-                if(all_neg_one and rows[1][d] != -1 and rows[0][d] == -1)
-                    red.push_back(d);
-            }
-            op = apply_reduce_sum_op(info, op, red, rows[1]);
-
-            if(not last_op)
-            {
-                last_op = op;
-                rows[0] = rows[1];
-                continue;
-            }
-            // Label is present in current two terms, but not in the remainder of the equation
-            std::vector<int> common_dims;
-            // Label is present in only left term or both terms and somewhere in the remainder
-            // of the equation
-            std::vector<int> left;
-            // Label is present in only right term or both terms and somewhere in the remainder
-            // of the equation
-            std::vector<int> right;
-
-            auto not_neg_one = [](auto i) { return i != -1; };
-            for(int d = 0; d < full_dim; ++d)
-            {
-                // There is no -1 in the column, for the current two rows
-                // The label is present in both rows
-                if(all_of(extract_column(rows, d, 0, rows.size()), not_neg_one))
-                {
-                    // There is at least 1 element that is not -1, for the remaining rows of the
-                    // matrix.
-                    // The label is present in at least one of the subsequent rows
-                    if(any_of(extract_column(mat, d, arg_idx + 1, mat.size()), not_neg_one))
-                    {
-                        left.push_back(d);
-                        right.push_back(d);
-                    }
-                    else
-                        common_dims.push_back(d);
-                }
-                // The label is missing in one or both of the rows
-                else
-                {
-                    if(rows[0][d] >= 0)
-                        left.push_back(d);
-                    if(rows[1][d] >= 0)
-                        right.push_back(d);
-                }
-            }
-
-            op = matmul(info, rows, last_op.value(), op, common_dims, left, right);
+            if(last_op)
+                op = process_pair(info, *last_op, op, mat, arg_idx, rows);
 
             last_op = op;
             rows[0] = rows[1];
         }
 
-        // finalize output
-        if(any_of(mat[args.size()], [](auto i) { return i >= 0; }))
-        {
-            rows[1] = mat[args.size()];
+        return finalize_output(info, op, mat, rows);
+    }
 
+    instruction_ref process_pair(const onnx_parser::node_info& info,
+                                 instruction_ref op1,
+                                 instruction_ref op2,
+                                 const std::vector<std::vector<int>>& mat,
+                                 size_t input_idx,
+                                 std::vector<std::vector<int>>& rows) const
+    {
+        // Label is present in current two terms, but not in the remainder of the equation
+        std::vector<int> common_dims;
+        // Label is present in only left term or both terms and somewhere in the remainder
+        // of the equation
+        std::vector<int> left;
+        // Label is present in only right term or both terms and somewhere in the remainder
+        // of the equation
+        std::vector<int> right;
+
+        auto not_neg_one = [](auto i) { return i != -1; };
+        for(int d = 0; d < mat[0].size(); ++d)
+        {
+            // There is no -1 in the column, for the current two rows
+            // The label is present in both rows
+            if(all_of(extract_column(rows, d, 0, rows.size()), not_neg_one))
+            {
+                // There is at least 1 element that is not -1, for the remaining rows of the
+                // matrix.
+                // The label is present in at least one of the subsequent rows
+                if(any_of(extract_column(mat, d, input_idx + 1, mat.size()), not_neg_one))
+                {
+                    left.push_back(d);
+                    right.push_back(d);
+                }
+                else
+                    common_dims.push_back(d);
+            }
+            // The label is missing in one or both of the rows
+            else
+            {
+                if(rows[0][d] >= 0)
+                    left.push_back(d);
+                if(rows[1][d] >= 0)
+                    right.push_back(d);
+            }
+        }
+
+        return matmul(info, rows, op1, op2, common_dims, left, right);
+    }
+
+    instruction_ref preprocess_input(const onnx_parser::node_info& info,
+                                     instruction_ref op,
+                                     const std::map<char, std::vector<int>>& duplicates,
+                                     const std::vector<std::vector<int>>& mat,
+                                     size_t input_idx,
+                                     std::vector<std::vector<int>>& rows) const
+    {
+        if(duplicates.size())
+        {
+            std::vector<std::tuple<int, std::vector<int>>> diag;
+            for(auto [_, v] : duplicates)
+            {
+                if(v.size() == 1)
+                    continue;
+
+                diag.push_back({v[0], v});
+            }
+
+            op = apply_diagonal(info, rows, op, diag);
+        }
+
+        // Transpose so the labels in the term are ordered alphabetically
+        op = unsqueeze_transpose(info, rows, op);
+
+        std::vector<int> red;
+        for(int d = 0; d < mat[0].size(); ++d)
+        {
+            bool all_neg_one = all_of(extract_column(mat, d, input_idx + 1, mat.size()),
+                                      [](auto i) { return i == -1; });
+            if(all_neg_one and rows[1][d] != -1 and rows[0][d] == -1)
+                red.push_back(d);
+        }
+
+        return apply_reduce_sum_op(info, op, red, rows[1]);
+    }
+
+    instruction_ref finalize_output(const onnx_parser::node_info& info,
+                                    instruction_ref op,
+                                    const std::vector<std::vector<int>>& mat,
+                                    std::vector<std::vector<int>>& rows) const
+    {
+        if(any_of(mat.back(), [](auto i) { return i >= 0; }))
+        {
+            rows[1] = mat.back();
             std::vector<int> red;
-            for(int d = 0; d < full_dim; ++d)
+            for(int d = 0; d < mat[0].size(); ++d)
             {
                 if(rows[0][d] > 0 and rows[1][d] == -1)
                     red.push_back(d);
@@ -168,9 +179,7 @@ struct parse_einsum : op_parser<parse_einsum>
             op = apply_reduce_sum_op(info, op, red, rows[1]);
         }
 
-        op = transpose_squeeze(info, rows, op, mat[args.size()]);
-
-        return op;
+        return transpose_squeeze(info, rows, op, mat.back());
     }
 
     instruction_ref apply_diagonal(const onnx_parser::node_info& info,
@@ -179,45 +188,12 @@ struct parse_einsum : op_parser<parse_einsum>
                                    std::vector<std::tuple<int, std::vector<int>>> diag) const
     {
         if(diag.size() != 1)
-        {
-            MIGRAPHX_THROW("Not implemented with more than one duplicated indice");
-        }
+            MIGRAPHX_THROW("Not implemented with more than one duplicated label");
 
         auto diag0 = diag[0];
 
         auto axis = std::get<0>(diag0);
         auto axes = std::get<1>(diag0);
-
-        // if(not contains(axes, axis))
-        // {
-        //     MIGRAPHX_THROW("Axis must be in axes");
-        // }
-
-        // std::vector<size_t> shape, new_shape;
-
-        // int i = 0;
-        // for(auto s : op->get_shape().lens())
-        // {
-        //     if(contains(axes, i))
-        //     {
-        //         if(i == axis)
-        //         {
-        //             shape.push_back(s);
-        //             new_shape.push_back(s);
-        //         }
-        //         else
-        //         {
-        //             shape.push_back(1);
-        //         }
-        //     }
-        //     else
-        //     {
-        //         shape.push_back(s);
-        //         new_shape.push_back(s);
-        //     }
-
-        //     i += 1;
-        // }
 
         auto ndim = rows[0].size();
 
@@ -327,7 +303,6 @@ struct parse_einsum : op_parser<parse_einsum>
             else
                 perm.push_back({rows[1][i], i});
         }
-
         op = info.add_instruction(make_op("unsqueeze", {{"axes", unsq_axes}}), op);
 
         std::sort(perm.begin(), perm.end(), [](auto lhs, auto rhs) {
@@ -404,20 +379,9 @@ struct parse_einsum : op_parser<parse_einsum>
     {
         int ndim = rows[0].size();
 
-        // TODO remove this check
-        if(set_intersection(axes, left).size() != 0 or set_intersection(axes, right).size() != 0)
-            MIGRAPHX_THROW("axes and right or left have axes in common");
-
-        //
-        std::vector<int> all_axes = set_union(set_union(left, right), axes);
-
-        // Labels that are both in left and right, and not in all_axes
-        std::vector<int> common_axes = set_intersection(left, right);
-        // Only for unsqueezed axes?
-        for(int i = 0; i < ndim; ++i)
-            if(not contains(all_axes, i))
-                common_axes.push_back(i);
-        std::sort(common_axes.begin(), common_axes.end());
+        auto all_axes = set_union(set_union(left, right), axes);
+        auto common_axes =
+            set_union(set_intersection(left, right), set_difference(arange(0, ndim), all_axes));
 
         // axes -> only in left_term and right_term
         // left -> only in left_term, in left_term and rem., in left_term and right_term and rem
@@ -442,12 +406,9 @@ struct parse_einsum : op_parser<parse_einsum>
         op2 = apply_transpose_op(info, op2, perm, rows[1]);
 
         // Axes = common_dims -> Label present only in current two terms(label category 1)
-        std::vector<int> new_axes(axes.size());
-        std::iota(new_axes.begin(), new_axes.end(), ndim - axes.size());
-
+        auto new_axes = arange(ndim - axes.size(), ndim);
         // common_axes -> labels present in both terms and remainder of eq(label category -1)
-        std::vector<int> new_common_axes(common_axes.size());
-        std::iota(new_common_axes.begin(), new_common_axes.end(), 0);
+        auto new_common_axes = arange(0, common_axes.size());
 
         instruction_ref op =
             batch_dot(info, rows, op1, op2, new_common_axes, new_axes, perm_left, perm_right);
@@ -469,11 +430,6 @@ struct parse_einsum : op_parser<parse_einsum>
                               std::vector<int> left,
                               std::vector<int> right) const
     {
-        if(op1->get_shape().ndim() != op2->get_shape().ndim())
-        {
-            MIGRAPHX_THROW("batch_dot input tensors need to have the same number of dimensions");
-        }
-
         auto common_labels = set_union(batch_axes, sum_axes);
         std::tie(op1, op2) = apply_broadcast_op(info, op1, op2, common_labels);
 
@@ -494,22 +450,22 @@ struct parse_einsum : op_parser<parse_einsum>
         op2 = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2);
         instruction_ref dot = info.add_instruction(make_op("dot"), op1, op2);
 
-        std::vector<int> new_shape;
+        std::vector<int> new_lens;
         for(int i : batch_axes)
-            new_shape.push_back(std::max(op1_shape[i], op2_shape[i]));
+            new_lens.push_back(std::max(op1_shape[i], op2_shape[i]));
 
         for(int i : left)
             if(not contains(batch_axes, i))
-                new_shape.push_back(op1_shape[i]);
+                new_lens.push_back(op1_shape[i]);
 
         for(int i : right)
             if(not contains(batch_axes, i))
-                new_shape.push_back(op2_shape[i]);
+                new_lens.push_back(op2_shape[i]);
 
-        while(new_shape.size() < op1_shape.size())
-            new_shape.push_back(1);
+        while(new_lens.size() < op1_shape.size())
+            new_lens.push_back(1);
 
-        auto op = info.add_instruction(make_op("reshape", {{"dims", new_shape}}), dot);
+        auto op = info.add_instruction(make_op("reshape", {{"dims", new_lens}}), dot);
         // compute output row
         std::transform(
             rows[0].begin(), rows[0].end(), rows[1].begin(), rows[1].begin(), [](int l, int r) {
@@ -885,6 +841,13 @@ struct parse_einsum : op_parser<parse_einsum>
         for(auto i = 0; i < axes.size(); ++i)
             ret[axes[i]] = i;
 
+        return ret;
+    }
+
+    std::vector<int> arange(int start_value, int end_value) const
+    {
+        std::vector<int> ret(end_value - start_value);
+        std::iota(ret.begin(), ret.end(), start_value);
         return ret;
     }
 
