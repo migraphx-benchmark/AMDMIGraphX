@@ -211,37 +211,22 @@ struct parse_einsum : op_parser<parse_einsum>
         if(diag.size() != 1)
             MIGRAPHX_THROW("Not implemented with more than one duplicated label");
 
-        auto diag0 = diag[0];
-
-        auto axis = std::get<0>(diag0);
-        auto axes = std::get<1>(diag0);
-
-        auto ndim = rows[0].size();
+        auto axis = std::get<0>(diag[0]);
+        auto axes = std::get<1>(diag[0]);
 
         int_vec batch_axes;
-        for(int i = 0; i < ndim; ++i)
-        {
+        for(int i = 0; i < rows[0].size(); ++i)
             if(not contains(axes, i))
-            {
                 batch_axes.push_back(i);
-            }
-        }
 
         auto min_axes = *(std::min_element(axes.begin(), axes.end()));
-        if(not std::all_of(
-               batch_axes.begin(), batch_axes.end(), [=](int ba) { return ba < min_axes; }))
-        {
+        if(not all_of(batch_axes, [=](int ba) { return ba < min_axes; }))
             MIGRAPHX_THROW("Currently batch axes have to be partitioned to the left");
-        }
 
         auto op_shape = op->get_shape().lens();
 
-        if(not std::all_of(axes.begin(), axes.end(), [op_shape, axis](int a) {
-               return op_shape[axis] == op_shape[a];
-           }))
-        {
+        if(not all_of(axes, [op_shape, axis](int a) { return op_shape[axis] == op_shape[a]; }))
             MIGRAPHX_THROW("All duplicated indices have to be the same dimension");
-        }
 
         size_t batch_size =
             std::accumulate(batch_axes.begin(), batch_axes.end(), 1, [&](auto acc, auto dim) {
@@ -249,7 +234,6 @@ struct parse_einsum : op_parser<parse_einsum>
             });
 
         std::vector<size_t> indices;
-
         for(int batch = 0; batch < batch_size; ++batch)
         {
             for(int i = 0; i < op_shape[axis]; ++i)
