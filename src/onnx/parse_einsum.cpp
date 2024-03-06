@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2023 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2015-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,8 @@ namespace onnx {
 struct parse_einsum : op_parser<parse_einsum>
 {
     using string_vec   = std::vector<std::string>;
+    using int_vec      = std::vector<int>;
+    using int_mat      = std::vector<std::vector<int>>;
     using char_int_map = std::map<char, int>;
 
     std::vector<op_desc> operators() const { return {{"Einsum"}}; }
@@ -53,7 +55,7 @@ struct parse_einsum : op_parser<parse_einsum>
         auto [terms, unique_labels, ellipses_ndim] = analyze_equation(equation, args);
         auto mat        = make_mapping_matrix(terms, unique_labels, ellipses_ndim);
         auto duplicates = look_for_duplicates(terms);
-        std::vector<std::vector<int>> rows = full(2, mat[0].size(), -1);
+        int_mat rows    = full(2, mat[0].size(), -1);
         // PREPROCESS EQUATION
 
         instruction_ref op;
@@ -79,20 +81,20 @@ struct parse_einsum : op_parser<parse_einsum>
     instruction_ref process_pair(const onnx_parser::node_info& info,
                                  instruction_ref op1,
                                  instruction_ref op2,
-                                 const std::vector<std::vector<int>>& mat,
+                                 const int_mat& mat,
                                  size_t input_idx,
-                                 std::vector<std::vector<int>>& rows) const
+                                 int_mat& rows) const
     {
         // Label is present in current two terms, but not in the remainder of the equation
-        std::vector<int> common_axes;
+        int_vec common_axes;
         // Label is present in only left term or both terms and somewhere in the remainder
         // of the equation
-        std::vector<int> left_only;
+        int_vec left_only;
         // Label is present in only right term or both terms and somewhere in the remainder
         // of the equation
-        std::vector<int> right_only;
-        std::vector<int> sum_axes;
-        std::vector<int> unsqueezed_axes;
+        int_vec right_only;
+        int_vec sum_axes;
+        int_vec unsqueezed_axes;
 
         auto not_neg_one = [](auto i) { return i != -1; };
         for(int d = 0; d < mat[0].size(); ++d)
@@ -129,7 +131,7 @@ struct parse_einsum : op_parser<parse_einsum>
         auto new_batch_axes = arange(0, batch_axes.size());
         auto new_sum_axes   = arange(rows[0].size() - sum_axes.size(), rows[0].size());
         auto perm_for_side  = [&](const auto& labels) {
-            std::vector<int> ret;
+            int_vec ret;
             for(int i = 0; i < perm.size(); ++i)
                 if(contains(labels, perm[i]))
                     ret.push_back(i);
@@ -148,14 +150,14 @@ struct parse_einsum : op_parser<parse_einsum>
 
     instruction_ref preprocess_input(const onnx_parser::node_info& info,
                                      instruction_ref op,
-                                     const std::map<char, std::vector<int>>& duplicates,
-                                     const std::vector<std::vector<int>>& mat,
+                                     const std::map<char, int_vec>& duplicates,
+                                     const int_mat& mat,
                                      size_t input_idx,
-                                     std::vector<std::vector<int>>& rows) const
+                                     int_mat& rows) const
     {
         if(not duplicates.empty())
         {
-            std::vector<std::tuple<int, std::vector<int>>> diag;
+            std::vector<std::tuple<int, int_vec>> diag;
             for(auto [_, v] : duplicates)
                 if(v.size() > 1)
                     diag.push_back({v[0], v});
@@ -166,7 +168,7 @@ struct parse_einsum : op_parser<parse_einsum>
         // Transpose so the labels in the term are ordered alphabetically
         op = unsqueeze_transpose(info, rows, op);
 
-        std::vector<int> red;
+        int_vec red;
         for(int d = 0; d < mat[0].size(); ++d)
         {
             bool all_neg_one = all_of(extract_column(mat, d, input_idx + 1, mat.size()),
@@ -180,13 +182,13 @@ struct parse_einsum : op_parser<parse_einsum>
 
     instruction_ref finalize_output(const onnx_parser::node_info& info,
                                     instruction_ref op,
-                                    const std::vector<std::vector<int>>& mat,
-                                    std::vector<std::vector<int>>& rows) const
+                                    const int_mat& mat,
+                                    int_mat& rows) const
     {
         if(any_of(mat.back(), [](auto i) { return i >= 0; }))
         {
             rows[1] = mat.back();
-            std::vector<int> red;
+            int_vec red;
             for(int d = 0; d < mat[0].size(); ++d)
             {
                 if(rows[0][d] > 0 and rows[1][d] == -1)
@@ -202,9 +204,9 @@ struct parse_einsum : op_parser<parse_einsum>
     }
 
     instruction_ref apply_diagonal(const onnx_parser::node_info& info,
-                                   std::vector<std::vector<int>>& rows,
+                                   int_mat& rows,
                                    instruction_ref op,
-                                   std::vector<std::tuple<int, std::vector<int>>> diag) const
+                                   std::vector<std::tuple<int, int_vec>> diag) const
     {
         if(diag.size() != 1)
             MIGRAPHX_THROW("Not implemented with more than one duplicated label");
@@ -216,7 +218,7 @@ struct parse_einsum : op_parser<parse_einsum>
 
         auto ndim = rows[0].size();
 
-        std::vector<int> batch_axes;
+        int_vec batch_axes;
         for(int i = 0; i < ndim; ++i)
         {
             if(not contains(axes, i))
@@ -267,7 +269,7 @@ struct parse_einsum : op_parser<parse_einsum>
         op = info.add_instruction(
             migraphx::make_op("gathernd", {{"batch_dims", batch_axes.size()}}), op, indices_arg);
         // compute output row
-        std::vector<int> to_remove;
+        int_vec to_remove;
         for(auto [choice, choices] : diag)
         {
             std::copy_if(choices.begin(),
@@ -296,11 +298,10 @@ struct parse_einsum : op_parser<parse_einsum>
         return op;
     }
 
-    instruction_ref unsqueeze_transpose(const onnx_parser::node_info& info,
-                                        std::vector<std::vector<int>>& rows,
-                                        instruction_ref op) const
+    instruction_ref
+    unsqueeze_transpose(const onnx_parser::node_info& info, int_mat& rows, instruction_ref op) const
     {
-        std::vector<int> unsq_axes;
+        int_vec unsq_axes;
         std::vector<std::tuple<int, int>> perm;
 
         for(auto i = 0; i < rows[1].size(); ++i)
@@ -316,7 +317,7 @@ struct parse_einsum : op_parser<parse_einsum>
             return std::get<0>(lhs) < std::get<0>(rhs);
         });
 
-        std::vector<int> new_perm(rows[1].size());
+        int_vec new_perm(rows[1].size());
         std::iota(new_perm.begin(), new_perm.end(), 0);
 
         for(auto i = 0, p = 0; i < rows[1].size(); ++i)
@@ -333,12 +334,12 @@ struct parse_einsum : op_parser<parse_einsum>
     }
 
     instruction_ref transpose_squeeze(const onnx_parser::node_info& info,
-                                      std::vector<std::vector<int>>& rows,
+                                      int_mat& rows,
                                       instruction_ref op,
-                                      std::vector<int> row_output) const
+                                      int_vec row_output) const
     {
         std::vector<std::tuple<int, int>> perm;
-        std::vector<int> sq;
+        int_vec sq;
 
         for(auto i = 0; i < row_output.size(); ++i)
         {
@@ -352,7 +353,7 @@ struct parse_einsum : op_parser<parse_einsum>
             return std::get<0>(lhs) < std::get<0>(rhs);
         });
 
-        std::vector<int> new_perm(rows[1].size());
+        int_vec new_perm(rows[1].size());
         std::iota(new_perm.begin(), new_perm.end(), 0);
 
         for(auto i = 0, p = 0; i < row_output.size(); ++i)
@@ -376,53 +377,14 @@ struct parse_einsum : op_parser<parse_einsum>
         return op;
     }
 
-    instruction_ref matmul(const onnx_parser::node_info& info,
-                           std::vector<std::vector<int>>& rows,
-                           instruction_ref op1,
-                           instruction_ref op2,
-                           std::vector<int> common_axes,
-                           std::vector<int> sum_axes,
-                           std::vector<int> left_only,
-                           std::vector<int> right_only,
-                           std::vector<int> unsqueezed_axes) const
-    {
-        auto batch_axes = set_union(common_axes, unsqueezed_axes);
-        auto perm       = concat_vectors(batch_axes, set_union(left_only, right_only), sum_axes);
-
-        auto perm_for_side = [&](const auto& labels) {
-            std::vector<int> ret;
-            for(int i = 0; i < perm.size(); ++i)
-                if(contains(labels, perm[i]))
-                    ret.push_back(i);
-            return ret;
-        };
-        auto perm_left  = perm_for_side(set_union(left_only, common_axes));
-        auto perm_right = perm_for_side(set_union(right_only, common_axes));
-
-        // Transpose so axes are ordered according to category
-        op1 = apply_transpose_op(info, op1, perm, rows[0]);
-        op2 = apply_transpose_op(info, op2, perm, rows[1]);
-
-        auto new_batch_axes = arange(0, batch_axes.size());
-        auto new_sum_axes   = arange(rows[0].size() - sum_axes.size(), rows[0].size());
-        auto op =
-            batch_dot(info, rows, op1, op2, new_batch_axes, new_sum_axes, perm_left, perm_right);
-
-        auto ordered_axes = concat_vectors(batch_axes, left_only, right_only, sum_axes);
-        perm              = make_ordered_permutation(ordered_axes);
-        op                = apply_transpose_op(info, op, perm, rows[1]);
-
-        return op;
-    }
-
     instruction_ref batch_dot(const onnx_parser::node_info& info,
-                              std::vector<std::vector<int>>& rows,
+                              int_mat& rows,
                               instruction_ref op1,
                               instruction_ref op2,
-                              std::vector<int> batch_axes,
-                              std::vector<int> sum_axes,
-                              std::vector<int> perm_left,
-                              std::vector<int> perm_right) const
+                              const int_vec& batch_axes,
+                              const int_vec& sum_axes,
+                              const int_vec& perm_left,
+                              const int_vec& perm_right) const
     {
         auto common_labels = set_union(batch_axes, sum_axes);
         std::tie(op1, op2) = apply_broadcast_op(info, op1, op2, common_labels);
@@ -444,7 +406,7 @@ struct parse_einsum : op_parser<parse_einsum>
         op2 = info.add_instruction(make_op("transpose", {{"permutation", {0, 2, 1}}}), op2);
         instruction_ref dot = info.add_instruction(make_op("dot"), op1, op2);
 
-        std::vector<int> new_lens;
+        int_vec new_lens;
 
         std::transform(batch_axes.begin(),
                        batch_axes.end(),
@@ -476,7 +438,7 @@ struct parse_einsum : op_parser<parse_einsum>
         return op;
     }
 
-    bool is_transpose_identity(std::vector<int> perm) const
+    bool is_transpose_identity(int_vec perm) const
     {
         for(auto i = 0u; i < perm.size(); ++i)
             if(perm[i] != i)
@@ -485,9 +447,9 @@ struct parse_einsum : op_parser<parse_einsum>
         return true;
     }
 
-    std::vector<std::vector<int>> full(int rows, int cols, int fill_value) const
+    int_mat full(int rows, int cols, int fill_value) const
     {
-        std::vector<std::vector<int>> ret(rows);
+        int_mat ret(rows);
         for(auto& row : ret)
             for(int i = 0; i < cols; ++i)
                 row.push_back(fill_value);
@@ -495,10 +457,9 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::vector<int>
-    extract_column(std::vector<std::vector<int>> mat, int col_idx, int row_begin, int row_end) const
+    int_vec extract_column(int_mat mat, int col_idx, int row_begin, int row_end) const
     {
-        std::vector<int> ret;
+        int_vec ret;
         ret.reserve(row_end - row_begin);
 
         for(int i = row_begin; i < row_end; ++i)
@@ -507,37 +468,35 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::vector<int> set_union(const std::vector<int>& lhs, const std::vector<int>& rhs) const
+    int_vec set_union(const int_vec& lhs, const int_vec& rhs) const
     {
-        std::vector<int> ret;
+        int_vec ret;
         std::set_union(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
 
         return ret;
     }
 
-    std::vector<int> set_intersection(const std::vector<int>& lhs,
-                                      const std::vector<int>& rhs) const
+    int_vec set_intersection(const int_vec& lhs, const int_vec& rhs) const
     {
-        std::vector<int> ret;
+        int_vec ret;
         std::set_intersection(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
 
         return ret;
     }
 
-    std::vector<int> set_difference(const std::vector<int>& lhs, const std::vector<int>& rhs) const
+    int_vec set_difference(const int_vec& lhs, const int_vec& rhs) const
     {
-        std::vector<int> ret;
+        int_vec ret;
         std::set_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
 
         return ret;
     }
 
-    std::vector<int> set_symmetric_difference(const std::vector<int>& lhs,
-                                              const std::vector<int>& rhs) const
+    int_vec set_symmetric_difference(const int_vec& lhs, const int_vec& rhs) const
     {
-        std::vector<int> ret;
+        int_vec ret;
         std::set_symmetric_difference(
             lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(ret));
 
@@ -582,16 +541,15 @@ struct parse_einsum : op_parser<parse_einsum>
         return ret;
     }
 
-    std::vector<std::vector<int>> make_mapping_matrix(const string_vec& terms,
-                                                      std::string_view unique_labels,
-                                                      size_t ellipses_ndim) const
+    int_mat make_mapping_matrix(const string_vec& terms,
+                                std::string_view unique_labels,
+                                size_t ellipses_ndim) const
     {
         std::map<char, int> label_to_column;
         for(auto i = 0; i < unique_labels.size(); ++i)
             label_to_column[unique_labels[i]] = i;
 
-        std::vector<std::vector<int>> mat =
-            full(terms.size(), unique_labels.size() + ellipses_ndim, -1);
+        int_mat mat = full(terms.size(), unique_labels.size() + ellipses_ndim, -1);
 
         for(auto i = 0; i < terms.size(); ++i)
         {
@@ -612,9 +570,9 @@ struct parse_einsum : op_parser<parse_einsum>
         return mat;
     }
 
-    std::vector<std::map<char, std::vector<int>>> look_for_duplicates(const string_vec& terms) const
+    std::vector<std::map<char, int_vec>> look_for_duplicates(const string_vec& terms) const
     {
-        std::vector<std::map<char, std::vector<int>>> duplicates;
+        std::vector<std::map<char, int_vec>> duplicates;
         for(auto term : terms)
         {
             if(term.size() == std::set<char>(term.begin(), term.end()).size())
@@ -623,7 +581,7 @@ struct parse_einsum : op_parser<parse_einsum>
                 continue;
             }
 
-            std::map<char, std::vector<int>> counts;
+            std::map<char, int_vec> counts;
             int i = 0;
             for(char c : term)
             {
@@ -679,7 +637,7 @@ struct parse_einsum : op_parser<parse_einsum>
                 term += '*';
                 break;
             default:
-                if(not std::isalpha(c))
+                if(std::isalpha(c) == 0)
                     MIGRAPHX_THROW(std::string("Invalid character '") + c +
                                    "' in einsum equation term");
 
@@ -711,7 +669,7 @@ struct parse_einsum : op_parser<parse_einsum>
                               const char_int_map& label_count,
                               size_t ellipses_ndim) const
     {
-        auto it = std::find_if(output_term.begin(), output_term.end(), [&](auto l) {
+        const auto* it = std::find_if(output_term.begin(), output_term.end(), [&](auto l) {
             return not contains(label_count, l) and l != '*';
         });
         if(it != output_term.end())
@@ -767,7 +725,7 @@ struct parse_einsum : op_parser<parse_einsum>
     apply_broadcast_op(const onnx_parser::node_info& info,
                        instruction_ref opl,
                        instruction_ref opr,
-                       const std::vector<int>& common_labels) const
+                       const int_vec& common_labels) const
     {
         std::pair<instruction_ref, instruction_ref> ret;
 
@@ -806,8 +764,8 @@ struct parse_einsum : op_parser<parse_einsum>
 
     instruction_ref apply_transpose_op(const onnx_parser::node_info& info,
                                        instruction_ref op,
-                                       const std::vector<int>& perm,
-                                       std::vector<int>& row) const
+                                       const int_vec& perm,
+                                       int_vec& row) const
     {
         if(is_transpose_identity(perm))
             return op;
@@ -823,8 +781,8 @@ struct parse_einsum : op_parser<parse_einsum>
 
     instruction_ref apply_reduce_sum_op(const onnx_parser::node_info& info,
                                         instruction_ref op,
-                                        const std::vector<int>& axes,
-                                        std::vector<int>& row) const
+                                        const int_vec& axes,
+                                        int_vec& row) const
     {
         if(axes.empty())
             return op;
@@ -835,18 +793,18 @@ struct parse_einsum : op_parser<parse_einsum>
         return info.add_instruction(make_op("reduce_sum", {{"axes", axes}}), op);
     }
 
-    std::vector<int> make_ordered_permutation(const std::vector<int>& axes) const
+    int_vec make_ordered_permutation(const int_vec& axes) const
     {
-        std::vector<int> ret(axes.size());
+        int_vec ret(axes.size());
         for(auto i = 0; i < axes.size(); ++i)
             ret[axes[i]] = i;
 
         return ret;
     }
 
-    std::vector<int> arange(int start_value, int end_value) const
+    int_vec arange(int start_value, int end_value) const
     {
-        std::vector<int> ret(end_value - start_value);
+        int_vec ret(end_value - start_value);
         std::iota(ret.begin(), ret.end(), start_value);
         return ret;
     }
