@@ -110,6 +110,7 @@ struct miopen_apply
         add_loop_op();
         add_neg_op();
         add_nms_op();
+        add_reduce_op();
         add_select_module_op();
         add_reshape_lazy_op();
     }
@@ -355,6 +356,41 @@ struct miopen_apply
                 mod->insert_instruction(ins, make_op("hip::copy_to_gpu"), cpu_out, output);
             return mod->replace_instruction(ins, gpu_out);
         });
+    }
+
+    void add_reduce_op()
+    {
+        const std::vector<std::string> reduce_ops{
+            "reduce_max", "reduce_min", "reduce_mean", "reduce_prod", "reduce_sum"};
+
+        const auto f = [=](instruction_ref ins) {
+            if(not ins->get_operator()
+                       .to_value()["axes"]
+                       .without_key()
+                       .to_vector<int64_t>()
+                       .empty())
+                return insert_precompile_op(ins);
+
+            auto output = insert_allocation(ins, ins->get_shape());
+            std::vector<instruction_ref> cpu_inputs;
+            cpu_inputs.reserve(ins->inputs().size());
+            std::transform(ins->inputs().begin(),
+                           ins->inputs().end(),
+                           std::back_inserter(cpu_inputs),
+                           [&](auto i) {
+                               return mod->insert_instruction(
+                                   ins, make_op("hip::copy_from_gpu"), i);
+                           });
+            cpu_inputs.front() =
+                mod->insert_instruction(ins, make_op("hip::sync_stream"), cpu_inputs);
+            auto cpu_out = mod->insert_instruction(ins, ins->get_operator(), cpu_inputs);
+            auto gpu_out =
+                mod->insert_instruction(ins, make_op("hip::copy_to_gpu"), cpu_out, output);
+            return mod->replace_instruction(ins, gpu_out);
+        };
+
+        for(const auto& reduce_op : reduce_ops)
+            apply_map.emplace(reduce_op, f);
     }
 
     /**

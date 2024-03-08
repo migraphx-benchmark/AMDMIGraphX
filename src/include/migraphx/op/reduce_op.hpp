@@ -99,11 +99,9 @@ struct reduce_op : op_name<Derived>
     {
         auto lens = original_shape.lens();
         for(const auto a : reduce_axes)
-        {
             lens[a] = 1;
-        }
 
-        return original_shape.with_lens(lens);
+        return shape{original_shape.type(), lens};
     }
 
     // Compute the output shape for cases when the input tensor has a dynamic shape.
@@ -192,6 +190,19 @@ struct reduce_op : op_name<Derived>
         }
     }
 
+    void normalize_axes(std::vector<int64_t>& reduce_axes, int64_t ndim) const
+    {
+        for(auto& a : reduce_axes)
+        {
+            if(a < -ndim or a >= ndim)
+                MIGRAPHX_THROW("Invalid axes for reduce: " + to_string(a) + ", input has " +
+                               to_string(ndim) + " dimension(s)");
+
+            if(a < 0)
+                a += ndim;
+        }
+    }
+
     template <class T>
     void reduce(const tensor_view<T>& input,
                 const shape& batch_shape,
@@ -245,9 +256,11 @@ struct reduce_op : op_name<Derived>
 
         std::vector<int64_t> reduce_axes;
         args[1].visit([&](auto&& s) { reduce_axes.assign(s.begin(), s.end()); });
+        normalize_axes(reduce_axes, args[0].get_shape().ndim());
         const auto result_shape = collapse_reduced_axes(data_arg.get_shape(), reduce_axes);
 
-        return reduce(result_shape, reduce_axes, data_arg);
+        auto ret = reduce(result_shape, reduce_axes, data_arg);
+        return ret;
     }
 
     auto init() const { return zero(); }

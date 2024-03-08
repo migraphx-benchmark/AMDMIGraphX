@@ -68,19 +68,23 @@ struct reduce_parser : op_parser<Derived>
         }
 
         // Handle variable input axes
-        if(keep_dims == 0)
-            MIGRAPHX_THROW("Keepdims not supported with runtime provided axes");
+        // if(keep_dims == 0)
+        //     MIGRAPHX_THROW("Keepdims not supported with runtime provided axes");
 
         // Empty axes attribute indicates to the operator to look for axes in the inputs
         // If the input axes are empty, the default behavior of reduce_op is to be an
         // identity operator
         auto reduce_op = make_op(op_name, {{"axes", {}}});
+        instruction_ref ret;
+        instruction_ref axes = args[1];
 
         if(noop_with_empty_axes != 0)
-            return info.add_instruction(reduce_op, args);
-
-        if(args[1]->get_shape().dynamic())
         {
+            ret = info.add_instruction(reduce_op, args);
+        }
+        else if(args[1]->get_shape().dynamic())
+        {
+            // TODO add squeeze to both branches
             auto reduce_input_axes = info.add_instruction(reduce_op, args);
             auto all_axes_lit      = info.add_literal(
                 literal{shape{shape::type_t::int64_type, {all_axes.size()}}, all_axes});
@@ -89,19 +93,23 @@ struct reduce_parser : op_parser<Derived>
             auto axes_size = info.add_instruction(make_op("dimensions_of", {{"end", 1}}), args[1]);
             auto is_axes_empty = info.add_instruction(make_op("equal"), axes_size, zero);
 
-            return info.add_instruction(
+            ret = info.add_instruction(
                 make_op("where"), is_axes_empty, reduce_all_axes, reduce_input_axes);
         }
         else if(args[1]->get_shape().elements() == 0)
         {
             auto all_axes_lit = info.add_literal(
                 literal{shape{shape::type_t::int64_type, {all_axes.size()}}, all_axes});
-            return info.add_instruction(reduce_op, args[0], all_axes_lit);
+            axes = all_axes_lit;
+            ret  = info.add_instruction(reduce_op, args[0], all_axes_lit);
         }
         else
-        {
-            return info.add_instruction(reduce_op, args);
-        }
+            ret = info.add_instruction(reduce_op, args);
+
+        if(keep_dims == 0)
+            ret = info.add_instruction(make_op("squeeze", {{"axes", {}}}), ret, axes);
+
+        return ret;
     }
 
     private:

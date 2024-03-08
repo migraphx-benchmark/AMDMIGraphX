@@ -132,6 +132,8 @@ struct find_nop_reshapes
     void apply(module& m, const match::matcher_result& mr) const
     {
         auto ins = mr.result;
+        if(ins->name() == "squeeze" and ins->get_shape().dynamic())
+            return;
         m.replace_instruction(ins, ins->inputs().front());
     }
 };
@@ -673,11 +675,11 @@ struct find_transpose_contiguous_reshaper_unary
 
     void apply(module& m, const match::matcher_result& r) const
     {
-        auto ins           = r.result;
-        auto reshaper_ins  = r.instructions["reshaper_ins"];
-        auto trans_ins     = r.instructions["trans_ins"];
-        auto cont_ins      = r.instructions["cont_ins"];
-        auto unary_ins     = m.insert_instruction(cont_ins, ins->get_operator(), trans_ins);
+        auto ins          = r.result;
+        auto reshaper_ins = r.instructions["reshaper_ins"];
+        auto trans_ins    = r.instructions["trans_ins"];
+        auto cont_ins     = r.instructions["cont_ins"];
+        auto unary_ins    = m.insert_instruction(cont_ins, ins->get_operator(), trans_ins);
         // older cont and reshape are removed by deadcode elimination
         m.replace_instruction(ins, reshaper_ins->get_operator(), unary_ins);
     }

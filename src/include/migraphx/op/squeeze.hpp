@@ -52,20 +52,28 @@ struct squeeze
         return {{"normalize_axes", normalize}};
     }
 
-    std::string name() const { return "squeeze"; }
-    shape normalize_compute_shape(std::vector<shape> inputs) const
+    void normalize_axes(std::vector<int64_t>& reduce_axes, int64_t ndim) const
     {
-        check_shapes{inputs, *this, true}.has(1);
-        auto input_shape = inputs[0];
-        if(input_shape.dynamic())
+        for(auto& a : reduce_axes)
         {
-            if(std::any_of(axes.begin(), axes.end(), [&](auto axis) {
-                   return input_shape.dyn_dims()[axis] != 1;
-               }))
-            {
+            if(a < -ndim or a >= ndim)
+                MIGRAPHX_THROW("Invalid axes for reduce: " + to_string(a) + ", input has " +
+                               to_string(ndim) + " dimension(s)");
+
+            if(a < 0)
+                a += ndim;
+        }
+    }
+
+    shape compute_shape_for_dynamic_input_shape(const std::vector<shape>& input_shapes) const
+    {
+        auto input_shape = input_shapes[0];
+        if(input_shapes.size() == 1)
+        {
+            if(any_of(axes, [&](auto axis) { return input_shape.dyn_dims()[axis] != 1; }))
                 MIGRAPHX_THROW(
                     "SQUEEZE: dynamic axis dimension should be equal to {1, 1, 0} or {1, 1, 1}");
-            }
+
             std::vector<shape::dynamic_dimension> dyn_dims = {};
             if(axes.empty())
             {
@@ -77,63 +85,94 @@ struct squeeze
             else
             {
                 for(auto i : range(input_shape.ndim()))
-                {
-                    if(std::find(axes.begin(), axes.end(), i) == axes.end())
-                    {
+                    if(not contains(axes, i))
                         dyn_dims.push_back(input_shape.dyn_dims()[i]);
-                    }
-                }
             }
             return {input_shape.type(), dyn_dims};
         }
         else
         {
-            auto type        = input_shape.type();
-            auto old_lens    = input_shape.lens();
-            auto old_strides = input_shape.strides();
-            if(std::any_of(
-                   axes.begin(), axes.end(), [&](auto axis) { return old_lens[axis] != 1; }))
+            auto axes_shape = input_shapes[1];
+            auto dyn_dims   = input_shape.dyn_dims();
+            std::cout << input_shape << std::endl;
+            auto flat_axes_count = std::count_if(
+                dyn_dims.begin(), dyn_dims.end(), [](const auto& dim) { return dim.min == 1; });
+            std::cout << "flat_axes_count: " << flat_axes_count << std::endl;
+            auto axes_size = axes_shape.dynamic() ? axes_shape.dyn_dims().front().min
+                                                  : axes_shape.lens().front();
+            std::cout << "axes_size: " << axes_size << std::endl;
+            if(flat_axes_count < axes_size)
+                MIGRAPHX_THROW("Lorem ipsum");
+
+            return input_shape;
+        }
+    }
+
+    shape compute_static_shape(const std::vector<shape>& input_shapes,
+                               const std::vector<int64_t>& sq_axes) const
+    {
+        auto input_shape = input_shapes[0];
+        auto type        = input_shape.type();
+        auto old_lens    = input_shape.lens();
+        auto old_strides = input_shape.strides();
+        if(any_of(sq_axes, [&](auto axis) { return old_lens[axis] != 1; }))
+            MIGRAPHX_THROW("SQUEEZE: static axis dimension should be equal to 1");
+
+        std::vector<std::size_t> new_lens;
+        std::vector<std::size_t> new_strides;
+        if(sq_axes.empty())
+        {
+            for(auto i : range(old_lens.size()))
             {
-                MIGRAPHX_THROW("SQUEEZE: static axis dimension should be equal to 1");
-            }
-            std::vector<std::size_t> new_lens;
-            std::vector<std::size_t> new_strides;
-            if(axes.empty())
-            {
-                for(auto i : range(old_lens.size()))
+                if(old_lens[i] != 1)
                 {
-                    if(old_lens[i] != 1)
-                    {
-                        new_lens.push_back(old_lens[i]);
-                        new_strides.push_back(old_strides[i]);
-                    }
+                    new_lens.push_back(old_lens[i]);
+                    new_strides.push_back(old_strides[i]);
                 }
-            }
-            else
-            {
-                for(auto i : range(old_lens.size()))
-                {
-                    if(std::find(axes.begin(), axes.end(), i) == axes.end())
-                    {
-                        new_lens.push_back(old_lens[i]);
-                        new_strides.push_back(old_strides[i]);
-                    }
-                }
-            }
-            if(new_lens.empty())
-            {
-                return shape{type};
-            }
-            else
-            {
-                return shape{type, new_lens, new_strides};
             }
         }
+        else
+        {
+            for(auto i : range(old_lens.size()))
+            {
+                if(not contains(sq_axes, i))
+                {
+                    new_lens.push_back(old_lens[i]);
+                    new_strides.push_back(old_strides[i]);
+                }
+            }
+        }
+
+        if(new_lens.empty())
+            return shape{type};
+        else
+            return shape{type, new_lens, new_strides};
+    }
+
+    std::string name() const { return "squeeze"; }
+
+    shape normalize_compute_shape(std::vector<shape> inputs) const
+    {
+        check_shapes{inputs, *this, true}.has(1, 2);
+
+        if(inputs[0].dynamic())
+            return compute_shape_for_dynamic_input_shape(inputs);
+        else
+            return compute_static_shape(inputs, axes);
     }
 
     argument compute(const dyn_output& dyn_out, std::vector<argument> args) const
     {
-        return args[0].reshape(dyn_out.computed_shape);
+        if(args.size() == 1)
+            return args[0].reshape(dyn_out.computed_shape);
+        else
+        {
+            std::vector<int64_t> sq_axes;
+            args[1].visit([&](auto&& s) { sq_axes.assign(s.begin(), s.end()); });
+            normalize_axes(sq_axes, args[0].get_shape().ndim());
+            auto output_shape = compute_static_shape(to_shapes(args), sq_axes);
+            return args[0].reshape(output_shape);
+        }
     }
     std::ptrdiff_t output_alias(const std::vector<shape>&) const { return 0; }
 };

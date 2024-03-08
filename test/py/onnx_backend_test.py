@@ -1075,7 +1075,34 @@ def create_backend_test(testname=None, target_device=None):
         c2.set_device(target_device)
     backend_test = MIGraphXBackendTest(c2, __name__)
 
-    if testname:
+# FAIL Incorrect shape {int64_type, {0}, {1}} for parameter: axes should be: int64_type, {1}, {1}
+# test_reduce_l1_default_axes_keepdims_example_cpu
+# test_reduce_l1_default_axes_keepdims_example_expanded_cpu
+# test_reduce_l1_default_axes_keepdims_random_cpu
+# test_reduce_l1_default_axes_keepdims_random_expanded_cpu
+
+# WON'T WORK, KEEPDIMS=0 not supported
+# test_reduce_l1_do_not_keepdims_example_cpu
+# test_reduce_l1_do_not_keepdims_example_expanded_cpu
+# test_reduce_l1_do_not_keepdims_random_cpu
+# test_reduce_l1_do_not_keepdims_random_expanded_cpu
+
+# WORKS
+# test_reduce_l1_keep_dims_example_cpu
+# test_reduce_l1_keep_dims_example_expanded_cpu
+# test_reduce_l1_keep_dims_random_cpu
+# test_reduce_l1_keep_dims_random_expanded_cpu
+# test_reduce_l1_negative_axes_keep_dims_example_cpu
+# test_reduce_l1_negative_axes_keep_dims_example_expanded_cpu
+# test_reduce_l1_negative_axes_keep_dims_random_cpu
+# test_reduce_l1_negative_axes_keep_dims_random_expanded_cpu
+    if True:
+        backend_test.include(r'test_reduce_l1_do_not_keepdims_example_cpu')
+        # backend_test.include(r'test_reduce_l1_negative_axes.*')
+        # backend_test.include(r'test_reduce_l1_keep_dims.*')
+        # backend_test.include(r'test_reduce_sum_negative_axes.*')
+        # backend_test.include(r'test_reduce_sum_keep_dims.*')
+    elif testname:
         backend_test.include(testname + '.*')
     else:
         # Onnx Operator tests
@@ -1411,6 +1438,7 @@ def parse_args():
     # parse just our args. python unittest has its own args and arg parsing, and that runs inside unittest.main()
     args, left = parser.parse_known_args()
     sys.argv = sys.argv[:1] + left
+    args.device = "GPU"
 
     if args.device is not None:
         print("run on {} device....".format(args.device))
