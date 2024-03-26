@@ -68,16 +68,11 @@ struct parse_scan : op_parser<parse_scan>
             MIGRAPHX_THROW("Lorem ipsum");
 
         // SCAN INPUT AXES
-        std::vector<int64_t> scan_input_axes(M, 0);
-        if(contains(info.attributes, "scan_input_axes"))
+        auto scan_input_axes = parse_vector_attribute(info, "scan_input_axes", M);
+        if(scan_input_axes.empty())
+            scan_input_axes = std::vector<int64_t>(M, 0);
+        else
         {
-            auto&& axes = info.attributes["scan_input_axes"].ints();
-            scan_input_axes.assign(axes.begin(), axes.end());
-
-            if(scan_input_axes.size() != M)
-                MIGRAPHX_THROW("Number of scan input axes (" + to_string(scan_input_axes.size()) +
-                               ") does not match number of scan inputs(" + to_string(M) + ")");
-
             std::vector<int64_t> ndims;
             ndims.reserve(M);
             std::transform(args.begin() + N,
@@ -96,36 +91,23 @@ struct parse_scan : op_parser<parse_scan>
         // SCAN INPUT AXES
 
         // SCAN INPUT DIRECTIONS
-        std::vector<int64_t> scan_input_directions(M, 0);
-        if(contains(info.attributes, "scan_input_directions"))
+        auto scan_input_directions = parse_vector_attribute(info, "scan_input_directions", M);
+        if(scan_input_directions.empty())
+            scan_input_directions = std::vector<int64_t>(M, 0);
+        else if(any_of(scan_input_directions, [](auto i) { return i != 0 and i != 1; }))
         {
-            auto&& dirs = info.attributes["scan_input_directions"].ints();
-            scan_input_directions.assign(dirs.begin(), dirs.end());
-
-            if(scan_input_directions.size() != M)
-                MIGRAPHX_THROW("Number of scan input directions (" +
-                               to_string(scan_input_directions.size()) +
-                               ") does not match number of scan inputs(" + to_string(M) + ")");
-
-            if(any_of(scan_input_directions, [](auto i) { return i != 0 and i != 1; }))
-                MIGRAPHX_THROW(
-                    "Scan output directions may contain only 1s and 0s, actual values: " +
-                    to_string_range(scan_input_directions));
+            MIGRAPHX_THROW(
+                "Scan: scan_input_directions may contain only 1s and 0s, actual values: " +
+                to_string_range(scan_input_directions));
         }
         // SCAN INPUT DIRECTIONS
 
         // SCAN OUTPUT AXES
-        std::vector<int64_t> scan_output_axes(K, 0);
-        if(contains(info.attributes, "scan_output_axes"))
+        auto scan_output_axes = parse_vector_attribute(info, "scan_output_axes", K);
+        if(scan_output_axes.empty())
+            scan_output_axes = std::vector<int64_t>(K, 0);
+        else
         {
-            auto&& axes = info.attributes["scan_output_axes"].ints();
-            scan_output_axes.assign(axes.begin(), axes.end());
-
-            if(scan_output_axes.size() != K)
-                MIGRAPHX_THROW("Number of scan output axes (" + to_string(scan_output_axes.size()) +
-                               ") does not match number of body scan outputs(" + to_string(K) +
-                               ")");
-
             std::vector<int64_t> ndims;
             ndims.reserve(K);
             std::transform(sub_mod_output_shapes.begin() + N,
@@ -137,22 +119,14 @@ struct parse_scan : op_parser<parse_scan>
         // SCAN OUTPUT AXES
 
         // SCAN OUTPUT DIRECTIONS
-        std::vector<int64_t> scan_output_directions(K, 0);
-        if(contains(info.attributes, "scan_output_directions"))
+        auto scan_output_directions = parse_vector_attribute(info, "scan_output_directions", K);
+        if(scan_output_directions.empty())
+            scan_output_directions = std::vector<int64_t>(K, 0);
+        else if(any_of(scan_output_directions, [](auto i) { return i != 0 and i != 1; }))
         {
-            auto&& dirs = info.attributes["scan_output_directions"].ints();
-            scan_output_directions.assign(dirs.begin(), dirs.end());
-
-            if(scan_output_directions.size() != K)
-                MIGRAPHX_THROW("Number of scan output directions (" +
-                               to_string(scan_output_directions.size()) +
-                               ") does not match number of body scan outputs(" + to_string(K) +
-                               ")");
-
-            if(any_of(scan_output_directions, [](auto i) { return i != 0 and i != 1; }))
-                MIGRAPHX_THROW(
-                    "Scan output directions may contain only 1s and 0s, actual values: " +
-                    to_string_range(scan_output_directions));
+            MIGRAPHX_THROW(
+                "Scan: scan_output_directions may contain only 1s and 0s, actual values: " +
+                to_string_range(scan_output_directions));
         }
         // SCAN OUTPUT DIRECTIONS
 
@@ -161,15 +135,14 @@ struct parse_scan : op_parser<parse_scan>
         {
             for(auto j = 0; j < M; ++j)
             {
-                auto dir       = scan_input_directions[j];
-                auto idx       = (1 - dir) * i + dir * (num_iters - 1 - i);
-                auto scan_axis = scan_input_axes[j];
-                auto slice     = info.add_instruction(
-                    make_op("slice",
-                            {{"axes", {scan_axis}}, {"starts", {idx}}, {"ends", {idx + 1}}}),
+                auto dir   = scan_input_directions[j];
+                auto idx   = (1 - dir) * i + dir * (num_iters - 1 - i);
+                auto axis  = scan_input_axes[j];
+                auto slice = info.add_instruction(
+                    make_op("slice", {{"axes", {axis}}, {"starts", {idx}}, {"ends", {idx + 1}}}),
                     args[N + j]);
                 alt_args.push_back(
-                    info.add_instruction(make_op("squeeze", {{"axes", {scan_axis}}}), slice));
+                    info.add_instruction(make_op("squeeze", {{"axes", {axis}}}), slice));
             }
         }
 
@@ -183,18 +156,15 @@ struct parse_scan : op_parser<parse_scan>
 
         std::vector<instruction_ref> ret;
         ret.reserve(N + K);
-        for(auto i = 0; i < N; ++i)
+        for(auto i = 0; i < N + K; ++i)
         {
-            auto get = info.add_instruction(make_op("get_tuple_elem", {{"index", i}}), scan);
-            ret.push_back(get);
-        }
-
-        for(auto i = N; i < N + K; ++i)
-        {
-            auto get       = info.add_instruction(make_op("get_tuple_elem", {{"index", i}}), scan);
-            auto scan_axis = scan_output_axes[i - N];
-            auto usq = info.add_instruction(make_op("unsqueeze", {{"axes", {scan_axis}}}), get);
-            ret.push_back(usq);
+            auto ins = info.add_instruction(make_op("get_tuple_elem", {{"index", i}}), scan);
+            if(i >= N)
+            {
+                auto scan_axis = scan_output_axes[i - N];
+                ins = info.add_instruction(make_op("unsqueeze", {{"axes", {scan_axis}}}), ins);
+            }
+            ret.push_back(ins);
         }
 
         for(auto i = 1; i < num_iters; ++i)
@@ -221,13 +191,30 @@ struct parse_scan : op_parser<parse_scan>
     {
         auto normalize_axis = [=](int64_t axis, int64_t ndim) {
             if(axis < -ndim or axis >= ndim)
-                MIGRAPHX_THROW("Axis value {" + to_string(axis) + "} out of range [" +
+                MIGRAPHX_THROW("Scan: Axis value {" + to_string(axis) + "} out of range [" +
                                to_string(-ndim) + ", " + to_string(ndim) + ")");
 
             return axis < 0 ? ndim + axis : axis;
         };
 
         std::transform(axes.begin(), axes.end(), ndims.begin(), axes.begin(), normalize_axis);
+    }
+
+    std::vector<int64_t> parse_vector_attribute(onnx_parser::node_info& info,
+                                                const std::string& attr_name,
+                                                size_t expected_size) const
+    {
+        if(not contains(info.attributes, attr_name))
+            return {};
+
+        std::vector<int64_t> res;
+        auto&& attr = info.attributes[attr_name].ints();
+        if(attr.size() != expected_size)
+            MIGRAPHX_THROW("Scan: " + attr_name + " size is " + to_string(attr.size()) +
+                           ", should be " + to_string(expected_size));
+        res.assign(attr.begin(), attr.end());
+
+        return res;
     }
 };
 

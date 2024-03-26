@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <cstdint>
 #include <iterator>
 #include <utility>
 #include <functional>
@@ -108,6 +109,7 @@ struct miopen_apply
         add_gemm_op<op::quant_dot>("quant_dot");
         add_if_op();
         add_loop_op();
+        add_scan_op();
         add_neg_op();
         add_nms_op();
         add_select_module_op();
@@ -334,6 +336,60 @@ struct miopen_apply
 
             return mod->replace_instruction(
                 ins, make_op("gpu::loop", ins->get_operator().to_value()), inputs, mod_args);
+        });
+    }
+
+    std::vector<shape> create_output_shapes(const module& m)
+    {
+        std::unordered_set<instruction_ref> output_ins;
+        auto l                   = std::prev(m.end());
+        const auto& prog_outputs = l->inputs();
+        std::vector<instruction_ref> outputs_alias(prog_outputs.size());
+
+        std::transform(prog_outputs.begin(),
+                       prog_outputs.end(),
+                       outputs_alias.begin(),
+                       [](const auto& i) { return instruction::get_output_alias(i); });
+
+        for(auto ins : outputs_alias)
+            output_ins.insert(ins);
+
+        std::vector<shape> ret;
+
+        for(auto ins : iterator_for(m))
+        {
+            if(ins->get_operator().name() != "allocate")
+                continue;
+
+            if(contains(output_ins, ins))
+                ret.push_back(ins->get_shape());
+        }
+
+        return ret;
+    }
+
+    void add_scan_op()
+    {
+        apply_map.emplace("scan", [=](instruction_ref ins) {
+            std::cout << "Lowering" << std::endl;
+            auto op    = ins->get_operator().to_value();
+            auto iters = op["iterations"].get_int64();
+            auto m     = ins->module_inputs().front();
+            // m->debug_print();
+            auto inputs        = ins->inputs();
+            // auto output_shapes = m->get_output_shapes();
+            auto output_shapes = create_output_shapes(*m);
+            for(const auto& sh : output_shapes)
+                std::cout << sh << std::endl;
+
+            for(auto i = 0; i < iters; ++i)
+            {
+                std::transform(output_shapes.begin(),
+                               output_shapes.end(),
+                               std::back_inserter(inputs),
+                               [&](const shape& sh) { return insert_allocation(ins, sh); });
+            }
+            return mod->replace_instruction(ins, ins->get_operator(), inputs, ins->module_inputs());
         });
     }
 

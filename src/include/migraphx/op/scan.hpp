@@ -74,19 +74,34 @@ struct scan : op_name<scan>
         return shape{op_output_shapes};
     }
 
-    std::unordered_map<std::string, int> get_output_params(const module_ref mod) const
-    {
-        std::unordered_map<std::string, int> ret;
-        const std::string output_prefix = "#output_";
+    // std::unordered_map<std::string, int> get_output_params(const module_ref mod) const
+    // {
+    //     std::unordered_map<std::string, int> ret;
+    //     const std::string output_prefix = "#output_";
 
-        const auto& param_names = mod->get_parameter_names();
+    //     const auto& param_names = mod->get_parameter_names();
+    //     for(const auto& name : param_names)
+    //     {
+    //         auto n = name.find(output_prefix);
+    //         if(n == std::string::npos)
+    //             continue;
+    //         int idx   = std::stoi(name.substr(n + output_prefix.size()));
+    //         ret[name] = idx;
+    //     }
+
+    //     return ret;
+    // }
+
+    std::vector<std::string> get_output_param_names(const module& m) const
+    {
+        const std::string output_prefix = "#output_";
+        std::vector<std::string> ret;
+        const auto& param_names = m.get_parameter_names();
         for(const auto& name : param_names)
         {
             auto n = name.find(output_prefix);
-            if(n == std::string::npos)
-                continue;
-            int idx   = std::stoi(name.substr(n + output_prefix.size()));
-            ret[name] = idx;
+            if(name.find(output_prefix) != std::string::npos)
+                ret.push_back(name);
         }
 
         return ret;
@@ -100,9 +115,10 @@ struct scan : op_name<scan>
                          module_ref&, const std::unordered_map<std::string, argument>&)>& run) const
     {
         assert(mods.size() == 1);
-        auto mod          = mods.front();
-        auto param_shapes = mod->get_parameter_shapes();
-        auto param_names  = mod->get_parameter_names();
+        auto mod                = mods.front();
+        auto param_shapes       = mod->get_parameter_shapes();
+        auto param_names        = mod->get_parameter_names();
+        auto output_param_names = get_output_param_names(*mod);
 
         auto K = mod->get_output_shapes().size() - num_state_vars;
         parameter_map pm;
@@ -113,6 +129,12 @@ struct scan : op_name<scan>
                 pm[param_names[j]] = ret[j];
             for(auto j = num_state_vars; j < num_state_vars + num_scan_inputs; ++j)
                 pm[param_names[j]] = args[i * num_scan_inputs + j];
+            for(auto j = 0; j < output_param_names.size(); ++j)
+            {
+                auto idx = num_state_vars + num_scan_inputs * iterations +
+                           i * output_param_names.size() + j;
+                pm[output_param_names[j]] = args[idx];
+            }
 
             auto mod_output = run(mod, pm);
 
@@ -122,7 +144,8 @@ struct scan : op_name<scan>
 
         return argument{ret};
     }
-};
+
+}; // namespace op
 
 } // namespace op
 } // namespace MIGRAPHX_INLINE_NS
