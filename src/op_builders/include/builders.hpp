@@ -22,32 +22,24 @@
  * THE SOFTWARE.
  */
 
-#include </workspace/halilcevic/AMDMIGraphX/src/op_builders/include/builders.hpp>
-#include <migraphx/onnx/op_parser.hpp>
-#include <migraphx/ranges.hpp>
+#pragma once
+
+#include "module_wrapper.hpp"
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace onnx {
+namespace op_builders {
 
-struct parse_einsum : op_parser<parse_einsum>
-{
+MIGRAPHX_EXPORT instruction_ref einsum(module_wrapper mod,
+                                       const std::vector<instruction_ref>& args,
+                                       const std::string& equation);
 
-    std::vector<op_desc> operators() const { return {{"Einsum"}}; }
+MIGRAPHX_EXPORT instruction_ref binary_op(module_wrapper mod,
+                                          const std::vector<instruction_ref>& args,
+                                          const std::string& op_name,
+                                          std::optional<uint64_t> broadcasted,
+                                          std::optional<uint64_t> axis);
 
-    instruction_ref parse(const op_desc&,
-                          const onnx_parser&,
-                          const onnx_parser::node_info& info,
-                          const std::vector<instruction_ref>& args) const
-    {
-        if(not contains(info.attributes, "equation"))
-            MIGRAPHX_THROW("Equation attribute is required");
-        std::string equation = info.attributes.at("equation").s();
-
-        return op_builders::einsum({info.mod}, args, equation);
-    }
-};
-
-} // namespace onnx
+} // namespace op_builders
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

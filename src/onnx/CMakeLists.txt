@@ -45,7 +45,7 @@ target_link_libraries(migraphx_onnx PRIVATE onnx-proto)
 if(NOT WIN32)
     target_link_libraries(migraphx_onnx PRIVATE "-Wl,--exclude-libs,ALL")
 endif()
-target_link_libraries(migraphx_onnx PUBLIC migraphx)
+target_link_libraries(migraphx_onnx PUBLIC migraphx migraphx_op_builders)
 
 rocm_install_targets(
   TARGETS migraphx_onnx

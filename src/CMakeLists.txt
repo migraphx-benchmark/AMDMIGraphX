@@ -322,6 +322,7 @@ add_subdirectory(api)
 add_subdirectory(common_api)
 add_subdirectory(driver)
 add_subdirectory(onnx)
+add_subdirectory(op_builders)
 add_subdirectory(tf)
 
 if(MIGRAPHX_ENABLE_PYTHON)

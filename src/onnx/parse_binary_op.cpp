@@ -23,8 +23,7 @@
  */
 #include <migraphx/onnx/op_parser.hpp>
 #include <migraphx/ranges.hpp>
-#include <migraphx/instruction.hpp>
-#include <migraphx/make_op.hpp>
+#include </workspace/halilcevic/AMDMIGraphX/src/op_builders/include/builders.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -51,31 +50,14 @@ struct parse_binary_op : op_parser<parse_binary_op>
     {
         if(args.size() != 2)
             MIGRAPHX_THROW("binary operators should have 2 operands");
-        if(contains(info.attributes, "broadcast") and contains(info.attributes, "axis"))
-        {
-            uint64_t broadcasted =
-                parser.parse_value(info.attributes.at("broadcast")).at<uint64_t>();
-            if(broadcasted != 0)
-            {
-                if(std::any_of(
-                       args.cbegin(), args.cend(), [](auto a) { return a->get_shape().dynamic(); }))
-                {
-                    MIGRAPHX_THROW(
-                        "Binary op broadcast attribute not supported for dynamic input shapes");
-                }
-                uint64_t axis = parser.parse_value(info.attributes.at("axis")).at<uint64_t>();
-                auto l        = info.add_instruction(
-                    make_op("broadcast",
-                            {{"axis", axis}, {"out_lens", args[0]->get_shape().lens()}}),
-                    args[1]);
-                return info.add_instruction(make_op(opd.op_name), args[0], l);
-            }
-            return info.add_instruction(make_op(opd.op_name), args);
-        }
-        else
-        {
-            return info.add_broadcastable_binary_op(opd.op_name, args[0], args[1]);
-        }
+
+        std::optional<uint64_t> broadcasted, axis;
+        if(contains(info.attributes, "broadcast"))
+            broadcasted = parser.parse_value(info.attributes.at("broadcast")).at<uint64_t>();
+        if(contains(info.attributes, "axis"))
+            axis = parser.parse_value(info.attributes.at("axis")).at<uint64_t>();
+
+        return op_builders::binary_op({info.mod}, args, opd.op_name, broadcasted, axis);
     }
 };
 

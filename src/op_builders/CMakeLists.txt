@@ -1,7 +1,7 @@
 #####################################################################################
 # The MIT License (MIT)
 #
-# Copyright (c) 2015-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2015-2023 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,18 @@
 # THE SOFTWARE.
 #####################################################################################
 
+file(GLOB OP_BUILDER_SRCS CONFIGURE_DEPENDS *.cpp)
+add_library(migraphx_op_builders ${OP_BUILDER_SRCS})
+target_include_directories(migraphx_op_builders PRIVATE include)
+set_target_properties(migraphx_op_builders PROPERTIES EXPORT_NAME op_builders)
+migraphx_generate_export_header(migraphx_op_builders)
+rocm_set_soversion(migraphx_op_builders ${MIGRAPHX_SO_VERSION})
+rocm_clang_tidy_check(migraphx_op_builders)
+if(NOT WIN32)
+    target_link_libraries(migraphx_op_builders PRIVATE "-Wl,--exclude-libs,ALL")
+endif()
+target_link_libraries(migraphx_op_builders PUBLIC migraphx)
 
-add_executable(MNISTSample mnist_sample.cpp)
-rocm_clang_tidy_check(MNISTSample)
-target_link_libraries(MNISTSample migraphx_onnx migraphx_ref migraphx_c migraphx migraphx_all_targets)
-target_include_directories(MNISTSample PUBLIC ../include include)
-
-add_executable(Network network.cpp)
-rocm_clang_tidy_check(Network)
-target_link_libraries(Network migraphx_onnx migraphx_ref migraphx_c migraphx migraphx_all_targets)
-target_include_directories(Network PUBLIC ../include include)
-
-# add_executable(RNNSample rnn_sample.cpp)
-# rocm_clang_tidy_check(RNNSample)
-# target_link_libraries(RNNSample migraphx_onnx migraphx_ref migraphx_c migraphx migraphx_all_targets)
-# target_include_directories(RNNSample PUBLIC ../include include)
+rocm_install_targets(
+  TARGETS migraphx_op_builders
+)

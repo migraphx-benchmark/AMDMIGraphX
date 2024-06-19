@@ -22,32 +22,42 @@
  * THE SOFTWARE.
  */
 
-#include </workspace/halilcevic/AMDMIGraphX/src/op_builders/include/builders.hpp>
-#include <migraphx/onnx/op_parser.hpp>
+#include <builders.hpp>
+#include <migraphx/make_op.hpp>
 #include <migraphx/ranges.hpp>
+#include <migraphx/instruction.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace onnx {
+namespace op_builders {
 
-struct parse_einsum : op_parser<parse_einsum>
+instruction_ref binary_op(module_wrapper mod,
+                          const std::vector<instruction_ref>& args,
+                          const std::string& op_name,
+                          std::optional<uint64_t> broadcasted,
+                          std::optional<uint64_t> axis)
 {
 
-    std::vector<op_desc> operators() const { return {{"Einsum"}}; }
-
-    instruction_ref parse(const op_desc&,
-                          const onnx_parser&,
-                          const onnx_parser::node_info& info,
-                          const std::vector<instruction_ref>& args) const
+    if(not broadcasted.has_value() or not axis.has_value())
     {
-        if(not contains(info.attributes, "equation"))
-            MIGRAPHX_THROW("Equation attribute is required");
-        std::string equation = info.attributes.at("equation").s();
-
-        return op_builders::einsum({info.mod}, args, equation);
+        return mod.add_broadcastable_binary_op(op_name, args[0], args[1]);
     }
-};
 
-} // namespace onnx
+    if(broadcasted.value() != 0)
+    {
+        if(std::any_of(args.cbegin(), args.cend(), [](auto a) { return a->get_shape().dynamic(); }))
+        {
+            MIGRAPHX_THROW("Binary op broadcast attribute not supported for dynamic input shapes");
+        }
+        auto l = mod.add_instruction(
+            make_op("broadcast",
+                    {{"axis", axis.value()}, {"out_lens", args[0]->get_shape().lens()}}),
+            args[1]);
+        return mod.add_instruction(make_op(op_name), args[0], l);
+    }
+    return mod.add_instruction(make_op(op_name), args);
+}
+
+} // namespace op_builders
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx
