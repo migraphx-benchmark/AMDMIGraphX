@@ -65,7 +65,7 @@ std::vector<T> mvn_test(std::vector<size_t> data_lens, migraphx::program p)
     migraphx::shape data_shape(migraphx::shape::get_type<T>{}, std::move(data_lens));
     std::vector<T> data(data_shape.elements());
     std::iota(begin(data), end(data), 0);
-
+    std::cout << "DS: " << data_shape;
     migraphx::parameter_map pm;
     pm["data"] = migraphx::argument(data_shape, data.data());
 

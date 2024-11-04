@@ -21,15 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-/*
+
 #include <migraphx/register_target.hpp>
 #include <migraphx/verify.hpp>
 #include <onnx_test.hpp>
 #include <onnx_verify_utils.hpp>
 
+static migraphx::shape make_shape(std::vector<size_t> lens)
+{
+    return migraphx::shape{migraphx::shape::float_type, std::move(lens)};
+}
+
 TEST_CASE(mvn_default_axes_test)
 {
-    auto result = mvn_test({2, 2, 2, 2}, read_onnx("mvn_default_axes_test.onnx"));
+    std::vector<float> data_lens{2, 2, 2, 2};
+
     std::vector<float> gold{-1.32424438,
                             -1.08347268,
                             -0.84270097,
@@ -46,6 +52,33 @@ TEST_CASE(mvn_default_axes_test)
                             0.84270097,
                             1.08347268,
                             1.32424438};
-    EXPECT(migraphx::verify::verify_rms_range(result, gold));
+
+    migraphx::program p = read_onnx("mvn_default_axes_test.onnx");
+    p.compile(migraphx::make_target("ref"));
+    // float_type, {2, 2, 2, 2}, {8, 4, 2, 1}
+    //  migraphx::shape data_shape{migraphx::shape::float_type, {2, 2, 2, 2}, {8, 4, 2, 1}};
+
+    migraphx::shape data_shape(migraphx::shape::float_type, data_lens);
+    std::vector<float> data(data_shape.elements());
+    std::iota(begin(data), end(data), 0);
+
+    // std::vector<float> data{2.f, 2.f, 2.f, 2.f};
+    // std::iota(begin(data), end(data), 0);
+
+    migraphx::parameter_map pm;
+    pm["data"] = migraphx::argument(data_shape, data.data());
+
+    auto result = p.eval(pm).back();
+    // std::cout << result;
+    std::vector<float> result_vector;
+    result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
+
+    std::cout << "result vector: " << std::endl;
+    for(auto el : result_vector)
+    {
+        std::cout << el << ", ";
+    }
+
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, gold));
+    //EXPECT(result_vector == gold);
 }
-*/

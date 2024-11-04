@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 #include <migraphx/onnx/op_parser.hpp>
-#include <migraphx/ranges.hpp>
 #include <migraphx/instruction.hpp>
+#include <migraphx/ranges.hpp>
 #include <migraphx/make_op.hpp>
-#include <migraphx/onnx/checks.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -33,22 +33,42 @@ namespace onnx {
 
 struct parse_mean_variance_normalization : op_parser<parse_mean_variance_normalization>
 {
+
     std::vector<op_desc> operators() const { return {{"MeanVarianceNormalization"}}; }
 
-    instruction_ref parse(const op_desc& /*opd*/,
-                          const onnx_parser& /*parser*/,
+    instruction_ref parse(const op_desc&,
+                          const onnx_parser&,
                           onnx_parser::node_info info,
-                          std::vector<instruction_ref> args) const
+                          const std::vector<instruction_ref>& args) const
     {
-        auto&& data    = args.front();
-        auto data_rank = data->get_shape().ndim();
+        auto x         = args[0];
+        auto x_shape   = x->get_shape();
+        auto x_type    = x_shape.type();
+        auto data_rank = x_shape.ndim();
+
+        const float exponent{2};
+        const float epsilon{1e-09};
         std::vector<int64_t> axes{0, 2, 3};
+
+        // if(contains(info.attributes, "axes"))
+        // {
+        //     auto axes_key = info.attributes.find("axes");
+        //     // std::vector<int> axesVector(axes_key->second.AppendToString,
+        //     axes_key->second.end()); std::string temporary_axes_values = ""; std::vector<int64_t>
+        //     temp_axes{axes_key->second.INTS}; axes = temp_axes;
+        // }
 
         if(contains(info.attributes, "axes"))
         {
             const auto& axes_attr = info.attributes["axes"].ints();
             axes.assign(axes_attr.begin(), axes_attr.end());
+            std::cout << "Axes after reading from attributes: " << std::endl;
+            for(auto axe : axes)
+            {
+                std::cout << axe << " " << std::endl;
+            }
         }
+
         else if(data_rank != 4)
         {
             MIGRAPHX_THROW(
@@ -58,26 +78,31 @@ struct parse_mean_variance_normalization : op_parser<parse_mean_variance_normali
 
         if(axes.size() != data_rank - 1)
         {
-            MIGRAPHX_THROW("Length of axes array needs to be equal to input tensor rank - 1");
+            MIGRAPHX_THROW("Length of axes array needs to be equal to input tensor rank - 1. "
+                           "Current length: " +
+                           std::to_string(axes.size()));
         }
 
-        auto data_mean = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), data);
-        auto data_mean_squared = info.add_common_op("mul", data_mean, data_mean);
+        auto exp = info.add_literal(migraphx::literal{x_shape.type(), {exponent}});
+        auto eps = info.add_literal(migraphx::literal{x_shape.type(), {epsilon}});
 
-        auto data_squared = info.add_common_op("mul", data, data);
-        auto data_squared_mean =
-            info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), data_squared);
+        auto x_rm = info.add_instruction(migraphx::make_op("reduce_mean", {{"axes", axes}}), x);
+        // auto exponent_bcast = info.add_instruction(migraphx::make_op("multibroadcast",
+        // {{"out_lens", x_rm->get_shape().lens()}}), exp);
+        auto ex_sq = info.add_common_op("pow", x_rm, exp);
+        // auto exponent_bcast_x = info.add_instruction(migraphx::make_op("multibroadcast",
+        // {{"out_lens", x->get_shape().lens()}}), exp);
+        auto x_sq  = info.add_common_op("pow", x, exp);
+        auto e_xsq = info.add_instruction(migraphx::make_op("reduce_mean", {{"axes", axes}}), x_sq);
+        // auto variance      = info.add_common_op("sub", e_xsq, ex_sq);
+        auto variance      = info.add_common_op("sub", e_xsq, ex_sq);
+        auto std           = info.add_common_op("sqrt", variance);
+        auto x_variance    = info.add_common_op("sub", x, x_rm);
+        auto processed_std = info.add_common_op("add", std, eps);
+        // auto y = info.add_instruction(migraphx::make_op("div"), x_variance, processed_std);
+        auto y = info.add_common_op("div", x_variance, processed_std);
 
-        auto mean_sub = info.add_common_op("sub", data_squared_mean, data_mean_squared);
-        auto std      = info.add_common_op("sqrt", mean_sub);
-
-        auto dividend = info.add_common_op("sub", data, data_mean);
-        auto epsilon =
-            info.add_literal({data->get_shape().type(),
-                              {data->get_shape().type() == shape::half_type ? 1e-7 : 1e-9}});
-        auto divisor = info.add_common_op("add", std, epsilon);
-
-        return info.add_common_op("div", dividend, divisor);
+        return y;
     }
 };
 
