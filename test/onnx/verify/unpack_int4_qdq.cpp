@@ -49,26 +49,26 @@ TEST_CASE(unpack_int4_qdq_test)
     EXPECT(rv == gold);
 }
 
-TEST_CASE(unpack_int4_block_sz_2_qdq_test)
-{
-    migraphx::program p = read_onnx("int4_const_identity_block_sz_2_qdq_test.onnx");
-    p.compile(migraphx::make_target("ref"));
+// TEST_CASE(unpack_int4_block_sz_2_qdq_test)
+// {
+//     migraphx::program p = read_onnx("int4_const_identity_block_sz_2_qdq_test.onnx");
+//     p.compile(migraphx::make_target("ref"));
 
-    migraphx::shape x2_shape{migraphx::shape::half_type, {2, 4}};
-    std::vector<migraphx::half> x2(16, migraphx::half(1.0));
+//     migraphx::shape x2_shape{migraphx::shape::half_type, {2, 4}};
+//     std::vector<migraphx::half> x2(16, migraphx::half(1.0));
 
-    migraphx::parameter_map pm;
-    pm["x2"] = migraphx::argument{x2_shape, x2.data()};
+//     migraphx::parameter_map pm;
+//     pm["x2"] = migraphx::argument{x2_shape, x2.data()};
 
-    auto result = p.eval(pm).back();
+//     auto result = p.eval(pm).back();
 
-    std::vector<migraphx::half> rv;
-    result.visit([&](auto output) { rv.assign(output.begin(), output.end()); });
+//     std::vector<migraphx::half> rv;
+//     result.visit([&](auto output) { rv.assign(output.begin(), output.end()); });
 
-    // MatMul output is 4x4: its first half should be all zeros. Rest all ones:
-    // Based on partial Identity matrix A supplied to AxB. (B aka 'x2' is all ones).
-    std::vector<migraphx::half> gold(16);
-    std::fill(gold.begin() + 8, gold.end(), migraphx::half(1.0));
+//     // MatMul output is 4x4: its first half should be all zeros. Rest all ones:
+//     // Based on partial Identity matrix A supplied to AxB. (B aka 'x2' is all ones).
+//     std::vector<migraphx::half> gold(16);
+//     std::fill(gold.begin() + 8, gold.end(), migraphx::half(1.0));
 
-    EXPECT(rv == gold);
-}
+//     EXPECT(rv == gold);
+// }

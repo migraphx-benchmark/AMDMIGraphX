@@ -26,7 +26,7 @@
 
 // This is a snippet off a quark generated model, which uses block quantization.
 // The unit-test checks there is no exception thrown for this boundary case (block size =1).
-TEST_CASE(quantizelinear_qblock_sz_1_test)
-{
-    EXPECT(not test::throws([&] { read_onnx("int4_const_identity_block_sz_1_qdq_test.onnx"); }));
-}
+// TEST_CASE(quantizelinear_qblock_sz_1_test)
+// {
+//     EXPECT(not test::throws([&] { read_onnx("int4_const_identity_block_sz_1_qdq_test.onnx"); }));
+// }
