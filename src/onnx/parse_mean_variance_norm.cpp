@@ -45,6 +45,15 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
         const onnx_parser::node_info& info,
         std::vector<instruction_ref> args) const
     {
+        const auto dtype         = args[0]->get_shape().type();
+        const auto literal_dtype = dtype;
+
+        if(not contains(valid_types, dtype))
+        {
+            MIGRAPHX_THROW(opd.onnx_name + ": invalid output type: " + std::to_string(dtype) +
+                           ". Valid types are (bfloat16), (double), and (float).");
+        }
+
         const auto& X                  = args[0];
 
         const auto Epsilon_default            = 1e-9f;
@@ -65,15 +74,6 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
         }
         assert(X->get_shape().ndim() >= axes_min_size);
         
-        const auto dtype         = args[0]->get_shape().type();
-        const auto literal_dtype = dtype;
-
-        if(not contains(valid_types, dtype))
-        {
-            MIGRAPHX_THROW(opd.onnx_name + ": invalid output type: " + std::to_string(dtype) +
-                           ". Valid types are (bfloat16), (double), and (float).");
-        }
-
         auto E_X        = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), X);
         auto E_sqr_X    = info.add_common_op("mul", E_X, E_X);
         auto X_sqr      = info.add_common_op("mul", X, X);
