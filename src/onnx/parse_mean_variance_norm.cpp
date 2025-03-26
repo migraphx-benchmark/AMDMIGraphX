@@ -56,13 +56,13 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
 
         const auto& X                  = args[0];
 
-        const auto Epsilon_default            = 1e-9f;
+        const auto eps_default            = 1e-9f;
         const auto axes_default = std::vector<size_t>{0, 2, 3};
         
-        auto Epsilon = Epsilon_default;
+        auto eps = eps_default;
         if (contains(info.attributes, "epsilon"))
         {
-            Epsilon = parser.parse_value(info.attributes.at("epsilon")).at<float>();
+            eps = parser.parse_value(info.attributes.at("epsilon")).at<float>();
         }
 
         auto axes = axes_default;
@@ -81,8 +81,8 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
         auto std_sqr    = info.add_common_op("sub", E_X_sqr, E_sqr_X);
         auto std        = info.add_common_op("sqrt", std_sqr);
         auto numerator  = info.add_common_op("sub", X, E_X);
-        auto Epsilon_literal= info.add_literal(literal{shape{literal_dtype}, {Epsilon}});
-        auto denominator= info.add_common_op("add", std, Epsilon_literal);
+        auto eps_literal= info.add_literal(literal{shape{literal_dtype}, {eps}});
+        auto denominator= info.add_common_op("add", std, eps_literal);
         auto Y          = info.add_common_op("div", numerator, denominator);
 
         return Y;

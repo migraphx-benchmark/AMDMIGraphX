@@ -33,10 +33,10 @@ TEST_CASE(mean_variance_norm_test)
     std::vector<size_t> dims{3, 4, 5, 6};
     migraphx::shape s1{migraphx::shape::float_type, dims};
 
-    const float epsilon_default = 1e-9f;
+    const float eps_default = 1e-9f;
 
     auto X          = mm->add_parameter("x", s1);
-    
+
     auto E_X        = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), X);
     auto E_sqr_X    = add_common_op(*mm, migraphx::make_op("mul"), {E_X, E_X});
     auto X_sqr      = add_common_op(*mm, migraphx::make_op("mul"), {X, X});
@@ -44,8 +44,8 @@ TEST_CASE(mean_variance_norm_test)
     auto std_sqr    = add_common_op(*mm, migraphx::make_op("sub"), {E_X_sqr, E_sqr_X});
     auto std        = add_common_op(*mm, migraphx::make_op("sqrt"), {std_sqr});
     auto numerator  = add_common_op(*mm, migraphx::make_op("sub"), {X, E_X});
-    auto Epsilon_literal = mm->add_literal(migraphx::literal{migraphx::shape{migraphx::shape::float_type}, {epsilon_default}});
-    auto denominator= add_common_op(*mm, migraphx::make_op("add"), {std, Epsilon_literal});
+    auto eps_literal = mm->add_literal(migraphx::literal{migraphx::shape{migraphx::shape::float_type}, {eps_default}});
+    auto denominator= add_common_op(*mm, migraphx::make_op("add"), {std, eps_literal});
     auto Y          = add_common_op(*mm, migraphx::make_op("div"), {numerator, denominator});
 
     mm->add_return({Y});
