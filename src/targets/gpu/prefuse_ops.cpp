@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include "migraphx/literal.hpp"
 #include <migraphx/matcher.hpp>
 #include <migraphx/permutation.hpp>
 #include <migraphx/gpu/prefuse_ops.hpp>
@@ -381,6 +382,77 @@ struct find_group_query_attention
     }
 };
 
+struct find_sparse_attention
+{
+    auto matcher() const
+    {
+        return match::name("sparse_attention");
+    }
+
+    void apply(module_pass_manager& mpm, const match::matcher_result& r) const
+    {
+        auto&& mod  = mpm.get_module();
+        auto ins    = r.result;
+        auto inputs = ins->inputs();
+        auto v      = ins->get_operator().to_value();
+
+        auto do_rotary          = v.at("do_rotary").to<bool>();
+        auto rotary_interleaved = v.at("rotary_interleaved").to<bool>();
+        auto num_heads          = v.at("num_heads").to<size_t>();
+        auto kv_num_heads       = v.at("kv_num_heads").to<size_t>();
+        auto sparse_block_size  = v.at("sparse_block_size").to<size_t>();
+        auto scale              = v.at("scale").to<float>();
+
+        auto qkv                        = inputs.at(0);
+        auto past_key                   = inputs.at(3);
+        auto past_val                   = inputs.at(4);
+        auto key_total_sequence_lengths = inputs.at(8);
+
+        auto output      = std::next(ins);
+        auto present_key = std::next(output);
+        auto present_val = std::next(present_key);
+        ins->debug_print();
+        output->debug_print();
+        present_key->debug_print();
+        present_val->debug_print();
+
+        if(do_rotary)
+        {
+            // TODO
+        }
+        // NOTE subtract sequence_length literal from key_total_sequence_lengths
+        auto sequence_length = inputs.at(0)->get_shape().lens()[2];
+        auto seq_len_lit     = mod.insert_literal(
+            ins, migraphx::literal{shape{shape::int32_type, {1}}, {sequence_length}});
+        seq_len_lit = mod.insert_instruction(
+            ins,
+            migraphx::make_op("multibroadcast",
+                              {{"out_lens", key_total_sequence_lengths->get_shape().lens()}}),
+            seq_len_lit);
+        seq_len_lit->debug_print();
+        key_total_sequence_lengths->debug_print();
+        auto new_ktsl = mod.insert_instruction(
+            ins, migraphx::make_op("sub"), key_total_sequence_lengths, seq_len_lit);
+        auto concat = mod.insert_instruction(
+            ins,
+            gpu_concat_past_present{
+                do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
+            {qkv, past_key, past_val, new_ktsl});
+        auto id = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
+
+        // auto new_output = mod.insert_literal(ins, literal{0.0f});
+        // new_output      = mod.insert_instruction(
+        //     ins,
+        //     make_op("multibroadcast", {{"out_lens", output->get_shape().lens()}}),
+        //     new_output);
+        // auto id = mod.insert_instruction(ins, make_op("identity"), new_output, concat);
+
+        mod.replace_instruction(output, id);
+        mod.replace_instruction(present_key, past_key);
+        mod.replace_instruction(present_val, past_val);
+    }
+};
+
 } // namespace
 
 void prefuse_ops::apply(module_pass_manager& mpm) const
@@ -393,6 +465,7 @@ void prefuse_ops::apply(module_pass_manager& mpm) const
     }
     match::find_matches(mpm, find_gemm_softmax_gemm{enable_attention});
     match::find_matches(mpm, find_group_query_attention{});
+    match::find_matches(mpm, find_sparse_attention{});
 }
 
 } // namespace gpu
