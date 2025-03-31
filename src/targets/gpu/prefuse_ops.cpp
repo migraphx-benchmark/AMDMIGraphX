@@ -389,9 +389,8 @@ struct find_sparse_attention
         return match::name("sparse_attention");
     }
 
-    void apply(module_pass_manager& mpm, const match::matcher_result& r) const
+    void apply(module& mod, const match::matcher_result& r) const
     {
-        auto&& mod  = mpm.get_module();
         auto ins    = r.result;
         auto inputs = ins->inputs();
         auto v      = ins->get_operator().to_value();
@@ -408,20 +407,6 @@ struct find_sparse_attention
         auto past_val                   = inputs.at(4);
         auto key_total_sequence_lengths = inputs.at(8);
 
-        auto rotary_qkv = qkv;
-        if(do_rotary)
-        {
-            // TODO Potentially have to do key_total_sequence_lengths - 1
-            std::cout << inputs.size() << std::endl;
-            //TODO Fix batch accessing for rotary, error the same as for concat, fix should be same.
-            rotary_qkv = mod.insert_instruction(
-                ins,
-                gpu_gqa_rotary_embedding{
-                    do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-                {qkv, key_total_sequence_lengths, inputs.at(9), inputs.at(10)});
-        }
-        std::cout << "After inserting rotary" << std::endl;
-
         auto sequence_length = inputs.at(0)->get_shape().lens()[2];
         auto seq_len_lit     = mod.insert_literal(
             ins, migraphx::literal{shape{shape::int32_type, {1}}, {sequence_length}});
@@ -432,11 +417,21 @@ struct find_sparse_attention
             seq_len_lit);
         auto new_ktsl = mod.insert_instruction(
             ins, migraphx::make_op("sub"), key_total_sequence_lengths, seq_len_lit);
+
+        if(do_rotary)
+        {
+            qkv = mod.insert_instruction(
+                ins,
+                gpu_gqa_rotary_embedding{
+                    do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
+                {qkv, new_ktsl, inputs.at(9), inputs.at(10)});
+        }
+
         auto concat = mod.insert_instruction(
             ins,
             gpu_concat_past_present{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {rotary_qkv, past_key, past_val, new_ktsl});
+            {qkv, past_key, past_val, new_ktsl});
         auto id = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
 
         auto attn_probs = mod.insert_instruction(
@@ -448,13 +443,13 @@ struct find_sparse_attention
         auto softmax = mod.insert_instruction(
             ins,
             gpu_gqa_softmax{do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {rotary_qkv, past_key, attn_probs, key_total_sequence_lengths});
+            {qkv, past_key, attn_probs, key_total_sequence_lengths});
 
         auto attn_scores = mod.insert_instruction(
             ins,
             gpu_compute_attention_scores{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {rotary_qkv, past_key, past_val, key_total_sequence_lengths, softmax});
+            {qkv, past_key, past_val, key_total_sequence_lengths, softmax});
 
         auto output      = std::next(ins);
         auto present_key = std::next(output);
@@ -463,8 +458,6 @@ struct find_sparse_attention
         mod.replace_instruction(output, attn_scores);
         mod.replace_instruction(present_key, past_key);
         mod.replace_instruction(present_val, past_val);
-        std::cout << "End of prefuse" << std::endl;
-        std::cout << mod << std::endl;
     }
 };
 
@@ -480,7 +473,7 @@ void prefuse_ops::apply(module_pass_manager& mpm) const
     }
     match::find_matches(mpm, find_gemm_softmax_gemm{enable_attention});
     match::find_matches(mpm, find_group_query_attention{});
-    match::find_matches(mpm, find_sparse_attention{});
+    match::find_matches(mpm.get_module(), find_sparse_attention{});
 }
 
 } // namespace gpu

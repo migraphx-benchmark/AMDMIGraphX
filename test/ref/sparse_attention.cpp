@@ -304,14 +304,14 @@ TEST_CASE(sparse_attention_token_generation)
     // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
-    for(auto i = 0; i < present_key_gold.size(); ++i)
-    {
-        if(gpu_present_key_result[i] != present_key_gold[i])
-        {
-            std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
-                      << ", gold=" << present_key_gold[i] << std::endl;
-        }
-    }
+    // for(auto i = 0; i < present_key_gold.size(); ++i)
+    // {
+    //     if(gpu_present_key_result[i] != present_key_gold[i])
+    //     {
+    //         std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
+    //                   << ", gold=" << present_key_gold[i] << std::endl;
+    //     }
+    // }
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
@@ -1397,14 +1397,14 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
     // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
-    for(auto i = 0; i < present_key_gold.size(); ++i)
-    {
-        if(gpu_present_key_result[i] != present_key_gold[i])
-        {
-            std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
-                      << ", gold=" << present_key_gold[i] << std::endl;
-        }
-    }
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
+    // for(auto i = 0; i < present_key_gold.size(); ++i)
+    // {
+    //     if(gpu_present_key_result[i] != present_key_gold[i])
+    //     {
+    //         std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
+    //                   << ", gold=" << present_key_gold[i] << std::endl;
+    //     }
+    // }
+    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
 }

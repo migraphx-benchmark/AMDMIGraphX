@@ -35,7 +35,6 @@ __device__ void copy_data(Dest destination, const Src source, index_int n, index
 {
     if(idx < n)
     {
-        // printf("dst=%f, src=%f\n", destination[idx], source[idx]);
         destination[idx] = source[idx];
     }
 }
@@ -53,7 +52,6 @@ struct concat_state_chunk
     template <class Past, class Chunk, class Present>
     __device__ Present compute(Past past, const Chunk chunk, Present present, index_int idx)
     {
-        // printf("i=%td, pb_chunk_length=%u\n", i, present_buff_chunk_length);
         auto start = present + i * present_buff_chunk_length;
 
         auto p = start;
@@ -75,7 +73,6 @@ template <class Present, class SeqLensK, class Cache, class Params>
 __device__ void
 update_cache(const Present present, SeqLensK seqlens_k, Cache cache, Params params, index_int idx)
 {
-    // printf("idx=%u\n", idx);
     const index_int batch_size                     = params.batch_size;
     const index_int sequence_length                = params.sequence_length;
     const index_int head_size                      = params.head_size;
@@ -91,7 +88,6 @@ update_cache(const Present present, SeqLensK seqlens_k, Cache cache, Params para
     const index_int past_buff_chunk_length    = past_buffer_sequence_length * head_size;    // L x H
     const index_int present_buff_chunk_length = present_buffer_sequence_length * head_size; // T x H
 
-    // TODO should be batch_size * kv_num_heads?
     const index_int loop_len = batch_size * kv_num_heads;
     const index_int i        = idx / (sequence_length * head_size);
     const index_int inner_i  = idx % (sequence_length * head_size);
@@ -99,7 +95,6 @@ update_cache(const Present present, SeqLensK seqlens_k, Cache cache, Params para
     {
         const index_int batch_index       = i / kv_num_heads;
         const index_int head_index        = i % kv_num_heads;
-        // printf("batch_idx=%u, head_idx=%u, kv_num_heads_factor=%u\n", batch_index, head_index, kv_num_heads_factor);
         const index_int past_seqlen       = sequence_length == 1
                                                 ? static_cast<index_int>(seqlens_k[batch_index])
                                                 : past_buffer_sequence_length;
@@ -131,16 +126,7 @@ __device__ void concat_past_present(
         auto k = q + params.num_heads * params.sequence_length * params.head_size;
         auto v = q + (params.num_heads + params.kv_num_heads) * params.sequence_length *
                          params.head_size;
-        // index_int num_heads       = params.num_heads;
-        // index_int kv_num_heads    = params.kv_num_heads;
-        // index_int sequence_length = params.sequence_length;
-        // index_int head_size       = params.head_size;
 
-        // printf("num_heads=%u, num_kv_heads=%u, sequence_length=%u, head_size=%u\n",
-            //    num_heads,
-            //    kv_num_heads,
-            //    sequence_length,
-            //    head_size);
         if(idx < elements / 2)
         {
             update_cache(k, seqlens_k, past_key.begin(), params, idx);
