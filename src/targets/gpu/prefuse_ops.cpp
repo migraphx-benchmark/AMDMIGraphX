@@ -402,21 +402,14 @@ struct find_sparse_attention
         auto sparse_block_size  = v.at("sparse_block_size").to<size_t>();
         auto scale              = v.at("scale").to<float>();
 
-        auto qkv                        = inputs.at(0);
-        auto past_key                   = inputs.at(3);
-        auto past_val                   = inputs.at(4);
-        auto key_total_sequence_lengths = inputs.at(8);
-
-        auto sequence_length = inputs.at(0)->get_shape().lens()[2];
-        auto seq_len_lit     = mod.insert_literal(
-            ins, migraphx::literal{shape{shape::int32_type, {1}}, {sequence_length}});
-        seq_len_lit = mod.insert_instruction(
-            ins,
-            migraphx::make_op("multibroadcast",
-                              {{"out_lens", key_total_sequence_lengths->get_shape().lens()}}),
-            seq_len_lit);
-        auto new_ktsl = mod.insert_instruction(
-            ins, migraphx::make_op("sub"), key_total_sequence_lengths, seq_len_lit);
+        auto qkv                = inputs.at(0);
+        auto past_key           = inputs.at(3);
+        auto past_val           = inputs.at(4);
+        auto key_total_seq_lens = inputs.at(8);
+        // GroupQueryAttention expects this input to contains total_sequence_lengths - 1 values
+        // SparseAttention expects it to contains total_sequence_lengths values
+        // Decrement it to make it compatible with GQA kernels
+        auto dec_key_total_seq_lens = decrement_key_total_seq_lens(mod, ins, key_total_seq_lens);
 
         if(do_rotary)
         {
@@ -424,40 +417,50 @@ struct find_sparse_attention
                 ins,
                 gpu_gqa_rotary_embedding{
                     do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-                {qkv, new_ktsl, inputs.at(9), inputs.at(10)});
+                {qkv, dec_key_total_seq_lens, inputs.at(9), inputs.at(10)});
         }
 
         auto concat = mod.insert_instruction(
             ins,
             gpu_concat_past_present{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, past_val, new_ktsl});
+            {qkv, past_key, past_val, dec_key_total_seq_lens});
         auto id = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
 
         auto attn_probs = mod.insert_instruction(
             ins,
             gpu_compute_attention_probabilities{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {id, past_key, past_val, key_total_sequence_lengths});
+            {id, past_key, past_val, dec_key_total_seq_lens});
 
         auto softmax = mod.insert_instruction(
             ins,
             gpu_gqa_softmax{do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, attn_probs, key_total_sequence_lengths});
+            {qkv, past_key, attn_probs, key_total_seq_lens});
 
+        // TODO Figure out why using dec_key_total_seq_lens causes a memory access fault
         auto attn_scores = mod.insert_instruction(
             ins,
             gpu_compute_attention_scores{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, past_val, key_total_sequence_lengths, softmax});
+            {qkv, past_key, past_val, key_total_seq_lens, softmax});
 
-        auto output      = std::next(ins);
-        auto present_key = std::next(output);
-        auto present_val = std::next(present_key);
+        auto&& outputs = ins->outputs();
+        mod.replace_instruction(outputs[0], attn_scores);
+        mod.replace_instruction(outputs[1], past_key);
+        mod.replace_instruction(outputs[2], past_val);
+    }
 
-        mod.replace_instruction(output, attn_scores);
-        mod.replace_instruction(present_key, past_key);
-        mod.replace_instruction(present_val, past_val);
+    instruction_ref
+    decrement_key_total_seq_lens(module& mod, instruction_ref ins, instruction_ref ktsl) const
+    {
+        auto seq_len_lit =
+            mod.insert_literal(ins, migraphx::literal{shape{shape::int32_type, {1}}, {1}});
+        seq_len_lit = mod.insert_instruction(
+            ins,
+            migraphx::make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}),
+            seq_len_lit);
+        return mod.insert_instruction(ins, migraphx::make_op("sub"), ktsl, seq_len_lit);
     }
 };
 
