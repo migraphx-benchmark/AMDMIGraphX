@@ -208,11 +208,11 @@ TEST_CASE(sparse_attention_token_generation)
     pm["main:#output_0"] = gpu_t.copy_to(
         migraphx::argument(migraphx::shape{shape::float_type, {1, 1, 32}}, bla.data()));
 
-    // p.compile(migraphx::make_target("ref"));
-    // auto results = p.eval(pm);
+    p.compile(migraphx::make_target("ref"));
+    auto results = p.eval(pm);
 
-    // std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
-    // results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
+    std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
+    results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
     // std::vector<float> present_key_result(past_key_shape.elements());
     // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
     // }); std::vector<float> present_val_result(past_value_shape.elements());
@@ -220,8 +220,11 @@ TEST_CASE(sparse_attention_token_generation)
     // });
 
     auto gpu_results = gpu_p.eval(pm);
+    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
+    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
+    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    migraphx::argument host = gpu_t.copy_from(gpu_results[1]);
+    host = gpu_t.copy_from(gpu_results[1]);
     host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_val_result(past_value_shape.elements());
     host = gpu_t.copy_from(gpu_results[2]);
@@ -312,6 +315,7 @@ TEST_CASE(sparse_attention_token_generation)
     //                   << ", gold=" << present_key_gold[i] << std::endl;
     //     }
     // }
+    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
@@ -511,11 +515,11 @@ TEST_CASE(sparse_attention_prompt_batched)
     pm["main:#output_0"] = gpu_t.copy_to(
         migraphx::argument(migraphx::shape{shape::float_type, {2, 8, 16}}, bla.data()));
 
-    // p.compile(migraphx::make_target("ref"));
-    // auto results = p.eval(pm);
+    p.compile(migraphx::make_target("ref"));
+    auto results = p.eval(pm);
 
-    // std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
-    // results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
+    std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
+    results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
     // std::vector<float> present_key_result(past_key_shape.elements());
     // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
     // }); std::vector<float> present_val_result(past_value_shape.elements());
@@ -523,8 +527,11 @@ TEST_CASE(sparse_attention_prompt_batched)
     // });
 
     auto gpu_results = gpu_p.eval(pm);
+    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
+    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
+    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    migraphx::argument host = gpu_t.copy_from(gpu_results[1]);
+    host = gpu_t.copy_from(gpu_results[1]);
     host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_val_result(past_value_shape.elements());
     host = gpu_t.copy_from(gpu_results[2]);
@@ -603,6 +610,7 @@ TEST_CASE(sparse_attention_prompt_batched)
     // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
+    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
     // EXPECT(migraphx::verify::rms_range(gpu_present_val_result, present_val_result));
@@ -912,11 +920,6 @@ TEST_CASE(sparse_attention_rotary_prompt)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    // p.compile(migraphx::make_target("ref"));
-    // auto results = p.eval({});
-
-    // std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
-    // results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
     // std::vector<float> present_key_result(past_key_shape.elements());
     // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
     // }); std::vector<float> present_val_result(past_value_shape.elements());
@@ -940,9 +943,19 @@ TEST_CASE(sparse_attention_rotary_prompt)
     pm["main:#output_0"] =
         gpu_t.copy_to(migraphx::argument(migraphx::shape{shape::float_type, {1, 8, 64}}, bla.data()));
 
+    p.compile(migraphx::make_target("ref"));
+    auto results = p.eval(pm);
+
+    std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
+    results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
+
+
     auto gpu_results = gpu_p.eval(pm);
+    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
+    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
+    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    migraphx::argument host = gpu_t.copy_from(gpu_results[1]);
+    host = gpu_t.copy_from(gpu_results[1]);
     host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_val_result(past_value_shape.elements());
     host = gpu_t.copy_from(gpu_results[2]);
@@ -1085,6 +1098,7 @@ TEST_CASE(sparse_attention_rotary_prompt)
     // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
+    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
 }
@@ -1280,11 +1294,6 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    // p.compile(migraphx::make_target("ref"));
-    // auto results = p.eval({});
-
-    // std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
-    // results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
     // std::vector<float> present_key_result(past_key_shape.elements());
     // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
     // std::vector<float> present_val_result(past_value_shape.elements());
@@ -1308,9 +1317,18 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
     pm["main:#output_0"] =
         gpu_t.copy_to(migraphx::argument(migraphx::shape{shape::float_type, {2, 1, 32}}, bla.data()));
 
+    p.compile(migraphx::make_target("ref"));
+    auto results = p.eval(pm);
+
+    std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
+    results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
+
     auto gpu_results = gpu_p.eval(pm);
+    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
+    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
+    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    migraphx::argument host = gpu_t.copy_from(gpu_results[1]);
+    host = gpu_t.copy_from(gpu_results[1]);
     host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
     std::vector<float> gpu_present_val_result(past_value_shape.elements());
     host = gpu_t.copy_from(gpu_results[2]);
@@ -1397,7 +1415,6 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
     // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
     // for(auto i = 0; i < present_key_gold.size(); ++i)
     // {
     //     if(gpu_present_key_result[i] != present_key_gold[i])
@@ -1406,5 +1423,7 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
     //                   << ", gold=" << present_key_gold[i] << std::endl;
     //     }
     // }
+    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
     EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
+    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
 }

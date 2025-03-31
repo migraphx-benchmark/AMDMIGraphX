@@ -433,17 +433,17 @@ struct find_sparse_attention
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
             {id, past_key, past_val, dec_key_total_seq_lens});
 
-        auto softmax = mod.insert_instruction(
-            ins,
-            gpu_gqa_softmax{do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, attn_probs, key_total_seq_lens});
+        // auto softmax = mod.insert_instruction(
+        //     ins,
+        //     gpu_gqa_softmax{do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
+        //     {qkv, past_key, attn_probs, key_total_seq_lens});
 
         // TODO Figure out why using dec_key_total_seq_lens causes a memory access fault
         auto attn_scores = mod.insert_instruction(
             ins,
             gpu_compute_attention_scores{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, past_val, key_total_seq_lens, softmax});
+            {qkv, past_key, past_val, dec_key_total_seq_lens, attn_probs});
 
         auto&& outputs = ins->outputs();
         mod.replace_instruction(outputs[0], attn_scores);
