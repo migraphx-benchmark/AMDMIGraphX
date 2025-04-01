@@ -1,14 +1,14 @@
-	mean_variance_norm_test:Ö
-0
-xy"MeanVarianceNormalization*
-axes@@†mean_variance_norm_testZ
-x
+	mean_variance_norm_test:è
+5
+dataout"MeanVarianceNormalization*
+axes@@†mean_variance_norm_testZ
+data
 
 
 
 
-b
-y
+b
+out
 
 
 
