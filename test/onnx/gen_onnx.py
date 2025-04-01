@@ -15770,13 +15770,4 @@ def scan_arg_shapes_mismatch_test():
 
 @onnx_test()
 def mean_variance_norm_test():
-    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3, 3, 1])
-    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 3, 3, 1])
-    ax = [2, 3]
-
-    node = onnx.helper.make_node('MeanVarianceNormalization',
-                                    inputs=['x'],
-                                    outputs=['y'],
-                                    axes=ax,
-                                    )
-    return ([node], [x], [y])
+    return mvn_n_rank_test_base([2, 3], [3, 3, 3, 1])
