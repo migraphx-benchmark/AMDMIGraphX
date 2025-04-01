@@ -76,7 +76,7 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
         if (x->get_shape().ndim() < axes_min_size)
         {
             MIGRAPHX_THROW(opd.onnx_name + ": input dimension has value: " + std::to_string(x->get_shape().ndim()) + 
-                        ". It sould be greater or equal to: " + std::to_string(axes_min_size))
+                        ". It sould be greater or equal to: " + std::to_string(axes_min_size));
         } 
         
         auto expected_val_x     = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), x);
