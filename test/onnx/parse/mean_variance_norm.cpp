@@ -33,7 +33,7 @@ TEST_CASE(mean_variance_norm_test)
     std::vector<size_t> dims{3, 4, 5, 6};
     migraphx::shape s1{migraphx::shape::float_type, dims};
 
-    const float eps_default = 1e-9f;
+    const float eps_default = 1e-7f;
 
     auto X          = mm->add_parameter("x", s1);
 
