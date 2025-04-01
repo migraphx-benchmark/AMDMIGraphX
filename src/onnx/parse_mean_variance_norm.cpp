@@ -33,7 +33,7 @@ namespace onnx {
 struct mean_variance_norm : op_parser<mean_variance_norm>
 {
     std::set<shape::type_t> valid_types = {
-        shape::bf16_type, shape::double_type, shape::float_type};
+        shape::bf16_type, shape::double_type, shape::float_type, shape::half_type};
 
     std::vector<op_desc> operators() const
     {
@@ -51,12 +51,12 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
         if(not contains(valid_types, dtype))
         {
             MIGRAPHX_THROW(opd.onnx_name + ": invalid output type: " + std::to_string(dtype) +
-                           ". Valid types are (bfloat16), (double), and (float).");
+                           ". Valid types are (bfloat16), (double), (float) and (half)");
         }
 
-        const auto& X                  = args[0];
+        const auto& x                  = args[0];
 
-        const auto eps_default            = 1e-9f;
+        const auto eps_default            = 1e-7f;
         const auto axes_default = std::vector<size_t>{0, 2, 3};
         
         auto eps = eps_default;
@@ -72,20 +72,25 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
             axes.assign(info.attributes.at("axes").ints().begin(), info.attributes.at("axes").ints().end());
             axes_min_size = axes.size();
         }
-        assert(X->get_shape().ndim() >= axes_min_size);
-        
-        auto E_X        = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), X);
-        auto E_sqr_X    = info.add_common_op("mul", E_X, E_X);
-        auto X_sqr      = info.add_common_op("mul", X, X);
-        auto E_X_sqr    = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), X_sqr);
-        auto std_sqr    = info.add_common_op("sub", E_X_sqr, E_sqr_X);
-        auto std        = info.add_common_op("sqrt", std_sqr);
-        auto numerator  = info.add_common_op("sub", X, E_X);
-        auto eps_literal= info.add_literal(literal{shape{literal_dtype}, {eps}});
-        auto denominator= info.add_common_op("add", std, eps_literal);
-        auto Y          = info.add_common_op("div", numerator, denominator);
 
-        return Y;
+        if (x->get_shape().ndim() < axes_min_size)
+        {
+            MIGRAPHX_THROW(opd.onnx_name + ": input dimension has value: " + std::to_string(x->get_shape().ndim()) + 
+                        ". It sould be greater or equal to: " + std::to_string(axes_min_size))
+        } 
+        
+        auto expected_val_x     = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), x);
+        auto expected_val_sqr_x = info.add_common_op("mul", expected_val_x, expected_val_x);
+        auto x_sqr              = info.add_common_op("mul", x, x);
+        auto expected_val_x_sqr = info.add_instruction(make_op("reduce_mean", {{"axes", axes}}), x_sqr);
+        auto std_sqr            = info.add_common_op("sub", expected_val_x_sqr, expected_val_sqr_x);
+        auto std                = info.add_common_op("sqrt", std_sqr);
+        auto numerator          = info.add_common_op("sub", x, expected_val_x);
+        auto eps_literal        = info.add_literal(literal{shape{literal_dtype}, {eps}});
+        auto denominator        = info.add_common_op("add", std, eps_literal);
+        auto y                  = info.add_common_op("div", numerator, denominator);
+
+        return y;
     }
 };
 
