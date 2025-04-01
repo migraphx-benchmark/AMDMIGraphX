@@ -30,17 +30,18 @@ TEST_CASE(mean_variance_norm_test)
     migraphx::program p;
     auto* mm = p.get_main_module();
 
-    std::vector<size_t> dims{3, 4, 5, 6};
+    const std::vector<size_t> dims{3, 3, 3, 1};
+    const std::vector<size_t> axes{0, 2, 3};
     migraphx::shape s1{migraphx::shape::float_type, dims};
 
     const float eps_default = 1e-7f;
 
     auto x                  = mm->add_parameter("x", s1);
 
-    auto expected_val_x     = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), x);
+    auto expected_val_x     = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", axes}}), x);
     auto expected_val_sqr_x = add_common_op(*mm, migraphx::make_op("mul"), {expected_val_x, expected_val_x});
     auto x_sqr              = add_common_op(*mm, migraphx::make_op("mul"), {x, x});
-    auto expected_val_x_sqr = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), x_sqr);
+    auto expected_val_x_sqr = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", axes}}), x_sqr);
     auto std_sqr            = add_common_op(*mm, migraphx::make_op("sub"), {expected_val_x_sqr, expected_val_sqr_x});
     auto std                = add_common_op(*mm, migraphx::make_op("sqrt"), {std_sqr});
     auto numerator          = add_common_op(*mm, migraphx::make_op("sub"), {x, expected_val_x});
