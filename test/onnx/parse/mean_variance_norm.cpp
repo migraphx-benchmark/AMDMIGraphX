@@ -35,22 +35,20 @@ TEST_CASE(mean_variance_norm_test)
 
     const float eps_default = 1e-7f;
 
-    auto X          = mm->add_parameter("x", s1);
+    auto x                  = mm->add_parameter("x", s1);
 
-    auto E_X        = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), X);
-    auto E_sqr_X    = add_common_op(*mm, migraphx::make_op("mul"), {E_X, E_X});
-    auto X_sqr      = add_common_op(*mm, migraphx::make_op("mul"), {X, X});
-    auto E_X_sqr    = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), X_sqr);
-    auto std_sqr    = add_common_op(*mm, migraphx::make_op("sub"), {E_X_sqr, E_sqr_X});
-    auto std        = add_common_op(*mm, migraphx::make_op("sqrt"), {std_sqr});
-    auto numerator  = add_common_op(*mm, migraphx::make_op("sub"), {X, E_X});
-    auto eps_literal = mm->add_literal(migraphx::literal{migraphx::shape{migraphx::shape::float_type}, {eps_default}});
-    auto denominator= add_common_op(*mm, migraphx::make_op("add"), {std, eps_literal});
-    auto Y          = add_common_op(*mm, migraphx::make_op("div"), {numerator, denominator});
-
-    mm->add_return({Y});
+    auto expected_val_x     = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), x);
+    auto expected_val_sqr_x = add_common_op(*mm, migraphx::make_op("mul"), {expected_val_x, expected_val_x});
+    auto x_sqr              = add_common_op(*mm, migraphx::make_op("mul"), {x, x});
+    auto expected_val_x_sqr = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", {2, 3}}}), x_sqr);
+    auto std_sqr            = add_common_op(*mm, migraphx::make_op("sub"), {expected_val_x_sqr, expected_val_sqr_x});
+    auto std                = add_common_op(*mm, migraphx::make_op("sqrt"), {std_sqr});
+    auto numerator          = add_common_op(*mm, migraphx::make_op("sub"), {x, expected_val_x});
+    auto eps_literal        = mm->add_literal(migraphx::literal{migraphx::shape{migraphx::shape::float_type}, {eps_default}});
+    auto denominator        = add_common_op(*mm, migraphx::make_op("add"), {std, eps_literal});
+    add_common_op(*mm, migraphx::make_op("div"), {numerator, denominator});
 
     migraphx::onnx_options options;
-    auto prog = read_onnx("mean_variance_norm_test.onnx", options);
+    auto prog = optimize_onnx("mean_variance_norm_test.onnx");
     EXPECT(p == prog);
 }
