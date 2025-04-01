@@ -302,6 +302,25 @@ struct gpu_concat_past_present : op::group_query_attention
 };
 MIGRAPHX_REGISTER_OP(gpu_concat_past_present);
 
+struct unpack_masks
+{
+    std::string name() const { return "gpu::unpack_masks"; }
+
+    template <class Self, class F>
+    static auto reflect(Self&, F)
+    {
+        return pack();
+    }
+
+    shape compute_shape(std::vector<shape> inputs) const
+    {
+        const auto block_row_ind_lens = inputs[0].lens();
+        const auto max_blocks = block_row_ind_lens[1] - 1;
+        return shape{shape::bool_type, {block_row_ind_lens[0], max_blocks, max_blocks}};
+    }
+};
+MIGRAPHX_REGISTER_OP(unpack_masks);
+
 struct find_group_query_attention
 {
     auto matcher() const { return match::name("group_query_attention"); }
@@ -414,6 +433,8 @@ struct find_sparse_attention
         auto qkv                = inputs.at(0);
         auto past_key           = inputs.at(3);
         auto past_val           = inputs.at(4);
+        auto block_row_indices  = inputs.at(5);
+        auto block_col_indices  = inputs.at(6);
         auto key_total_seq_lens = inputs.at(8);
         // GroupQueryAttention expects this input to contains total_sequence_lengths - 1 values
         // SparseAttention expects it to contains total_sequence_lengths values
@@ -442,11 +463,14 @@ struct find_sparse_attention
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
             {id, past_key, past_val, dec_key_total_seq_lens});
 
+        auto mask =
+            mod.insert_instruction(ins, unpack_masks{}, {block_row_indices, block_col_indices});
+
         auto softmax = mod.insert_instruction(
             ins,
             gpu_sparse_attn_softmax{
                 do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
-            {qkv, past_key, attn_probs, key_total_seq_lens});
+            {qkv, past_key, attn_probs, key_total_seq_lens, mask});
 
         auto attn_scores = mod.insert_instruction(
             ins,
