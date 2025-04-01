@@ -15770,9 +15770,9 @@ def scan_arg_shapes_mismatch_test():
 
 @onnx_test()
 def mean_variance_norm_test():
-    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 4, 5, 6])
-    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 4, 5, 6])
-    ax = [2, 3]
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [3, 3, 3, 1])
+    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [3, 3, 3, 1])
+    ax = [0, 2, 3]
 
     node = onnx.helper.make_node('MeanVarianceNormalization',
                                     inputs=['x'],
@@ -15780,39 +15780,3 @@ def mean_variance_norm_test():
                                     axes=ax,
                                     )
     return ([node], [x], [y])
-
-@onnx_test()
-def mean_variance_norm_val_test():
-    # example from: https://github.com/onnx/onnx/blob/main/onnx/backend/test/case/node/meanvariancenormalization.py
-    x = np.array(
-            [
-                [
-                    [[0.8439683], [0.5665144], [0.05836735]],
-                    [[0.02916367], [0.12964272], [0.5060197]],
-                    [[0.79538304], [0.9411346], [0.9546573]],
-                ],
-                [
-                    [[0.17730942], [0.46192095], [0.26480448]],
-                    [[0.6746842], [0.01665257], [0.62473077]],
-                    [[0.9240844], [0.9722341], [0.11965699]],
-                ],
-                [
-                    [[0.41356155], [0.9129373], [0.59330076]],
-                    [[0.81929934], [0.7862604], [0.11799799]],
-                    [[0.69248444], [0.54119414], [0.07513223]],
-                ],
-            ],
-            dtype=np.float32,
-    )
-
-    x_tensor = helper.make_tensor(name='x_tensor', data_type=TensorProto.FLOAT, dims=x.shape, vals=x.flatten().astype(np.float))
-    y = helper.make_tensor_value_info('y', TensorProto.FLOAT, x.shape)
-    ax = [0, 2, 3]
-
-    node = onnx.helper.make_node('MeanVarianceNormalization',
-                                    inputs=['x_tensor'],
-                                    outputs=['y'],
-                                    axes=ax,
-                                    )
-
-    return ([node], [], [y], [x_tensor])
