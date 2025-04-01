@@ -31,6 +31,7 @@
 #include <migraphx/pass_manager.hpp>
 #include <migraphx/dead_code_elimination.hpp>
 #include <migraphx/op/group_query_attention.hpp>
+#include <migraphx/op/sparse_attention.hpp>
 #ifdef MIGRAPHX_USE_COMPOSABLEKERNEL
 #include <migraphx/gpu/ck.hpp>
 #endif
@@ -285,6 +286,14 @@ struct gpu_gqa_softmax : op::group_query_attention
 };
 MIGRAPHX_REGISTER_OP(gpu_gqa_softmax);
 
+struct gpu_sparse_attn_softmax : op::sparse_attention
+{
+    std::string name() const { return "gpu::sparse_attn_softmax"; }
+
+    shape compute_shape(std::vector<shape> inputs) const { return inputs.at(2); }
+};
+MIGRAPHX_REGISTER_OP(gpu_sparse_attn_softmax);
+
 struct gpu_concat_past_present : op::group_query_attention
 {
     std::string name() const { return "gpu::concat_past_present"; }
@@ -433,17 +442,17 @@ struct find_sparse_attention
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
             {id, past_key, past_val, dec_key_total_seq_lens});
 
-        // auto softmax = mod.insert_instruction(
-        //     ins,
-        //     gpu_gqa_softmax{do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-        //     {qkv, past_key, attn_probs, key_total_seq_lens});
+        auto softmax = mod.insert_instruction(
+            ins,
+            gpu_sparse_attn_softmax{
+                do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
+            {qkv, past_key, attn_probs, key_total_seq_lens});
 
-        // TODO Figure out why using dec_key_total_seq_lens causes a memory access fault
         auto attn_scores = mod.insert_instruction(
             ins,
             gpu_compute_attention_scores{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, past_val, dec_key_total_seq_lens, attn_probs});
+            {qkv, past_key, past_val, dec_key_total_seq_lens, softmax});
 
         auto&& outputs = ins->outputs();
         mod.replace_instruction(outputs[0], attn_scores);
