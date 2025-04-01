@@ -54,9 +54,9 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
                            ". Valid types are (bfloat16), (double), (float) and (half)");
         }
 
-        const auto& x                  = args[0];
+        const auto& x           = args[0];
 
-        const auto eps_default            = 1e-7f;
+        const auto eps_default  = 1e-7f;
         const auto axes_default = std::vector<size_t>{0, 2, 3};
         
         auto eps = eps_default;
