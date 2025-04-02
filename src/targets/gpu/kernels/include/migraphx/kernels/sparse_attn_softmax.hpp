@@ -55,49 +55,45 @@ template <size_t SparseBlockSize,
 __device__ void sparse_attn_softmax(
     Output output, Input, PresentKey, Probs, SeqLensK seqlens_k, Mask mask, Params params)
 {
-    (void)mask;
-    const index_int elements        = params.batch_size * params.num_heads * params.sequence_length;
+    constexpr index_int elements    = output.get_shape().elements();
     constexpr index_int num_layouts = mask.get_shape().lens[0];
     make_index().global_stride(elements, [&](auto idx) {
-        const index_int batch_idx = idx / (params.num_heads * params.sequence_length);
-        // (idx - batch_idx * batch_size) / num_heads
-        const index_int head_idx =
-            idx % (params.num_heads * params.sequence_length) / params.sequence_length;
-        const index_int seq_idx = idx % params.sequence_length;
-        const index_int key_total_seq_len = seqlens_k[batch_idx];
-        // TODO just do key_total_seq_len - params.sequence_length
-        const index_int past_seq_len   = params.sequence_length == 1 ? key_total_seq_len - 1 : 0;
-        // constexpr index_int max_blocks = mask.get_shape().lens[1];
-        const auto layout_idx          = head_idx % num_layouts;
+        const auto multi_idx = output.get_shape().multi(idx);
+        const auto batch_idx = multi_idx[0];
+        const auto head_idx  = multi_idx[1];
+        const auto row_idx   = multi_idx[2];
+        const auto col_idx   = multi_idx[3];
 
-        const auto q_idx         = seq_idx;
-        const auto causal_length = past_seq_len + q_idx + 1;
-        const auto q_abs_idx     = q_idx + past_seq_len;
-        // printf("idx=%u, batch_idx=%u, head_idx=%u, seq_idx=%u, causal_len=%u\n", idx, batch_idx, head_idx, seq_idx, causal_length);
-        for(index_int i = 0; i < causal_length; ++i)
+        const index_int key_total_seq_len = seqlens_k[batch_idx];
+        if(col_idx >= key_total_seq_len)
+            return;
+
+        const index_int past_seq_len = key_total_seq_len - params.sequence_length;
+        const auto row_abs_idx       = row_idx + past_seq_len;
+        const auto causal_length     = row_abs_idx + 1;
+
+        if(col_idx < causal_length)
         {
-            const index_int mask_row    = q_abs_idx / SparseBlockSize;
-            const index_int mask_column = i / SparseBlockSize;
+            const index_int layout_idx  = head_idx % num_layouts;
+            const index_int mask_row    = row_abs_idx / SparseBlockSize;
+            const index_int mask_column = col_idx / SparseBlockSize;
             if(not mask[make_array(layout_idx, mask_row, mask_column)])
             {
-                output[make_array(batch_idx, head_idx, seq_idx, i)] =
-                    numeric_lowest<typename Output::type>();
+                output[multi_idx] = numeric_lowest<typename Output::type>();
             }
         }
-        auto it = output.begin() + output.get_shape().index(make_array(batch_idx, head_idx, seq_idx, 0));
-        // if(idx==0) {
-        //     auto i = output.begin_at(make_array(0u, 0u, 0u, 0u));
-        //     auto single = output.get_shape().index(make_array(0u, 0u, 0u, 0u));
-        //     printf("val0=%f, it0=%f, single=%u\n", output[make_array(0u, 0u, 0u, 0u)], *i, single);
-        //     i = output.begin_at(make_array(0u, 1u, 0u, 0u));
-        //     single = output.get_shape().index(make_array(0u, 1u, 0u, 0u));
-        //     printf("val1=%f, it1=%f, single=%u\n", output[make_array(0u, 1u, 0u, 0u)], *i, single);
-        //     printf("val2=%f\n", output[make_array(0u, 2u, 0u, 0u)]);
-        //     printf("val3=%f\n", output[make_array(0u, 3u, 0u, 0u)]);
-        // }
-        softmax_inplace(it, 1, causal_length);
-        for(index_int i = causal_length; i < key_total_seq_len; ++i) {
-            output[make_array(batch_idx, head_idx, seq_idx, i)] = 0;
+        else
+        {
+            output[multi_idx] = 0;
+        }
+
+        // Not nice, failing to utilise threads, but this is just a basic working implementation
+        // which will (hopefully) be improved upon
+        if(col_idx == 0)
+        {
+            auto it = output.begin() +
+                      output.get_shape().index(make_array(batch_idx, head_idx, row_idx, 0));
+            softmax_inplace(it, 1, causal_length);
         }
     });
 }

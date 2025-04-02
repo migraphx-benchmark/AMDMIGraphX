@@ -83,9 +83,7 @@ struct sparse_attn_softmax_compiler : compiler<sparse_attn_softmax_compiler>
         auto gqa_params_str = params.make_init_str();
 
         hip_compile_options options;
-        options.set_launch_params(
-            v,
-            compute_global_for(ctx, params.batch_size * params.num_heads * params.sequence_length));
+        options.set_launch_params(v, compute_global_for(ctx, inputs.back().elements()));
         options.inputs         = inputs;
         options.output         = inputs.back();
         options.kernel_name    = v.get("kernel", "sparse_attn_softmax_kernel");

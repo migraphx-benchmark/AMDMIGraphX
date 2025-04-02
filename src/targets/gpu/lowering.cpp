@@ -591,7 +591,6 @@ struct miopen_apply
             output = mod->insert_instruction(ins, make_op("hip::fill"), output);
             auto new_inputs = ins->inputs();
             new_inputs.push_back(output);
-            to_value(ins->get_operator()).debug_print();
             return mod->replace_instruction(
                 ins,
                 make_op("gpu::precompile_op", {{"op", to_value(ins->get_operator())}}),
