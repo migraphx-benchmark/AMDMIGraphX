@@ -15779,3 +15779,7 @@ def mean_variance_norm_default_axes_test():
 @onnx_test()
 def mean_variance_norm_invalid_type_test():
     return mvn_default_axes_test_base([3, 3, 3, 1], type=TensorProto.INT8)
+
+@onnx_test()
+def mean_variance_norm_invalid_axes_test():
+    return mvn_n_rank_test_base(axes=[2, 3, 1, 4], dims=[3, 1])
