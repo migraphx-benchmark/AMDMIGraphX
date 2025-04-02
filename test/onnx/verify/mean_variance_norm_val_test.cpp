@@ -31,14 +31,33 @@
 
 TEST_CASE(mean_variance_norm_val_test)
 {
-    migraphx::program p = read_onnx("mean_variance_norm_val_test.onnx");
+    // example from: https://github.com/onnx/onnx/blob/main/onnx/backend/test/case/node/meanvariancenormalization.py
+    migraphx::program p = read_onnx("mean_variance_norm_default_axes_test.onnx");
 
     p.compile(migraphx::make_target("ref"));
-    auto result = p.eval({}).back();
+
+    const migraphx::shape s{migraphx::shape::float_type, {3, 3, 3, 1}};
+    std::vector<float> x = {
+        0.843968, 0.566514, 0.0583673,
+        0.0291637, 0.129643, 0.50602,
+        0.795383, 0.941135, 0.954657,
+
+        0.177309, 0.461921, 0.264804,
+        0.674684, 0.0166526, 0.624731,
+        0.924084, 0.972234, 0.119657,
+
+        0.413562, 0.912937, 0.593301,
+        0.819299, 0.78626, 0.117998,
+        0.692484, 0.541194, 0.0751322
+    };
+
+    migraphx::parameter_map p_map;
+    p_map["data"] = migraphx::argument(s, x.data());
+
+    auto result = p.eval(p_map).back();
     std::vector<float> result_vector(9);
     result.visit([&](auto output) { result_vector.assign(output.begin(), output.end()); });
 
-    // example from: https://github.com/onnx/onnx/blob/main/onnx/backend/test/case/node/meanvariancenormalization.py
     const std::vector<float> expected_result = 
     {
         1.35464, 0.330535, -1.54508, 
@@ -53,5 +72,5 @@ TEST_CASE(mean_variance_norm_val_test)
         1.29061, 1.18602, -0.929458, 
         0.0721332, -0.38174, -1.77993
     };
-    EXPECT(migraphx::verify::verify_rms_range(result_vector, expected_result));    
+    EXPECT(migraphx::verify::verify_rms_range(result_vector, expected_result));
 }
