@@ -64,3 +64,8 @@ TEST_CASE(mean_variance_norm_default_axes_test)
 
     EXPECT(axes == axes_default);
 }
+
+TEST_CASE(mean_variance_norm_invalid_type_test)
+{
+    EXPECT(test::throws([&] { optimize_onnx("mean_variance_norm_invalid_type_test.onnx"); }));
+}
