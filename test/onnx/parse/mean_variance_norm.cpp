@@ -36,7 +36,7 @@ TEST_CASE(mean_variance_norm_test)
 
     const float eps_default = 1e-7f;
 
-    auto x                  = mm->add_parameter("x", s1);
+    auto x                  = mm->add_parameter("data", s1);
 
     auto expected_val_x     = mm->add_instruction(migraphx::make_op("reduce_mean", {{"axes", axes}}), x);
     auto expected_val_sqr_x = add_common_op(*mm, migraphx::make_op("mul"), {expected_val_x, expected_val_x});
