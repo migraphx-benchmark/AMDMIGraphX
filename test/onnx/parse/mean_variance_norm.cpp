@@ -49,7 +49,18 @@ TEST_CASE(mean_variance_norm_test)
     auto denominator        = add_common_op(*mm, migraphx::make_op("add"), {std, eps_literal});
     add_common_op(*mm, migraphx::make_op("div"), {numerator, denominator});
 
-    migraphx::onnx_options options;
     auto prog = optimize_onnx("mean_variance_norm_test.onnx");
     EXPECT(p == prog);
+}
+
+TEST_CASE(mean_variance_norm_default_axes_test)
+{
+    migraphx::program p;
+    const auto prog = optimize_onnx("mean_variance_norm_default_axes_test.onnx");
+    const auto* mm = prog.get_main_module();
+    const auto it = std::find_if(mm->begin(), mm->end(), [](auto instr){ return instr.name() == "reduce_mean";});
+    const auto axes = (*it).get_operator().to_value().at("axes").get_array();
+    const auto axes_default = std::vector<std::int64_t>{0, 2, 3};
+
+    EXPECT(axes == axes_default);
 }

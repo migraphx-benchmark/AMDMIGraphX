@@ -15771,3 +15771,7 @@ def scan_arg_shapes_mismatch_test():
 @onnx_test()
 def mean_variance_norm_test():
     return mvn_n_rank_test_base([2, 3], [3, 3, 3, 1])
+
+@onnx_test()
+def mean_variance_norm_default_axes_test():
+    return mvn_default_axes_test_base([3, 3, 3, 1])
