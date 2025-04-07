@@ -56,7 +56,7 @@ struct mean_variance_norm : op_parser<mean_variance_norm>
 
         const auto& x           = args[0];
 
-        const auto eps_default  = 1e-7f;
+        const auto eps_default  = (dtype == shape::half_type) ? 1e-7f : 1e-9f;
         const auto axes_default = std::vector<size_t>{0, 2, 3};
         
         auto eps = eps_default;
