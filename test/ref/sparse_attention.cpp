@@ -163,12 +163,12 @@ TEST_CASE(sparse_attention_token_generation)
     auto qkv        = mm->add_literal(literal{qkv_shape, qkv_val});
     auto k          = mm->add_literal(literal{});
     auto v          = mm->add_literal(literal{});
-    auto past_key   = mm->add_parameter("past_key", past_key_shape);
-    auto past_value = mm->add_parameter("past_value", past_value_shape);
+    auto past_key   = mm->add_literal(literal{past_key_shape, past_key_val});
+    auto past_value = mm->add_literal(literal{past_value_shape, past_value_val});
     auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
     auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
     auto tsl        = mm->add_literal(literal{total_sequence_len_shape, tsl_val});
-    auto ktsl       = mm->add_parameter("ktsl", key_total_sequence_lens_shape);
+    auto ktsl       = mm->add_literal(literal{key_total_sequence_lens_shape, ktsl_val});
 
     auto sparse_attn = mm->add_instruction(make_op("sparse_attention",
                                                    {{"do_rotary", do_rotary},
@@ -194,41 +194,15 @@ TEST_CASE(sparse_attention_token_generation)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    migraphx::program gpu_p = p;
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    auto gpu_t        = migraphx::make_target("gpu");
-    gpu_p.compile(gpu_t);
-    std::cout << gpu_p << std::endl;
-    migraphx::parameter_map pm;
-    pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
-    pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));
-    pm["ktsl"] = gpu_t.copy_to(migraphx::argument(key_total_sequence_lens_shape, ktsl_val.data()));
-    std::vector<float> bla(32);
-    pm["main:#output_0"] = gpu_t.copy_to(
-        migraphx::argument(migraphx::shape{shape::float_type, {1, 1, 32}}, bla.data()));
-
     p.compile(migraphx::make_target("ref"));
-    auto results = p.eval(pm);
+    auto results = p.eval({});
 
     std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
     results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
-    // std::vector<float> present_key_result(past_key_shape.elements());
-    // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
-    // }); std::vector<float> present_val_result(past_value_shape.elements());
-    // results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end());
-    // });
-
-    auto gpu_results = gpu_p.eval(pm);
-    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
-    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
-    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    host = gpu_t.copy_from(gpu_results[1]);
-    host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_val_result(past_value_shape.elements());
-    host = gpu_t.copy_from(gpu_results[2]);
-    host.visit([&](auto output) { gpu_present_val_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_key_result(past_key_shape.elements());
+    results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_val_result(past_value_shape.elements());
+    results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end()); });
 
     std::vector<float> attn_gold{
         0.76145f,  0.20335f, 0.06977f,  -0.09397f, -0.35240f, -0.24121f, 0.19932f, 0.10970f,
@@ -304,21 +278,9 @@ TEST_CASE(sparse_attention_token_generation)
         0.38190f,  -0.73470f, 0.11403f,  1.56294f,  -0.31808f, -1.34281f, 0.47457f,  -0.25326f,
         0.28916f,  2.17363f,  0.20315f,  -0.52204f, -0.55325f, -1.40188f, -0.82835f, -0.68602f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
-    // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
-    // for(auto i = 0; i < present_key_gold.size(); ++i)
-    // {
-    //     if(gpu_present_key_result[i] != present_key_gold[i])
-    //     {
-    //         std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
-    //                   << ", gold=" << present_key_gold[i] << std::endl;
-    //     }
-    // }
-    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
 }
 
 TEST_CASE(sparse_attention_prompt_batched)
@@ -470,12 +432,12 @@ TEST_CASE(sparse_attention_prompt_batched)
     auto qkv        = mm->add_literal(literal{qkv_shape, qkv_val});
     auto k          = mm->add_literal(literal{});
     auto v          = mm->add_literal(literal{});
-    auto past_key   = mm->add_parameter("past_key", past_key_shape);
-    auto past_value = mm->add_parameter("past_value", past_value_shape);
+    auto past_key   = mm->add_literal(literal{past_key_shape, past_key_val});
+    auto past_value = mm->add_literal(literal{past_value_shape, past_value_val});
     auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
     auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
     auto tsl        = mm->add_literal(literal{total_sequence_len_shape, tsl_val});
-    auto ktsl       = mm->add_parameter("ktsl", key_total_sequence_lens_shape);
+    auto ktsl       = mm->add_literal(literal{key_total_sequence_lens_shape, ktsl_val});
 
     auto sparse_attn = mm->add_instruction(make_op("sparse_attention",
                                                    {{"do_rotary", do_rotary},
@@ -502,40 +464,15 @@ TEST_CASE(sparse_attention_prompt_batched)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    migraphx::program gpu_p = p;
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    auto gpu_t        = migraphx::make_target("gpu");
-    gpu_p.compile(gpu_t);
-    migraphx::parameter_map pm;
-    pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
-    pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));
-    pm["ktsl"] = gpu_t.copy_to(migraphx::argument{key_total_sequence_lens_shape, ktsl_val.data()});
-    std::vector<float> bla(256);
-    pm["main:#output_0"] = gpu_t.copy_to(
-        migraphx::argument(migraphx::shape{shape::float_type, {2, 8, 16}}, bla.data()));
-
     p.compile(migraphx::make_target("ref"));
-    auto results = p.eval(pm);
+    auto results = p.eval({});
 
     std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
     results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
-    // std::vector<float> present_key_result(past_key_shape.elements());
-    // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
-    // }); std::vector<float> present_val_result(past_value_shape.elements());
-    // results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end());
-    // });
-
-    auto gpu_results = gpu_p.eval(pm);
-    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
-    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
-    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    host = gpu_t.copy_from(gpu_results[1]);
-    host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_val_result(past_value_shape.elements());
-    host = gpu_t.copy_from(gpu_results[2]);
-    host.visit([&](auto output) { gpu_present_val_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_key_result(past_key_shape.elements());
+    results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_val_result(past_value_shape.elements());
+    results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end()); });
 
     std::vector<float> attn_gold{
         -0.47717f, -1.30265f, 0.12719f,  0.58952f,  0.08389f,  -2.15075f, 0.92238f,  1.60766f,
@@ -607,14 +544,9 @@ TEST_CASE(sparse_attention_prompt_batched)
         -0.62157f, -0.34495f, -0.42287f, -0.61585f, -0.28848f, -1.18934f, 0.78285f,  -0.10385f,
         -1.02588f, 1.58360f,  0.38757f,  0.48773f,  -0.22308f, -0.60687f, 0.80870f,  1.33592f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
-    // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
-    // EXPECT(migraphx::verify::rms_range(gpu_present_val_result, present_val_result));
-    // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
 }
 
 TEST_CASE(sparse_attention_rotary_prompt)
@@ -882,17 +814,17 @@ TEST_CASE(sparse_attention_rotary_prompt)
         -0.24262f, -0.91950f, -0.94094f, 0.56482f,  0.93425f,  0.91671f,  -0.97063f, 0.94558f,
         -0.56968f, -0.44970f, 0.83764f,  0.99831f,  0.59482f,  0.76926f,  0.98003f,  0.25181f};
 
-    auto qkv        = mm->add_parameter("qkv", qkv_shape);
+    auto qkv        = mm->add_literal(literal{qkv_shape, qkv_val});
     auto k          = mm->add_literal(literal{});
     auto v          = mm->add_literal(literal{});
-    auto past_key   = mm->add_parameter("past_key", past_key_shape);
-    auto past_value = mm->add_parameter("past_value", past_value_shape);
+    auto past_key   = mm->add_literal(literal{past_key_shape, past_key_val});
+    auto past_value = mm->add_literal(literal{past_value_shape, past_value_val});
     auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
     auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
     auto tsl        = mm->add_literal(literal{total_sequence_len_shape, tsl_val});
-    auto ktsl       = mm->add_parameter("ktsl", key_total_sequence_lens_shape);
-    auto cos_cache  = mm->add_parameter("cos_cache", cos_cache_shape);
-    auto sin_cache  = mm->add_parameter("sin_cache", sin_cache_shape);
+    auto ktsl       = mm->add_literal(literal{key_total_sequence_lens_shape, ktsl_val});
+    auto cos_cache  = mm->add_literal(literal{cos_cache_shape, cos_cache_val});
+    auto sin_cache  = mm->add_literal(literal{sin_cache_shape, sin_cache_val});
 
     auto sparse_attn = mm->add_instruction(make_op("sparse_attention",
                                                    {{"do_rotary", do_rotary},
@@ -920,46 +852,15 @@ TEST_CASE(sparse_attention_rotary_prompt)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    // std::vector<float> present_key_result(past_key_shape.elements());
-    // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end());
-    // }); std::vector<float> present_val_result(past_value_shape.elements());
-    // results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end());
-    // });
-    migraphx::program gpu_p = p;
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    auto gpu_t        = migraphx::make_target("gpu");
-    gpu_p.compile(gpu_t);
-    std::cout << "post compile" << std::endl;
-    std::cout << gpu_p << std::endl;
-    migraphx::parameter_map pm;
-    pm["qkv"]        = gpu_t.copy_to(migraphx::argument(qkv_shape, qkv_val.data()));
-    pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
-    pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));
-    pm["ktsl"] = gpu_t.copy_to(migraphx::argument(key_total_sequence_lens_shape, ktsl_val.data()));
-    pm["cos_cache"] = gpu_t.copy_to(migraphx::argument(cos_cache_shape, cos_cache_val.data()));
-    pm["sin_cache"] = gpu_t.copy_to(migraphx::argument(sin_cache_shape, sin_cache_val.data()));
-    std::vector<float> bla(512);
-    pm["main:#output_0"] =
-        gpu_t.copy_to(migraphx::argument(migraphx::shape{shape::float_type, {1, 8, 64}}, bla.data()));
-
     p.compile(migraphx::make_target("ref"));
-    auto results = p.eval(pm);
+    auto results = p.eval({});
 
     std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
     results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
-
-
-    auto gpu_results = gpu_p.eval(pm);
-    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
-    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
-    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    host = gpu_t.copy_from(gpu_results[1]);
-    host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_val_result(past_value_shape.elements());
-    host = gpu_t.copy_from(gpu_results[2]);
-    host.visit([&](auto output) { gpu_present_val_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_key_result(past_key_shape.elements());
+    results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_val_result(past_value_shape.elements());
+    results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end()); });
 
     std::vector<float> attn_gold{
         1.54316f,  -0.70976f, 0.40827f,  0.09174f,  -0.81059f, -0.94260f, 0.83612f,  1.54785f,
@@ -1095,12 +996,9 @@ TEST_CASE(sparse_attention_rotary_prompt)
         -2.51687f, -1.04707f, -0.63970f, -0.70438f, 0.59782f,  0.74183f,  0.31749f,  -0.28442f,
         -1.95803f, -1.79381f, 0.46461f,  -0.17142f, 0.41181f,  0.27836f,  -0.02363f, 0.93865f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
 }
 
 TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
@@ -1259,12 +1157,12 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
     auto qkv        = mm->add_literal(literal{qkv_shape, qkv_val});
     auto k          = mm->add_literal(literal{});
     auto v          = mm->add_literal(literal{});
-    auto past_key   = mm->add_parameter("past_key", past_key_shape);
-    auto past_value = mm->add_parameter("past_value", past_value_shape);
+    auto past_key   = mm->add_literal(literal{past_key_shape, past_key_val});
+    auto past_value = mm->add_literal(literal{past_value_shape, past_value_val});
     auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
     auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
     auto tsl        = mm->add_literal(literal{total_sequence_len_shape, tsl_val});
-    auto ktsl       = mm->add_parameter("ktsl", key_total_sequence_lens_shape);
+    auto ktsl       = mm->add_literal(literal{key_total_sequence_lens_shape, ktsl_val});
     auto cos_cache  = mm->add_literal(literal{cos_cache_shape, cos_cache_val});
     auto sin_cache  = mm->add_literal(literal{sin_cache_shape, sin_cache_val});
 
@@ -1294,45 +1192,15 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
         mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 2}}), sparse_attn);
     mm->add_return({attn_output, present_key_output, present_val_output});
 
-    // std::vector<float> present_key_result(past_key_shape.elements());
-    // results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
-    // std::vector<float> present_val_result(past_value_shape.elements());
-    // results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end()); });
-
-    migraphx::program gpu_p = p;
-    migraphx::compile_options opts;
-    opts.offload_copy = true;
-    auto gpu_t        = migraphx::make_target("gpu");
-    gpu_p.compile(gpu_t);
-    std::cout << "post compile" << std::endl;
-    std::cout << gpu_p << std::endl;
-    migraphx::parameter_map pm;
-    // pm["qkv"]        = gpu_t.copy_to(migraphx::argument(qkv_shape, qkv_val.data()));
-    pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
-    pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));
-    pm["ktsl"] = gpu_t.copy_to(migraphx::argument(key_total_sequence_lens_shape, ktsl_val.data()));
-    // pm["cos_cache"] = gpu_t.copy_to(migraphx::argument(cos_cache_shape, cos_cache_val.data()));
-    // pm["sin_cache"] = gpu_t.copy_to(migraphx::argument(sin_cache_shape, sin_cache_val.data()));
-    std::vector<float> bla(64);
-    pm["main:#output_0"] =
-        gpu_t.copy_to(migraphx::argument(migraphx::shape{shape::float_type, {2, 1, 32}}, bla.data()));
-
     p.compile(migraphx::make_target("ref"));
-    auto results = p.eval(pm);
+    auto results = p.eval({});
 
     std::vector<float> attn_result(batch_size * sequence_length * num_heads * head_size);
     results[0].visit([&](auto output) { attn_result.assign(output.begin(), output.end()); });
-
-    auto gpu_results = gpu_p.eval(pm);
-    std::vector<float> gpu_attn_result(batch_size * sequence_length * num_heads * head_size);
-    migraphx::argument host = gpu_t.copy_from(gpu_results[0]);
-    host.visit([&](auto output) { gpu_attn_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_key_result(past_key_shape.elements());
-    host = gpu_t.copy_from(gpu_results[1]);
-    host.visit([&](auto output) { gpu_present_key_result.assign(output.begin(), output.end()); });
-    std::vector<float> gpu_present_val_result(past_value_shape.elements());
-    host = gpu_t.copy_from(gpu_results[2]);
-    host.visit([&](auto output) { gpu_present_val_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_key_result(past_key_shape.elements());
+    results[1].visit([&](auto output) { present_key_result.assign(output.begin(), output.end()); });
+    std::vector<float> present_val_result(past_value_shape.elements());
+    results[2].visit([&](auto output) { present_val_result.assign(output.begin(), output.end()); });
 
     std::vector<float> attn_gold{
         0.87719f,  -0.76625f, -0.69476f, 0.04467f,  -0.29315f, -1.13361f, 0.15757f,  1.02717f,
@@ -1412,18 +1280,7 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
         0.50709f,  -0.39303f, -0.94137f, 0.54072f,  -0.17975f, 0.04328f,  0.37207f,  2.18807f,
         -0.53601f, -0.44769f, 2.41322f,  -1.96112f, -0.13698f, 0.57829f,  -1.85719f, 0.77514f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
-    // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
-    // for(auto i = 0; i < present_key_gold.size(); ++i)
-    // {
-    //     if(gpu_present_key_result[i] != present_key_gold[i])
-    //     {
-    //         std::cout << "DIFF: i=" << i << ", gpu=" << gpu_present_key_result[i]
-    //                   << ", gold=" << present_key_gold[i] << std::endl;
-    //     }
-    // }
-    EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_key_result, present_key_gold));
-    EXPECT(migraphx::verify::verify_rms_range(gpu_present_val_result, present_val_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
+    EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
 }
