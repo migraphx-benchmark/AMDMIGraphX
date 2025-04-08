@@ -26,9 +26,9 @@
 #include <migraphx/program.hpp>
 #include <migraphx/generate.hpp>
 #include <migraphx/make_op.hpp>
+#include <migraphx/instruction.hpp>
 
-struct test_sparse_attention_token_generation
-    : verify_program<test_sparse_attention_token_generation>
+struct test_sparse_attention_rotary_interleaved_prompt : verify_program<test_sparse_attention_rotary_interleaved_prompt>
 {
     migraphx::program create_program() const
     {
@@ -36,19 +36,21 @@ struct test_sparse_attention_token_generation
         auto* mm = p.get_main_module();
 
         const size_t batch_size                = 1;
-        const size_t sequence_length           = 1;
+        const size_t sequence_length           = 256;
         const size_t num_heads                 = 4;
         const size_t kv_num_heads              = 2;
-        const size_t head_size                 = 256;
-        const size_t max_cache_sequence_length = 512;
-        const size_t sparse_block_size         = 128;
-        const size_t num_layouts               = 4;
+        const size_t head_size                 = 512;
+        const size_t max_cache_sequence_length = 256;
+        const size_t sparse_block_size         = 64;
+        const size_t num_layouts               = 2;
         const size_t max_blocks                = 4;
-        const size_t max_nnz_blocks            = 10;
-        const size_t total_sequence_length     = 512;
-        const float scale                      = 1.0;
-        const bool do_rotary                   = false;
-        const bool rotary_interleaved          = false;
+        const size_t max_nnz_blocks            = 9;
+        const size_t total_sequence_length     = 256;
+        const size_t max_rotary_seq_length     = max_cache_sequence_length;
+        const size_t rotary_dim                = head_size / 2;
+        const float scale                      = 0.0;
+        const bool do_rotary                   = true;
+        const bool rotary_interleaved          = true;
 
         migraphx::shape qkv_shape(
             migraphx::shape::float_type,
@@ -65,21 +67,14 @@ struct test_sparse_attention_token_generation
                                                 {num_layouts, max_nnz_blocks});
         migraphx::shape total_sequence_len_shape(migraphx::shape::int32_type, {1});
         migraphx::shape key_total_sequence_lens_shape(migraphx::shape::int32_type, {batch_size});
+        migraphx::shape cos_cache_shape(migraphx::shape::float_type,
+                                        {max_rotary_seq_length, rotary_dim});
+        migraphx::shape sin_cache_shape(migraphx::shape::float_type,
+                                        {max_rotary_seq_length, rotary_dim});
 
-        // layout 2 - dense
-        // layout 3 - sparse, but with no zero blocks on used row(row 3)
-        std::vector<int> bri_val{/*layout 1*/ 0, 1, 3, 6, 9,
-                                 /*layout 2*/ 0, 1, 3, 6, 10,
-                                 /*layout 3*/ 0, 1, 3, 5, 9,
-                                 /*layout 4*/ 0, 1, 3, 5, 8};
-
-        std::vector<int> bci_val{/*layout 1*/ 0, 0, 1, 0, 1, 2, 0, 2, 3,  -1,
-                                 /*layout 2*/ 0, 0, 1, 0, 1, 2, 0, 1, 2,  3,
-                                 /*layout 3*/ 0, 0, 1, 1, 2, 0, 1, 2, 3,  -1,
-                                 /*layout 4*/ 0, 0, 1, 1, 2, 1, 2, 3, -1, -1};
-
+        std::vector<int> bri_val{0, 1, 3, 6, 9, 0, 1, 3, 5, 8};
+        std::vector<int> bci_val{0, 0, 1, 0, 1, 2, 0, 2, 3, 0, 0, 1, 1, 2, 1, 2, 3, -1};
         std::vector<int> tsl_val(total_sequence_len_shape.elements(), total_sequence_length);
-
         std::vector<int> ktsl_val(key_total_sequence_lens_shape.elements(), total_sequence_length);
 
         auto qkv        = mm->add_parameter("qkv", qkv_shape);
@@ -91,6 +86,10 @@ struct test_sparse_attention_token_generation
         auto bci        = mm->add_literal(migraphx::literal{block_col_indices_shape, bci_val});
         auto tsl        = mm->add_literal(migraphx::literal{total_sequence_len_shape, tsl_val});
         auto ktsl = mm->add_literal(migraphx::literal{key_total_sequence_lens_shape, ktsl_val});
+        auto cos_cache = mm->add_parameter("cos_cache", cos_cache_shape);
+        cos_cache = add_clip(mm, cos_cache, -1.0f, 1.0f);
+        auto sin_cache = mm->add_parameter("sin_cache", sin_cache_shape);
+        sin_cache = add_clip(mm, sin_cache, -1.0f, 1.0f);
 
         auto sparse_attn =
             mm->add_instruction(migraphx::make_op("sparse_attention",
@@ -108,7 +107,9 @@ struct test_sparse_attention_token_generation
                                 bri,
                                 bci,
                                 tsl,
-                                ktsl);
+                                ktsl,
+                                cos_cache,
+                                sin_cache);
         auto attn_output =
             mm->add_instruction(migraphx::make_op("get_tuple_elem", {{"index", 0}}), sparse_attn);
         auto present_key_output =
@@ -118,5 +119,23 @@ struct test_sparse_attention_token_generation
         mm->add_return({attn_output, present_key_output, present_val_output});
 
         return p;
+    }
+
+    migraphx::instruction_ref
+    add_clip(migraphx::module* mod, migraphx::instruction_ref x, float min, float max) const
+    {
+        auto min_val_lit = mod->add_literal(
+            migraphx::literal{migraphx::shape{migraphx::shape::float_type, {1}}, {min}});
+        auto max_val_lit = mod->add_literal(
+            migraphx::literal{migraphx::shape{migraphx::shape::float_type, {1}}, {max}});
+
+        auto min_val_lit_bc = mod->add_instruction(
+            migraphx::make_op("multibroadcast", {{"out_lens", x->get_shape().lens()}}),
+            min_val_lit);
+        auto max_val_lit_bc = mod->add_instruction(
+            migraphx::make_op("multibroadcast", {{"out_lens", x->get_shape().lens()}}),
+            max_val_lit);
+
+        return mod->add_instruction(migraphx::make_op("clip"), x, min_val_lit_bc, max_val_lit_bc);
     }
 };

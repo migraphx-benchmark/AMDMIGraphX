@@ -26,7 +26,6 @@
 #include <migraphx/program.hpp>
 #include <migraphx/generate.hpp>
 #include <migraphx/make_op.hpp>
-#include <migraphx/instruction.hpp>
 
 struct test_sparse_attention_prompt_batched : verify_program<test_sparse_attention_prompt_batched>
 {
