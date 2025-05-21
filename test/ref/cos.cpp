@@ -23,6 +23,9 @@
  */
 #include "migraphx/compile_options.hpp"
 #include "migraphx/module.hpp"
+#include "migraphx/operation.hpp"
+#include "migraphx/stringutils.hpp"
+#include <cstdint>
 #include <migraphx/instruction.hpp>
 #include <migraphx/literal.hpp>
 #include <migraphx/make_op.hpp>
@@ -95,8 +98,9 @@ struct unpack_masks
 MIGRAPHX_REGISTER_OP(unpack_masks);
 } // namespace migraphx
 
+template <typename T>
 void print_mat(
-    const std::vector<bool>& data, int32_t batches, int32_t channels, int32_t rows, int32_t cols)
+    const std::vector<T>& data, int32_t batches, int32_t channels, int32_t rows, int32_t cols)
 {
     for(int32_t i = 0; i < batches; ++i)
     {
@@ -194,30 +198,93 @@ TEST_CASE(bla)
               sparse_block_size * max_blocks);
 }
 
-TEST_CASE(bla_mlir)
+TEST_CASE(unpack)
 {
     using namespace migraphx;
 
-    migraphx::program p;
-    auto* mm = p.get_main_module();
+    const size_t num_layouts = 2;
+    const size_t mat_dim     = 3;
+    const size_t max_nnz     = 6;
+    const shape row_idx_sh{shape::uint32_type, {num_layouts, mat_dim + 1}};
+    const shape col_idx_sh{shape::uint32_type, {num_layouts, max_nnz}};
 
-    shape xs{shape::float_type, {1024, 1024}};
-    shape ys{shape::float_type, {1024, 1024}};
-    shape ss{shape::float_type, {1}};
-    auto x_param     = mm->add_parameter("x", xs);
-    auto y_param     = mm->add_parameter("y", ys);
-    auto scale_param = mm->add_parameter("scale", ss);
+    program p;
+    auto* mm     = p.get_main_module();
+    auto row_idx = mm->add_parameter("row_idx", row_idx_sh);
+    auto col_idx = mm->add_parameter("col_idx", col_idx_sh);
 
-    auto dot1  = mm->add_instruction(make_op("dot"), x_param, y_param);
-    auto scale = mm->add_instruction(
-        make_op("multibroadcast", {{"out_lens", dot1->get_shape().lens()}}), scale_param);
-    dot1 = mm->add_instruction(make_op("mul"), dot1, scale);
-    auto softmax = mm->add_instruction(make_op("softmax"), dot1);
-    auto dot2    = mm->add_instruction(make_op("dot"), softmax, x_param);
-    mm->add_return({dot2});
+    auto lower_bounds = mm->add_instruction(
+        make_op("slice", {{"axes", {1}}, {"starts", {0}}, {"ends", {mat_dim}}}), row_idx);
+    lower_bounds = mm->add_instruction(make_op("unsqueeze", {{"axes", {2}}}), lower_bounds);
+    auto lower_bounds_lens = lower_bounds->get_shape().lens();
+    lower_bounds_lens[2]   = max_nnz;
+    lower_bounds = mm->add_instruction(make_op("multibroadcast", {{"out_lens", lower_bounds_lens}}),
+                                       lower_bounds);
+
+    auto upper_bounds = mm->add_instruction(
+        make_op("slice", {{"axes", {1}}, {"starts", {1}}, {"ends", {mat_dim + 1}}}), row_idx);
+    upper_bounds = mm->add_instruction(make_op("unsqueeze", {{"axes", {2}}}), upper_bounds);
+    auto upper_bounds_lens = upper_bounds->get_shape().lens();
+    upper_bounds_lens[2]   = max_nnz;
+    upper_bounds = mm->add_instruction(make_op("multibroadcast", {{"out_lens", upper_bounds_lens}}),
+                                       upper_bounds);
+
+    // TODO this would have to be cast into the same type as row_idx
+    std::vector<uint32_t> column_indices_vals(max_nnz);
+    std::iota(column_indices_vals.begin(), column_indices_vals.end(), 0);
+    auto column_indices =
+        mm->add_literal(shape{shape::uint32_type, {1, 1, max_nnz}}, column_indices_vals);
+    column_indices = mm->add_instruction(
+        make_op("multibroadcast", {{"out_lens", lower_bounds->get_shape().lens()}}),
+        column_indices);
+
+    auto gte = mm->add_instruction(make_op("less"), column_indices, lower_bounds);
+    gte      = mm->add_instruction(make_op("not"), gte);
+    gte      = mm->add_instruction(make_op("convert", {{"target_type", shape::bool_type}}), gte);
+    auto lt  = mm->add_instruction(make_op("less"), column_indices, upper_bounds);
+    lt       = mm->add_instruction(make_op("convert", {{"target_type", shape::bool_type}}), lt);
+    auto where_predicate = mm->add_instruction(make_op("logical_and"), gte, lt);
+    auto updates = mm->add_instruction(make_op("convert", {{"target_type", shape::uint32_type}}),
+                                       where_predicate);
+
+    col_idx           = mm->add_instruction(make_op("unsqueeze", {{"axes", {1}}}), col_idx);
+    auto col_idx_lens = col_idx->get_shape().lens();
+    col_idx_lens[1]   = mat_dim;
+    col_idx = mm->add_instruction(make_op("multibroadcast", {{"out_lens", col_idx_lens}}), col_idx);
+
+    auto out_of_bound_idx =
+        mm->add_literal(shape{shape::uint32_type, {1, 1, 1}}, std::vector<uint32_t>{mat_dim});
+    out_of_bound_idx = mm->add_instruction(
+        make_op("multibroadcast", {{"out_lens", col_idx->get_shape().lens()}}), out_of_bound_idx);
+
+    auto indices =
+        mm->add_instruction(make_op("where"), where_predicate, col_idx, out_of_bound_idx);
+
+    auto out_mat = mm->add_literal(shape{shape::uint32_type, {1, 1, 1}}, std::vector<uint32_t>(0));
+    out_mat      = mm->add_instruction(
+        make_op("multibroadcast", {{"out_lens", {num_layouts, mat_dim, mat_dim}}}), out_mat);
+
+    auto scatter =
+        mm->add_instruction(make_op("scatter_none", {{"axis", 2}, {"skip_out_of_bounds", true}}),
+                            out_mat,
+                            indices,
+                            updates);
+
+    mm->add_return({scatter});
 
     compile_options opts;
     opts.offload_copy = true;
     p.compile(make_target("gpu"), opts);
     std::cout << p << std::endl;
+
+    parameter_map pm;
+    std::vector<uint32_t> row_idx_vals{0, 2, 3, 6, 0, 3, 4, 6};
+    pm["row_idx"] = argument{row_idx_sh, row_idx_vals.data()};
+    std::vector<uint32_t> col_idx_vals{0, 2, 1, 0, 1, 2, 0, 1, 2, 1, 0, 2};
+    pm["col_idx"] = argument{col_idx_sh, col_idx_vals.data()};
+    auto res      = p.eval(pm).front();
+
+    std::vector<uint32_t> out;
+    res.visit([&](auto r) { out.assign(r.begin(), r.end()); });
+    print_mat(out, 1, num_layouts, mat_dim, mat_dim);
 }
