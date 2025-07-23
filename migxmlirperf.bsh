@@ -1,0 +1,203 @@
+#!/bin/bash
+
+#set -x
+
+LOGFILE=./mlir.perf.$1
+LOGSUMMARYFILE=./mlir_summary.perf.$1
+#DRIVERPATH="/opt/rocm/bin/migraphx-driver"
+DRIVERPATH="/code/AMDMIGraphX/build/bin/migraphx-driver"
+
+export HIP_FORCE_DEV_KERNARG=1
+
+echo "###########################################" >>  $LOGFILE
+echo "New Run $(pwd)" >>  $LOGFILE
+date >> $LOGFILE
+echo "GPU: $(rocminfo |grep -o -m 1 'gfx.*')" >> $LOGFILE
+echo "MIGX: $($DRIVERPATH --version)" >> $LOGFILE
+echo "MIGX Commit: $(git -C /code/AMDMIGraphX log -n 1  --pretty=oneline)" >> $LOGFILE
+ls -l /etc/alternatives |grep "rocm ->" >> $LOGFILE
+echo "###########################################" >>  $LOGFILE
+
+COUNTER=0
+
+function run_test {
+    title=$1
+    env_vars=$2
+    modelname=$3
+    modelparms=$4
+    modeldatatype=$5
+
+    (( COUNTER++ ))
+
+    echo "TEST: $COUNTER, $title $env_vars $modelname $modelparms $modeldatatype" >> $LOGFILE
+
+    ( if [ -n "$env_vars" ]; then export $env_vars; fi; time $DRIVERPATH perf $modelname $modelparms $modeldatatype ) 2>&1 |tee raw_perf.txt
+    cat raw_perf.txt |sed -n '/Summary:/,$p'  >>  $LOGFILE
+
+    runtime=$(tail raw_perf.txt |grep "real"|cut -f2- )
+    totaltime=$(grep 'Total time:' raw_perf.txt|cut -d ' ' -f 3 |cut -d 'm' -f 1)
+    echo "TEST: $COUNTER, $runtime, $title, $modelname, $modelparms, $modeldatatype, $totaltime" >> $LOGSUMMARYFILE
+}
+
+# MIGRAPHX_MLIR_TRACE=1 MIGRAPHX_TRACE_BENCHMARKING=2
+# MIGRAPHX_PROBLEM_CACHE=/workspace/perf.json
+
+while read testcase params
+do
+    if [[ $testcase =~ ^# ]]; then
+        continue;
+    fi
+
+    #for datatype in " " "--fp16" "--fp16 --int8" "--int8" "--fp16 --fp8" "--fp8" ; do
+    #for datatype in "--fp16" ; do
+    for datatype in " " "--fp16" "--fp16 --int8" "--int8" ; do
+
+        run_test "DEFAULT" "" "$testcase" "$params" "$datatype"
+        #run_test "MLIR CF" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution" "$testcase" "$params" "$datatype"
+        #run_test "MLIR ATTN" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=attention" "$testcase" "$params" "$datatype"
+        #run_test "MLIR DISPOOL" "MIGRAPHX_DISABLE_MIOPEN_POOLING=1" "$testcase" "$params" "$datatype"
+        #run_test "MLIR DISLNF" "MIGRAPHX_DISABLE_LAYERNORM_FUSION=1" "$testcase" "$params" "$datatype"
+        #run_test "NHWC" "MIGRAPHX_ENABLE_NHWC=1" "$testcase" "$params" "$datatype"
+        #run_test "MLIR NHWC " "MIGRAPHX_ENABLE_NHWC=1 MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution" "$testcase" "$params" "$datatype"
+
+
+        #run_test "EXHAUSTIVE TUNE" "" "$testcase" "$params --exhaustive-tune" "$datatype"
+        #run_test "NHWC NOTUNE" "MIGRAPHX_ENABLE_NHWC=1" "$testcase" "$params " "$datatype"
+        #run_test "EXHAUSTIVE TUNE NHWC" "MIGRAPHX_ENABLE_NHWC=1 MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution,attention MIGRAPHX_DISABLE_MIOPEN_POOLING=1" "$testcase" "$params --exhaustive-tune" "$datatype"
+
+
+        #run_test "EXHAUSTIVE TUNE NHWC" "MIGRAPHX_ENABLE_NHWC=1 MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution,attention MIGRAPHX_DISABLE_MIOPEN_POOLING=1" "$testcase" "$params" "$datatype"
+        #run_test "EXHAUSTIVE TUNE NHWC" "MIGRAPHX_ENABLE_NHWC=1 MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution,attention MIGRAPHX_DISABLE_MIOPEN_POOLING=1" "$testcase" "$params --exhaustive-tune" "$datatype"
+        #run_test "EXHAUSTIVE TUNE NHWC" "MIGRAPHX_ENABLE_NHWC=1 MIGRAPHX_MLIR_USE_SPECIFIC_OPS=convolution,fused_convolution,attention MIGRAPHX_DISABLE_MIOPEN_POOLING=1" "$testcase" "$params --exhaustive-tune" "$datatype"
+        
+
+
+        #run_test "MODEL rocBLAS" "MIGRAPHX_DISABLE_MLIR=1" $testcase "$params --exhaustive-tune" "$datatype"
+        #run_test "MODEL hipBLAS" "MIGRAPHX_DISABLE_MLIR=1 MIGRAPHX_ENABLE_HIPBLASLT_GEMM=1" $testcase "$params " "$datatype"
+        #run_test "MODEL hipBLAS GT" "MIGRAPHX_DISABLE_MLIR=1 MIGRAPHX_ENABLE_HIPBLASLT_GEMM=1 MIGRAPHX_ENABLE_HIP_GEMM_TUNING=1" $testcase "$params --exhaustive-tune" "$datatype"
+
+        #run_test "MODEl  CK" "MIGRAPHX_ENABLE_CK=1 MIGRAPHX_DISABLE_MLIR=1" $testcase "$params --exhaustive-tune" "$datatype"
+        #run_test "MLIR(ATN)" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=attention" $testcase "$params  --exhaustive-tune" "$datatype"
+        #run_test "MLIR(FSD_CON CNV )" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=fused_convolution,convolution" $testcase "$params  --exhaustive-tune" "$datatype"
+        #run_test "MLIR(DOT FUS_DOT)" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=dot,fused_dot" $testcase "$params --exhaustive-tune" "$datatype"
+        #run_test "MLIR(FSD CNV DOT)" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=fused,convolution,dot" $testcase "$params --exhaustive-tune" "$datatype"
+        #run_test "MLIR(ATN)" "MIGRAPHX_MLIR_USE_SPECIFIC_OPS=attention" $testcase "$params --exhaustive-tune" "$datatype"
+
+    done
+
+done <<TESTLIST
+/models/ORT/onnx_models/bert_base_cased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/onnx_models/bert_base_cased_1.onnx  --fill1 input_ids --input-dim @input_ids 64 384 --batch 64
+/models/ORT/onnx_models/bert_base_cased_1.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/onnx_models/bert_base_cased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/onnx_models/bert_base_cased_1.onnx  --fill1 input_ids --input-dim @input_ids 64 32 --batch 64
+/models/ORT/bert_base_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/bert_base_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 64 384 --batch 64
+/models/ORT/bert_base_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/bert_base_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/bert_base_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 64 32 --batch 64
+/models/ORT/bert_large_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/bert_large_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 32 384 --batch 32
+/models/ORT/bert_large_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/bert_large_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/bert_large_uncased_1.onnx  --fill1 input_ids --input-dim @input_ids 32 32 --batch 32
+/models/ORT/distilgpt2_1.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/distilgpt2_1.onnx  --fill1 input_ids --input-dim @input_ids 16 384 --batch 16
+/models/ORT/distilgpt2_1.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/distilgpt2_1.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/distilgpt2_1.onnx  --fill1 input_ids --input-dim @input_ids 16 32 --batch 16
+/models/ORT/onnx_models/bert_base_cased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/onnx_models/bert_base_cased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 64 384 --batch 64
+/models/ORT/onnx_models/bert_base_cased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/onnx_models/bert_base_cased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/onnx_models/bert_base_cased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 64 32 --batch 64
+/models/ORT/onnx_models/bert_large_uncased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/onnx_models/bert_large_uncased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 32 384 --batch 32
+/models/ORT/onnx_models/bert_large_uncased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/onnx_models/bert_large_uncased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/onnx_models/bert_large_uncased_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 32 32 --batch 32
+/models/ORT/onnx_models/distilgpt2_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 384
+/models/ORT/onnx_models/distilgpt2_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 16 384 --batch 16
+/models/ORT/onnx_models/distilgpt2_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 256 384 --batch 256
+/models/ORT/onnx_models/distilgpt2_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 1 32
+/models/ORT/onnx_models/distilgpt2_1_fp16_gpu.onnx  --fill1 input_ids --input-dim @input_ids 16 32 --batch 16
+/models/onnx-model-zoo/gpt2-10.onnx --batch 1
+/models/mlperf/resnet50_v1.onnx --batch 1
+/models/mlperf/resnet50_v1.onnx --batch 64
+/models/mlperf/resnet50_v1.onnx --batch 512
+/models/sd/stable-diffusion-2-onnx/unet/model.onnx --input-dim @sample 2 4 64 64 @timestep 1 @encoder_hidden_states 2 64 1024 --batch 2
+/models/sd/stable-diffusion-2-onnx/unet/model.onnx --input-dim @sample 8 4 64 64 @timestep 1 @encoder_hidden_states 8 64 1024 --batch 8
+/models/sd/stable-diffusion-2-onnx/unet/model.onnx --input-dim @sample 64 4 64 64 @timestep 1 @encoder_hidden_states 64 64 1024 --batch 64
+/models/sd/stable-diffusion-2-onnx/text_encoder/model.onnx --input-dim @sample 2 4 64 64 @timestep 1 @encoder_hidden_states 2 64 1024 --batch 2
+/models/sd/stable-diffusion-2-onnx/text_encoder/model.onnx --input-dim @sample 8 4 64 64 @timestep 1 @encoder_hidden_states 8 64 1024 --batch 8
+/models/sd/stable-diffusion-2-onnx/text_encoder/model.onnx --input-dim @sample 64 4 64 64 @timestep 1 @encoder_hidden_states 64 64 1024 --batch 64
+/models/sd/stable-diffusion-2-onnx/vae_encoder/model.onnx --input-dim @sample 2 4 64 64 @timestep 1 @encoder_hidden_states 2 64 1024 --batch 2
+/models/sd/stable-diffusion-2-onnx/vae_encoder/model.onnx --input-dim @sample 8 4 64 64 @timestep 1 @encoder_hidden_states 8 64 1024 --batch 8
+/models/sd/stable-diffusion-2-onnx/vae_encoder/model.onnx --input-dim @sample 64 4 64 64 @timestep 1 @encoder_hidden_states 64 64 1024 --batch 64
+/models/mlperf/bert_large_mlperf.onnx --fill1 input_ids --fill1 input_mask --fill1 segment_ids
+/models/llama2_7b/decoder_model.onnx
+/models/qwen1.5-7b/model.onnx
+/models/phi3/model.onnx
+/models/mask-rcnn/MaskRCNN-10.onnx
+/models/llama3_8b/model.onnx
+/models/whisper-large/encoder_model.onnx
+/models/whisper-large/decoder_model.onnx
+/models/mistral-7b/model.onnx
+/models/flux/model.onnx
+/models/sd3/text_encoder/model.onnx
+/models/sd3/text_encoder_2/model.onnx
+/models/sd3/text_encoder_3/model.onnx
+/models/sd3.5/text_encoder/model.onnx
+/models/sd3.5/text_encoder_2/model.onnx
+/models/sd3.5/text_encoder_3/model.onnx
+/models/yolov10/yolov10n_1.onnx
+/models/sd3_medium/vae_encoder/model.onnx
+/models/yolov4.onnx
+#
+#/models/sdxl/unet/model.onnx --input-dim @sample 2 4 128 128 @timestep 1 @encoder_hidden_states 2 77 2048 @time_ids 2 6 @text_embeds 2 1280 --batch 2
+#/models/bert/bertsquad-12.onnx --fill1 input_ids:0 --fill1 input_mask:0 --fill1 segment_ids:0
+#/models/torchvision/resnet50i64.onnx --batch 64
+#/models/torchvision/densenet121i32.onnx --batch 32
+#/models/torchvision/inceptioni32.onnx --batch 32
+#/models/cadene/inceptionv4i16.onnx --batch 16
+#/models/cadene/resnext101_64x4di16.onnx --batch 16
+#/models/slim/mobilenet_i64.pb --batch 64
+#/models/slim/nasnet_i64.pb --batch 64
+#/models/slim/resnet50v2_i64.pb --batch 64
+#/models/huggingface-transformers/bert_mrpc8.onnx --fill1 input.1 --fill1 input.5 --fill1 onnx::Unsqueeze_1 --onnx --batch 8
+#/models/tf-misc/bert_mrpc1.pb --fill1 input_ids_1 --fill1 segment_ids_1 --fill1 input_mask_1 --tf --batch 1
+#/models/pytorch-examples/wlang_gru.onnx --fill0 input.1 --onnx
+#/models/pytorch-examples/wlang_lstm.onnx --fill0 input.1 --onnx
+#/models/torchvision/resnet50i1.onnx
+#/models/torchvision/inceptioni1.onnx
+#/models/cadene/dpn92i1.onnx
+#/models/cadene/resnext101_64x4di1.onnx
+#/models/slim/vgg16_i1.pb
+#/models/slim/mobilenet_i1.pb
+#/models/slim/inceptionv4_i1.pb
+#/models/onnx-misc/taau_low_res_downsample_d2s_for_infer_time_fp16_opset11.onnx --input-dim @inputs 1 1920 1080 8
+#/models/agentmodel/AgentModel.onnx
+#/models/bert/bert-large-uncased.onnx --input-dim @input_ids 32 32 @attention_mask 32 32 @token_type_ids 32 32 --fill1 input_ids attention_mask token_type_ids --batch 32
+#/models/bert/bert-large-uncased.onnx --input-dim @input_ids 32 384 @attention_mask 32 384 @token_type_ids 32 384 --fill1 input_ids attention_mask token_type_ids --batch 32
+#/models/bert/bert-large-uncased.onnx --input-dim @input_ids 1 32 @attention_mask 1 32 @token_type_ids 1 32 --fill1 input_ids attention_mask token_type_ids
+#/models/bert/bert-large-uncased.onnx --input-dim @input_ids 1 384 @attention_mask 1 384 @token_type_ids 1 384 --fill1 input_ids attention_mask token_type_ids
+#/models/UIF/pt_albert_basev1.5_1.2_M2.6/float/onnx_albert_base_qa/pt_albert_base_0_0_fp32.onnx  --fill1 attention_mask --fill1 token_type_ids --fill1 input_ids --input-dim @input_ids 1 384
+#/models/UIF/pt_wd_1.2_M2.6/float/pt_wd_fp32.onnx  --fill1 input
+#/models/UIF/pt_gpt2_medium_1.2_M2.6/float/onnx_gpt2-medium/pt_gpt2_medium_fp32.onnx --fill1 input_ids 
+#/models/UIF/pt_3dunet_1.2_M2.6/float/pt_3dunet_0_0_fp32.onnx
+#/models/UIF/pt_3dunet_1.2_M2.6/float/pt_3dunet_0_32_fp32.onnx
+#/models/UIF/pt_pointpillars_1.2_M2.6/float/pt_pointpillars_0_0_fp32.onnx  --fill1 voxels --fill1 coors
+#/models/UIF/pt_detr_1.2_M2.6/float/onnx/detr_r50_fp32.onnx
+#/models/UIF/tf2_bert_largev1.5_1.2_M2.6/float/onnx_model/tf2_bert_large_0_0_fp32.onnx
+#/models/UIF/pt_vit_1.2_M2.6/float/pt_vit_0_0_fp32.onnx
+#/models/UIF/pt_gpt2_large_1.2_M2.6/float/onnx_gpt2-large/fp32/pt_gpt2_large_fp32.onnx
+#/models/UIF/pt_retinanet_1.2_M2.6/float/pt_retinanet_fp32.onnx
+#/models/UIF/pt_detr_onnx/pt_detr_fp32.onnx
+#/models/UIF/tf2_bert_basev1.5_1.2_M2.6/float/onnx_model/tf2_bert_base_0_0_fp32.onnx
+#/models/UIF/pt_mobilebertv1.5_1.2_M2.6/float/onnx_mobilebert_qa/pt_mobilebert_0_0_fp32.onnx  --fill1 attention_mask --fill1 token_type_ids --fill1 input_ids --fp16 --input-dim @input_ids 1 384
+#/models/UIF/pt_distilbertv1.5_1.2_M2.6/float/onnx_distilbert_squadv_qa/pt_distilbert_0_0_fp32.onnx --fill1 attention_mask --fill1 input_ids
+#/models/UIF/tf2_2dunet_0.7_1.2_M2.6/float/tf2_2dunet_prune_0.7_fp32.onnx
+#/models/UIF/pt_ofa_resnet_0.88_1.2_M2.6/float/pt_ofa_resnet_0.88_0_fp32.onnx
+#/models/UIF/tf2_yolov3_1.2_M2.6/float/tf2_yolov3_0_0_fp32.onnx
+#/models/UIF/pt_albert_largev1.5_1.2_M2.6/float/onnx_albert_large_qa/pt_albert_large_0_0_fp32.onnx  --fill1 attention_mask --fill1 token_type_ids --fill1 input_ids --input-dim @input_ids 1 384
+TESTLIST
