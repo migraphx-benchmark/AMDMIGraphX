@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include "migraphx/instruction.hpp"
 #include "migraphx/literal.hpp"
 #include <migraphx/matcher.hpp>
 #include <migraphx/permutation.hpp>
@@ -302,25 +303,6 @@ struct gpu_concat_past_present : op::group_query_attention
 };
 MIGRAPHX_REGISTER_OP(gpu_concat_past_present);
 
-struct unpack_masks
-{
-    std::string name() const { return "gpu::unpack_masks"; }
-
-    template <class Self, class F>
-    static auto reflect(Self&, F)
-    {
-        return pack();
-    }
-
-    shape compute_shape(std::vector<shape> inputs) const
-    {
-        const auto block_row_ind_lens = inputs[0].lens();
-        const auto max_blocks = block_row_ind_lens[1] - 1;
-        return shape{shape::bool_type, {block_row_ind_lens[0], max_blocks, max_blocks}};
-    }
-};
-MIGRAPHX_REGISTER_OP(unpack_masks);
-
 struct find_group_query_attention
 {
     auto matcher() const { return match::name("group_query_attention"); }
@@ -412,10 +394,7 @@ struct find_group_query_attention
 
 struct find_sparse_attention
 {
-    auto matcher() const
-    {
-        return match::name("sparse_attention");
-    }
+    auto matcher() const { return match::name("sparse_attention"); }
 
     void apply(module& mod, const match::matcher_result& r) const
     {
@@ -436,8 +415,8 @@ struct find_sparse_attention
         auto block_row_indices  = inputs.at(5);
         auto block_col_indices  = inputs.at(6);
         auto key_total_seq_lens = inputs.at(8);
-        // GroupQueryAttention expects this input to contains total_sequence_lengths - 1 values
-        // SparseAttention expects it to contains total_sequence_lengths values
+        // GroupQueryAttention expects this input to contain total_sequence_lengths - 1 values
+        // SparseAttention expects it to contain total_sequence_lengths values
         // Decrement it to make it compatible with GQA kernels
         auto dec_key_total_seq_lens = decrement_key_total_seq_lens(mod, ins, key_total_seq_lens);
 
@@ -463,8 +442,7 @@ struct find_sparse_attention
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
             {id, past_key, past_val, dec_key_total_seq_lens});
 
-        auto mask =
-            mod.insert_instruction(ins, unpack_masks{}, {block_row_indices, block_col_indices});
+        auto mask = unpack_masks(mod, ins, block_row_indices, block_col_indices);
 
         auto softmax = mod.insert_instruction(
             ins,
@@ -494,6 +472,83 @@ struct find_sparse_attention
             migraphx::make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}),
             seq_len_lit);
         return mod.insert_instruction(ins, migraphx::make_op("sub"), ktsl, seq_len_lit);
+    }
+
+    instruction_ref unpack_masks(module& mod,
+                                 instruction_ref ins,
+                                 instruction_ref block_row_ind,
+                                 instruction_ref block_col_ind) const
+    {
+        const uint32_t num_layouts = block_row_ind->get_shape().lens()[0];
+        const uint32_t mat_dim     = block_row_ind->get_shape().lens()[1] - 1;
+        const uint32_t max_nnz     = block_col_ind->get_shape().lens()[1];
+        const auto dtype           = block_row_ind->get_shape().type();
+        const auto out_type        = shape::uint8_type;
+
+        block_col_ind =
+            mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {1}}}), block_col_ind);
+        auto col_idx_lens = block_col_ind->get_shape().lens();
+        col_idx_lens[1]   = mat_dim;
+        block_col_ind     = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", col_idx_lens}}), block_col_ind);
+
+        const auto make_bounds = [&](const auto start, const auto end) {
+            auto bounds = mod.insert_instruction(
+                ins,
+                make_op("slice", {{"axes", {1}}, {"starts", {start}}, {"ends", {end}}}),
+                block_row_ind);
+            bounds = mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {2}}}), bounds);
+            auto bounds_lens = bounds->get_shape().lens();
+            bounds_lens[2]   = max_nnz;
+            return mod.insert_instruction(
+                ins, make_op("multibroadcast", {{"out_lens", bounds_lens}}), bounds);
+        };
+        auto lower_bounds = make_bounds(0, mat_dim);
+        auto upper_bounds = make_bounds(1, mat_dim + 1);
+
+        std::vector<uint32_t> column_indices_vals(max_nnz);
+        std::iota(column_indices_vals.begin(), column_indices_vals.end(), 0);
+        auto column_indices =
+            mod.insert_literal(ins, {shape{dtype, {1, 1, max_nnz}}, column_indices_vals});
+        column_indices = mod.insert_instruction(
+            ins,
+            make_op("multibroadcast", {{"out_lens", lower_bounds->get_shape().lens()}}),
+            column_indices);
+
+        auto gte = mod.insert_instruction(ins, make_op("less"), column_indices, lower_bounds);
+        gte      = mod.insert_instruction(ins, make_op("not"), gte);
+        gte      = mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", shape::bool_type}}), gte);
+        auto lt = mod.insert_instruction(ins, make_op("less"), column_indices, upper_bounds);
+        lt      = mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", shape::bool_type}}), lt);
+        auto where_predicate = mod.insert_instruction(ins, make_op("logical_and"), gte, lt);
+        auto updates         = mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", out_type}}), where_predicate);
+
+        auto out_of_bound_idx =
+            mod.insert_literal(ins, {shape{dtype, {1, 1, 1}}, std::vector<uint32_t>{mat_dim}});
+        out_of_bound_idx = mod.insert_instruction(
+            ins,
+            make_op("multibroadcast", {{"out_lens", block_col_ind->get_shape().lens()}}),
+            out_of_bound_idx);
+
+        auto indices = mod.insert_instruction(
+            ins, make_op("where"), where_predicate, block_col_ind, out_of_bound_idx);
+
+        auto out_mat =
+            mod.insert_literal(ins, {shape{out_type, {1, 1, 1}}, std::vector<uint32_t>(0)});
+        out_mat = mod.insert_instruction(
+            ins,
+            make_op("multibroadcast", {{"out_lens", {num_layouts, mat_dim, mat_dim}}}),
+            out_mat);
+
+        return mod.insert_instruction(
+            ins,
+            make_op("scatter_none", {{"axis", 2}, {"skip_out_of_bounds", true}}),
+            out_mat,
+            indices,
+            updates);
     }
 };
 

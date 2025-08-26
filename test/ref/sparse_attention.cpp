@@ -304,7 +304,7 @@ TEST_CASE(sparse_attention_token_generation)
         0.38190f,  -0.73470f, 0.11403f,  1.56294f,  -0.31808f, -1.34281f, 0.47457f,  -0.25326f,
         0.28916f,  2.17363f,  0.20315f,  -0.52204f, -0.55325f, -1.40188f, -0.82835f, -0.68602f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
     // for(auto i = 0; i < present_key_gold.size(); ++i)
@@ -607,7 +607,7 @@ TEST_CASE(sparse_attention_prompt_batched)
         -0.62157f, -0.34495f, -0.42287f, -0.61585f, -0.28848f, -1.18934f, 0.78285f,  -0.10385f,
         -1.02588f, 1.58360f,  0.38757f,  0.48773f,  -0.22308f, -0.60687f, 0.80870f,  1.33592f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::rms_range(gpu_present_key_result, present_key_result));
     EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
@@ -1095,7 +1095,7 @@ TEST_CASE(sparse_attention_rotary_prompt)
         -2.51687f, -1.04707f, -0.63970f, -0.70438f, 0.59782f,  0.74183f,  0.31749f,  -0.28442f,
         -1.95803f, -1.79381f, 0.46461f,  -0.17142f, 0.41181f,  0.27836f,  -0.02363f, 0.93865f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
     EXPECT(migraphx::verify::verify_rms_range(gpu_attn_result, attn_result));
@@ -1412,7 +1412,7 @@ TEST_CASE(sparse_attention_rotary_interleaved_token_generation_batched)
         0.50709f,  -0.39303f, -0.94137f, 0.54072f,  -0.17975f, 0.04328f,  0.37207f,  2.18807f,
         -0.53601f, -0.44769f, 2.41322f,  -1.96112f, -0.13698f, 0.57829f,  -1.85719f, 0.77514f};
 
-    // EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
+    EXPECT(migraphx::verify::verify_rms_range(attn_result, attn_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_key_result, present_key_gold));
     // EXPECT(migraphx::verify::verify_rms_range(present_val_result, present_val_gold));
     // for(auto i = 0; i < present_key_gold.size(); ++i)
