@@ -23,6 +23,7 @@
  */
 #include "migraphx/instruction.hpp"
 #include "migraphx/literal.hpp"
+#include "migraphx/module.hpp"
 #include <migraphx/matcher.hpp>
 #include <migraphx/permutation.hpp>
 #include <migraphx/gpu/prefuse_ops.hpp>
@@ -434,15 +435,25 @@ struct find_sparse_attention
             gpu_concat_past_present{
                 do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
             {qkv, past_key, past_val, dec_key_total_seq_lens});
-        auto id = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
-
-        auto attn_probs = mod.insert_instruction(
-            ins,
-            gpu_compute_attention_probabilities{
-                do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {id, past_key, past_val, dec_key_total_seq_lens});
+        concat = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
 
         auto mask = unpack_masks(mod, ins, block_row_indices, block_col_indices);
+
+        auto q = mod.insert_instruction(
+            ins, make_op("slice", {{"axes", {1}}, {"starts", {0}}, {"ends", {num_heads}}}), qkv);
+        auto num_heads_ratio = num_heads / kv_num_heads;
+        auto k = past_key;
+        if(num_heads_ratio > 1) {
+            auto k_final_lens = k->get_shape().lens();
+            k_final_lens[1] = num_heads;
+            k = mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {2}}}), past_key);
+            auto k_lens = k->get_shape().lens();
+            k_lens[2] = num_heads_ratio;
+            k = mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", k_lens}}), k);
+            k = mod.insert_instruction(ins, make_op("reshape", {{"dims", k_final_lens}}), k);
+        }
+
+        auto attn_probs = attention_probabilities(mod, ins, q, k, scale);
 
         auto softmax = mod.insert_instruction(
             ins,
@@ -549,6 +560,25 @@ struct find_sparse_attention
             out_mat,
             indices,
             updates);
+    }
+
+    instruction_ref attention_probabilities(module& mod,
+                                            instruction_ref ins,
+                                            instruction_ref q,
+                                            instruction_ref k,
+                                            float scale) const
+    {
+        k = mod.insert_instruction(ins, make_op("transpose", {{"permutation", {0, 1, 3, 2}}}), k);
+        // NOTE: This does not handle key_total_seq_lens at all, if it's different to
+        // max_cache_sequence_length, behavior will not be as expected
+        auto attn_probs = mod.insert_instruction(ins, make_op("dot"), q, k);
+        scale = float_equal(scale, 0.0f) ? 1.0f / std::sqrt(static_cast<float>(q->get_shape().lens()[3])): scale;
+        auto scale_lit = mod.insert_literal(ins, literal{shape{shape::float_type, {1}}, {scale}});
+        scale_lit      = mod.insert_instruction(
+            ins,
+            make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}),
+            scale_lit);
+        return mod.insert_instruction(ins, make_op("mul"), attn_probs, scale_lit);
     }
 };
 
