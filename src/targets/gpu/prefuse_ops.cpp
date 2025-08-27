@@ -401,14 +401,14 @@ struct find_sparse_attention
     {
         auto ins    = r.result;
         auto inputs = ins->inputs();
-        auto v      = ins->get_operator().to_value();
+        auto op_v      = ins->get_operator().to_value();
 
-        auto do_rotary          = v.at("do_rotary").to<bool>();
-        auto rotary_interleaved = v.at("rotary_interleaved").to<bool>();
-        auto num_heads          = v.at("num_heads").to<size_t>();
-        auto kv_num_heads       = v.at("kv_num_heads").to<size_t>();
-        auto sparse_block_size  = v.at("sparse_block_size").to<size_t>();
-        auto scale              = v.at("scale").to<float>();
+        auto do_rotary          = op_v.at("do_rotary").to<bool>();
+        auto rotary_interleaved = op_v.at("rotary_interleaved").to<bool>();
+        auto num_heads          = op_v.at("num_heads").to<size_t>();
+        auto kv_num_heads       = op_v.at("kv_num_heads").to<size_t>();
+        auto sparse_block_size  = op_v.at("sparse_block_size").to<size_t>();
+        auto scale              = op_v.at("scale").to<float>();
 
         auto qkv                = inputs.at(0);
         auto past_key           = inputs.at(3);
@@ -437,35 +437,21 @@ struct find_sparse_attention
             {qkv, past_key, past_val, dec_key_total_seq_lens});
         concat = mod.insert_instruction(ins, make_op("identity"), concat, past_key, past_val);
 
-        auto mask = unpack_masks(mod, ins, block_row_indices, block_col_indices);
-
         auto q = mod.insert_instruction(
             ins, make_op("slice", {{"axes", {1}}, {"starts", {0}}, {"ends", {num_heads}}}), qkv);
-        auto num_heads_ratio = num_heads / kv_num_heads;
-        auto k = past_key;
-        if(num_heads_ratio > 1) {
-            auto k_final_lens = k->get_shape().lens();
-            k_final_lens[1] = num_heads;
-            k = mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {2}}}), past_key);
-            auto k_lens = k->get_shape().lens();
-            k_lens[2] = num_heads_ratio;
-            k = mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", k_lens}}), k);
-            k = mod.insert_instruction(ins, make_op("reshape", {{"dims", k_final_lens}}), k);
-        }
+        auto k = transform_kv(mod, ins, num_heads, kv_num_heads, past_key);
+        auto v = transform_kv(mod, ins, num_heads, kv_num_heads, past_val);
 
         auto attn_probs = attention_probabilities(mod, ins, q, k, scale);
 
+        auto mask = unpack_masks(mod, ins, block_row_indices, block_col_indices);
         auto softmax = mod.insert_instruction(
             ins,
             gpu_sparse_attn_softmax{
                 do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
             {qkv, past_key, attn_probs, key_total_seq_lens, mask});
 
-        auto attn_scores = mod.insert_instruction(
-            ins,
-            gpu_compute_attention_scores{
-                do_rotary, kv_num_heads, -1, num_heads, rotary_interleaved, scale},
-            {qkv, past_key, past_val, dec_key_total_seq_lens, softmax});
+        auto attn_scores = attention_scores(mod, ins, softmax, v);
 
         auto&& outputs = ins->outputs();
         mod.replace_instruction(outputs[0], attn_scores);
@@ -483,6 +469,25 @@ struct find_sparse_attention
             migraphx::make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}),
             seq_len_lit);
         return mod.insert_instruction(ins, migraphx::make_op("sub"), ktsl, seq_len_lit);
+    }
+
+    instruction_ref transform_kv(
+        module& mod, instruction_ref ins, int num_heads, int kv_num_heads, instruction_ref kv) const
+    {
+        auto num_heads_ratio = num_heads / kv_num_heads;
+        if(num_heads_ratio > 1)
+        {
+            auto kv_final_lens = kv->get_shape().lens();
+            kv_final_lens[1]   = num_heads;
+            kv           = mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {2}}}), kv);
+            auto kv_lens = kv->get_shape().lens();
+            kv_lens[2]   = num_heads_ratio;
+            kv =
+                mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", kv_lens}}), kv);
+            kv = mod.insert_instruction(ins, make_op("reshape", {{"dims", kv_final_lens}}), kv);
+        }
+
+        return kv;
     }
 
     instruction_ref unpack_masks(module& mod,
@@ -569,8 +574,9 @@ struct find_sparse_attention
                                             float scale) const
     {
         k = mod.insert_instruction(ins, make_op("transpose", {{"permutation", {0, 1, 3, 2}}}), k);
-        // NOTE: This does not handle key_total_seq_lens at all, if it's different to
+        // TODO: This does not handle key_total_seq_lens at all, if it's different to
         // max_cache_sequence_length, behavior will not be as expected
+        // Could set elements for which idx > total_sequence_length to 0, thus nullifying their effect on the gemm.
         auto attn_probs = mod.insert_instruction(ins, make_op("dot"), q, k);
         scale = float_equal(scale, 0.0f) ? 1.0f / std::sqrt(static_cast<float>(q->get_shape().lens()[3])): scale;
         auto scale_lit = mod.insert_literal(ins, literal{shape{shape::float_type, {1}}, {scale}});
@@ -579,6 +585,20 @@ struct find_sparse_attention
             make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}),
             scale_lit);
         return mod.insert_instruction(ins, make_op("mul"), attn_probs, scale_lit);
+    }
+
+    instruction_ref attention_scores(module& mod,
+                                     instruction_ref ins,
+                                     instruction_ref softmax,
+                                     instruction_ref v) const
+    {
+        auto attn_scores = mod.insert_instruction(ins, make_op("dot"), softmax, v);
+        attn_scores      = mod.insert_instruction(
+            ins, make_op("transpose", {{"permutation", {0, 2, 1, 3}}}), attn_scores);
+        return mod.insert_instruction(
+            ins,
+            make_op("reshape", {{"dims", ins->outputs()[0]->get_shape().lens()}}),
+            attn_scores);
     }
 };
 
