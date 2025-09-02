@@ -23,6 +23,7 @@
  */
 #include "migraphx/instruction.hpp"
 #include "migraphx/literal.hpp"
+#include "migraphx/make_op.hpp"
 #include "migraphx/module.hpp"
 #include <cstdint>
 #include <migraphx/matcher.hpp>
@@ -402,7 +403,7 @@ struct find_sparse_attention
     {
         auto ins    = r.result;
         auto inputs = ins->inputs();
-        auto op_v      = ins->get_operator().to_value();
+        auto op_v   = ins->get_operator().to_value();
 
         auto do_rotary          = op_v.at("do_rotary").to<bool>();
         auto rotary_interleaved = op_v.at("rotary_interleaved").to<bool>();
@@ -422,7 +423,7 @@ struct find_sparse_attention
         // Decrement it to make it compatible with GQA kernels
         auto dec_key_total_seq_lens = decrement_key_total_seq_lens(mod, ins, key_total_seq_lens);
 
-        auto batch_size = qkv->get_shape().lens()[0];
+        auto batch_size      = qkv->get_shape().lens()[0];
         auto sequence_length = qkv->get_shape().lens()[2];
 
         if(do_rotary)
@@ -447,26 +448,37 @@ struct find_sparse_attention
         auto v = transform_kv(mod, ins, num_heads, kv_num_heads, past_val);
 
         auto attn_probs = attention_probabilities(mod, ins, q, k, scale);
-        auto bnsm = attn_probs->get_shape().lens();
+        auto bnsm       = attn_probs->get_shape().lens();
 
         auto [mask, expanded_mask] = make_block_masks(
             mod, ins, block_row_indices, block_col_indices, sparse_block_size, num_heads, bnsm);
-        attn_probs->debug_print();
-        expanded_mask->debug_print();
+        // TODO move this into make_block_masks
+        expanded_mask = mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", shape::bool_type}}), expanded_mask);
+        auto causal_mask = make_causal_mask(mod, ins, shape::uint32_type, bnsm, key_total_seq_lens);
+        auto final_mask =
+            mod.insert_instruction(ins, make_op("logical_and"), expanded_mask, causal_mask);
+        auto ninf = mod.insert_literal(
+            ins,
+            {{attn_probs->get_shape().type(), {1}}, {-std::numeric_limits<float>::infinity()}});
+        ninf = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}), ninf);
+        attn_probs = mod.insert_instruction(ins, make_op("where"), final_mask, attn_probs, ninf);
+        auto softmax = mod.insert_instruction(ins, make_op("softmax", {{"axis", 3}}), attn_probs);
 
-        auto softmax = insert_softmax(mod,
-                                      ins,
-                                      do_rotary,
-                                      rotary_interleaved,
-                                      num_heads,
-                                      kv_num_heads,
-                                      scale,
-                                      sparse_block_size,
-                                      qkv,
-                                      past_key,
-                                      attn_probs,
-                                      key_total_seq_lens,
-                                      mask);
+        // auto softmax = insert_softmax(mod,
+        //                               ins,
+        //                               do_rotary,
+        //                               rotary_interleaved,
+        //                               num_heads,
+        //                               kv_num_heads,
+        //                               scale,
+        //                               sparse_block_size,
+        //                               qkv,
+        //                               past_key,
+        //                               attn_probs,
+        //                               key_total_seq_lens,
+        //                               mask);
 
         auto attn_scores = attention_scores(mod, ins, softmax, v);
 
@@ -605,7 +617,6 @@ struct find_sparse_attention
         // layout_2, ..., layout_n, ...}
         auto num_layouts        = masks->get_shape().lens()[0];
         auto head_layout_factor = (num_heads + num_layouts - 1) / num_layouts;
-        ;
         auto expanded_lens = masks->get_shape().lens();
         expanded_lens.insert(expanded_lens.begin(), bnsm[0]);
         expanded_lens[1] *= head_layout_factor;
@@ -625,46 +636,86 @@ struct find_sparse_attention
         expanded_masks = mod.insert_instruction(
             ins, make_op("reshape", {{"dims", expanded_lens}}), expanded_masks);
 
-        // std::vector<int64_t> axes;
-        // std::vector<int64_t> starts;
-        // std::vector<int64_t> ends;
-        // if(expanded_masks->get_shape().lens()[2] > bnsm[2])
-        // {
-        //     axes.push_back(2);
-        //     starts.push_back(bnsm[2] - 1);
-        //     ends.push_back(bnsm[2]);
-        // }
-        // if(expanded_masks->get_shape().lens()[3] > bnsm[3])
-        // {
-        //     axes.push_back(3);
-        //     starts.push_back(0);
-        //     ends.push_back(bnsm[3]);
-        // }
-        // if(not axes.empty())
-        // {
-        //     expanded_masks = mod.insert_instruction(
-        //         expanded_masks,
-        //         make_op("slice", {{"axes", axes}, {"starts", starts}, {"ends", ends}}),
-        //         expanded_masks);
-        // }
+        std::vector<int64_t> axes;
+        std::vector<int64_t> starts;
+        std::vector<int64_t> ends;
+        if(expanded_masks->get_shape().lens()[2] > bnsm[2])
+        {
+            axes.push_back(2);
+            starts.push_back(bnsm[2] == 1 ? -2 : bnsm[2] - 1);
+            ends.push_back(bnsm[2] == 1 ? -1 : bnsm[2]);
+        }
+        if(expanded_masks->get_shape().lens()[3] > bnsm[3])
+        {
+            axes.push_back(3);
+            starts.push_back(0);
+            ends.push_back(bnsm[3]);
+        }
+        if(not axes.empty())
+        {
+            expanded_masks = mod.insert_instruction(
+                expanded_masks,
+                make_op("slice", {{"axes", axes}, {"starts", starts}, {"ends", ends}}),
+                expanded_masks);
+        }
 
         return std::make_tuple(masks, expanded_masks);
     }
 
-    instruction_ref attention_probabilities(module& mod,
-                                            instruction_ref ins,
-                                            instruction_ref q,
-                                            instruction_ref k,
-                                            float scale) const
+    instruction_ref make_causal_mask(module& mod,
+                                     instruction_ref ins,
+                                     shape::type_t dtype,
+                                     const std::vector<size_t>& bnsm,
+                                     instruction_ref ktsl) const
+    {
+        std::vector<size_t> causal_lens_vals(bnsm[2]);
+        // TODO: Starting value would have to be offset when sequence length == 1
+
+        dtype = ktsl->get_shape().type();
+        std::iota(causal_lens_vals.begin(), causal_lens_vals.end(), 0);
+        // Have to do literal->reshape->broadcast instead of literal with appropriate shape ->
+        // broadcast to avoid simplify algebra messing up
+        auto causal_lens = mod.insert_literal(ins, {{dtype, {bnsm[2]}}, causal_lens_vals});
+        causal_lens =
+            mod.insert_instruction(ins, make_op("reshape", {{"dims", {bnsm[2], 1}}}), causal_lens);
+        causal_lens = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", bnsm}}), causal_lens);
+        auto sl = mod.insert_literal(ins, {{ktsl->get_shape().type(), {1}}, {bnsm[2]}});
+        sl      = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}), sl);
+        auto psl = mod.insert_instruction(ins, make_op("sub"), ktsl, sl);
+        psl = mod.insert_instruction(ins, make_op("reshape", {{"dims", {bnsm[0], 1, 1, 1}}}), psl);
+        psl = mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", bnsm}}), psl);
+        causal_lens = mod.insert_instruction(ins, make_op("add"), causal_lens, psl);
+
+        std::vector<size_t> column_indices_vals(bnsm[3]);
+        std::iota(column_indices_vals.begin(), column_indices_vals.end(), 0);
+        auto column_indices =
+            mod.insert_literal(ins, {{dtype, {1, 1, 1, bnsm[3]}}, column_indices_vals});
+        column_indices = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", bnsm}}), column_indices);
+
+        auto causal_mask =
+            mod.insert_instruction(ins, make_op("greater"), column_indices, causal_lens);
+        causal_mask = mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", shape::bool_type}}), causal_mask);
+        return causal_mask = mod.insert_instruction(ins, make_op("not"), causal_mask);
+    }
+
+    instruction_ref attention_probabilities(
+        module& mod, instruction_ref ins, instruction_ref q, instruction_ref k, float scale) const
     {
         k = mod.insert_instruction(ins, make_op("transpose", {{"permutation", {0, 1, 3, 2}}}), k);
         // TODO: This does not handle key_total_seq_lens at all, if it's different to
         // max_cache_sequence_length, behavior will not be as expected
-        // Could set elements for which idx > total_sequence_length to 0, thus nullifying their effect on the gemm.
+        // Could set elements for which idx > total_sequence_length to 0, thus nullifying their
+        // effect on the gemm.
         auto attn_probs = mod.insert_instruction(ins, make_op("dot"), q, k);
-        scale = float_equal(scale, 0.0f) ? 1.0f / std::sqrt(static_cast<float>(q->get_shape().lens()[3])): scale;
-        auto scale_lit = mod.insert_literal(ins, literal{shape{shape::float_type, {1}}, {scale}});
-        scale_lit      = mod.insert_instruction(
+        scale           = float_equal(scale, 0.0f)
+                              ? 1.0f / std::sqrt(static_cast<float>(q->get_shape().lens()[3]))
+                              : scale;
+        auto scale_lit  = mod.insert_literal(ins, literal{shape{shape::float_type, {1}}, {scale}});
+        scale_lit       = mod.insert_instruction(
             ins,
             make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}),
             scale_lit);
