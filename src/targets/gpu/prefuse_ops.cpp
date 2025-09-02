@@ -24,6 +24,7 @@
 #include "migraphx/instruction.hpp"
 #include "migraphx/literal.hpp"
 #include "migraphx/module.hpp"
+#include <cstdint>
 #include <migraphx/matcher.hpp>
 #include <migraphx/permutation.hpp>
 #include <migraphx/gpu/prefuse_ops.hpp>
@@ -421,6 +422,9 @@ struct find_sparse_attention
         // Decrement it to make it compatible with GQA kernels
         auto dec_key_total_seq_lens = decrement_key_total_seq_lens(mod, ins, key_total_seq_lens);
 
+        auto batch_size = qkv->get_shape().lens()[0];
+        auto sequence_length = qkv->get_shape().lens()[2];
+
         if(do_rotary)
         {
             qkv = mod.insert_instruction(
@@ -443,13 +447,26 @@ struct find_sparse_attention
         auto v = transform_kv(mod, ins, num_heads, kv_num_heads, past_val);
 
         auto attn_probs = attention_probabilities(mod, ins, q, k, scale);
+        auto bnsm = attn_probs->get_shape().lens();
 
-        auto mask = unpack_masks(mod, ins, block_row_indices, block_col_indices);
-        auto softmax = mod.insert_instruction(
-            ins,
-            gpu_sparse_attn_softmax{
-                do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
-            {qkv, past_key, attn_probs, key_total_seq_lens, mask});
+        auto [mask, expanded_mask] = make_block_masks(
+            mod, ins, block_row_indices, block_col_indices, sparse_block_size, num_heads, bnsm);
+        attn_probs->debug_print();
+        expanded_mask->debug_print();
+
+        auto softmax = insert_softmax(mod,
+                                      ins,
+                                      do_rotary,
+                                      rotary_interleaved,
+                                      num_heads,
+                                      kv_num_heads,
+                                      scale,
+                                      sparse_block_size,
+                                      qkv,
+                                      past_key,
+                                      attn_probs,
+                                      key_total_seq_lens,
+                                      mask);
 
         auto attn_scores = attention_scores(mod, ins, softmax, v);
 
@@ -490,10 +507,10 @@ struct find_sparse_attention
         return kv;
     }
 
-    instruction_ref unpack_masks(module& mod,
-                                 instruction_ref ins,
-                                 instruction_ref block_row_ind,
-                                 instruction_ref block_col_ind) const
+    instruction_ref unpack_block_masks(module& mod,
+                                       instruction_ref ins,
+                                       instruction_ref block_row_ind,
+                                       instruction_ref block_col_ind) const
     {
         const uint32_t num_layouts = block_row_ind->get_shape().lens()[0];
         const uint32_t mat_dim     = block_row_ind->get_shape().lens()[1] - 1;
@@ -567,6 +584,73 @@ struct find_sparse_attention
             updates);
     }
 
+    std::tuple<instruction_ref, instruction_ref>
+    make_block_masks(module& mod,
+                     instruction_ref ins,
+                     instruction_ref block_row_ind,
+                     instruction_ref block_col_ind,
+                     size_t sparse_block_size,
+                     size_t num_heads,
+                     const std::vector<size_t>& bnsm) const
+    {
+        auto masks = unpack_block_masks(mod, ins, block_row_ind, block_col_ind);
+        // Want masks to go from:
+        // {num_layouts, max_blocks, max_blocks}
+        // to:
+        // {batch_size, num_layouts * head_layout_factor, max_blocks * block_size, max_blocks *
+        // block_size}
+        // Where head_layout_factor is (num_heads + num_layouts - 1) / num_layouts
+        // In dimension 1(num_layouts * head_layout_factor) the layouts need to be repeated, that
+        // is: {layout_1, layout_2, ..., layout_n} -> {layout_1, layout_2, ..., layout_n, layout_1,
+        // layout_2, ..., layout_n, ...}
+        auto num_layouts        = masks->get_shape().lens()[0];
+        auto head_layout_factor = (num_heads + num_layouts - 1) / num_layouts;
+        ;
+        auto expanded_lens = masks->get_shape().lens();
+        expanded_lens.insert(expanded_lens.begin(), bnsm[0]);
+        expanded_lens[1] *= head_layout_factor;
+        expanded_lens[2] *= sparse_block_size;
+        expanded_lens[3] *= sparse_block_size;
+        auto expanded_masks =
+            mod.insert_instruction(ins, make_op("unsqueeze", {{"axes", {0, 3, 5}}}), masks);
+
+        auto bc_lens = expanded_masks->get_shape().lens();
+        bc_lens[0]   = head_layout_factor;
+        bc_lens[3]   = sparse_block_size;
+        bc_lens[5]   = sparse_block_size;
+        bc_lens.insert(bc_lens.begin(), bnsm[0]);
+        expanded_masks = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", bc_lens}}), expanded_masks);
+
+        expanded_masks = mod.insert_instruction(
+            ins, make_op("reshape", {{"dims", expanded_lens}}), expanded_masks);
+
+        // std::vector<int64_t> axes;
+        // std::vector<int64_t> starts;
+        // std::vector<int64_t> ends;
+        // if(expanded_masks->get_shape().lens()[2] > bnsm[2])
+        // {
+        //     axes.push_back(2);
+        //     starts.push_back(bnsm[2] - 1);
+        //     ends.push_back(bnsm[2]);
+        // }
+        // if(expanded_masks->get_shape().lens()[3] > bnsm[3])
+        // {
+        //     axes.push_back(3);
+        //     starts.push_back(0);
+        //     ends.push_back(bnsm[3]);
+        // }
+        // if(not axes.empty())
+        // {
+        //     expanded_masks = mod.insert_instruction(
+        //         expanded_masks,
+        //         make_op("slice", {{"axes", axes}, {"starts", starts}, {"ends", ends}}),
+        //         expanded_masks);
+        // }
+
+        return std::make_tuple(masks, expanded_masks);
+    }
+
     instruction_ref attention_probabilities(module& mod,
                                             instruction_ref ins,
                                             instruction_ref q,
@@ -585,6 +669,29 @@ struct find_sparse_attention
             make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}),
             scale_lit);
         return mod.insert_instruction(ins, make_op("mul"), attn_probs, scale_lit);
+    }
+
+    instruction_ref insert_softmax(module& mod,
+                                   instruction_ref ins,
+                                   bool do_rotary,
+                                   bool rotary_interleaved,
+                                   size_t num_heads,
+                                   size_t kv_num_heads,
+                                   float scale,
+                                   size_t sparse_block_size,
+                                   instruction_ref qkv,
+                                   instruction_ref past_key,
+                                   instruction_ref attn_probs,
+                                   instruction_ref key_total_seq_lens,
+                                   instruction_ref mask) const
+    {
+        auto softmax = mod.insert_instruction(
+            ins,
+            gpu_sparse_attn_softmax{
+                do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
+            {qkv, past_key, attn_probs, key_total_seq_lens, mask});
+
+        return softmax;
     }
 
     instruction_ref attention_scores(module& mod,
