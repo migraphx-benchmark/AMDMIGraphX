@@ -165,8 +165,10 @@ TEST_CASE(sparse_attention_token_generation)
     auto v          = mm->add_literal(literal{});
     auto past_key   = mm->add_parameter("past_key", past_key_shape);
     auto past_value = mm->add_parameter("past_value", past_value_shape);
-    auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
-    auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
+    auto bri = mm->add_parameter("bri", block_row_indices_shape);
+    auto bci = mm->add_parameter("bci", block_col_indices_shape);
+    // auto bri        = mm->add_literal(literal{block_row_indices_shape, bri_val});
+    // auto bci        = mm->add_literal(literal{block_col_indices_shape, bci_val});
     auto tsl        = mm->add_literal(literal{total_sequence_len_shape, tsl_val});
     auto ktsl       = mm->add_parameter("ktsl", key_total_sequence_lens_shape);
 
@@ -203,6 +205,8 @@ TEST_CASE(sparse_attention_token_generation)
     migraphx::parameter_map pm;
     pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
     pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));
+    pm["bri"] = gpu_t.copy_to(migraphx::argument(block_row_indices_shape, bri_val.data()));
+    pm["bci"] = gpu_t.copy_to(migraphx::argument(block_col_indices_shape, bci_val.data()));
     pm["ktsl"] = gpu_t.copy_to(migraphx::argument(key_total_sequence_lens_shape, ktsl_val.data()));
     std::vector<float> bla(32);
     pm["main:#output_0"] = gpu_t.copy_to(
@@ -507,6 +511,7 @@ TEST_CASE(sparse_attention_prompt_batched)
     opts.offload_copy = true;
     auto gpu_t        = migraphx::make_target("gpu");
     gpu_p.compile(gpu_t);
+    std::cout << gpu_p << std::endl;
     migraphx::parameter_map pm;
     pm["past_key"]   = gpu_t.copy_to(migraphx::argument(past_key_shape, past_key_val.data()));
     pm["past_value"] = gpu_t.copy_to(migraphx::argument(past_value_shape, past_value_val.data()));

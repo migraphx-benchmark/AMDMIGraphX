@@ -290,14 +290,6 @@ struct gpu_gqa_softmax : op::group_query_attention
 };
 MIGRAPHX_REGISTER_OP(gpu_gqa_softmax);
 
-struct gpu_sparse_attn_softmax : op::sparse_attention
-{
-    std::string name() const { return "gpu::sparse_attn_softmax"; }
-
-    shape compute_shape(std::vector<shape> inputs) const { return inputs.at(2); }
-};
-MIGRAPHX_REGISTER_OP(gpu_sparse_attn_softmax);
-
 struct gpu_concat_past_present : op::group_query_attention
 {
     std::string name() const { return "gpu::concat_past_present"; }
@@ -423,9 +415,6 @@ struct find_sparse_attention
         // Decrement it to make it compatible with GQA kernels
         auto dec_key_total_seq_lens = decrement_key_total_seq_lens(mod, ins, key_total_seq_lens);
 
-        auto batch_size      = qkv->get_shape().lens()[0];
-        auto sequence_length = qkv->get_shape().lens()[2];
-
         if(do_rotary)
         {
             qkv = mod.insert_instruction(
@@ -448,37 +437,15 @@ struct find_sparse_attention
         auto v = transform_kv(mod, ins, num_heads, kv_num_heads, past_val);
 
         auto attn_probs = attention_probabilities(mod, ins, q, k, scale);
-        auto bnsm       = attn_probs->get_shape().lens();
 
-        auto [mask, expanded_mask] = make_block_masks(
-            mod, ins, block_row_indices, block_col_indices, sparse_block_size, num_heads, bnsm);
-        // TODO move this into make_block_masks
-        expanded_mask = mod.insert_instruction(
-            ins, make_op("convert", {{"target_type", shape::bool_type}}), expanded_mask);
-        auto causal_mask = make_causal_mask(mod, ins, shape::uint32_type, bnsm, key_total_seq_lens);
-        auto final_mask =
-            mod.insert_instruction(ins, make_op("logical_and"), expanded_mask, causal_mask);
-        auto ninf = mod.insert_literal(
-            ins,
-            {{attn_probs->get_shape().type(), {1}}, {-std::numeric_limits<float>::infinity()}});
-        ninf = mod.insert_instruction(
-            ins, make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}), ninf);
-        attn_probs = mod.insert_instruction(ins, make_op("where"), final_mask, attn_probs, ninf);
-        auto softmax = mod.insert_instruction(ins, make_op("softmax", {{"axis", 3}}), attn_probs);
-
-        // auto softmax = insert_softmax(mod,
-        //                               ins,
-        //                               do_rotary,
-        //                               rotary_interleaved,
-        //                               num_heads,
-        //                               kv_num_heads,
-        //                               scale,
-        //                               sparse_block_size,
-        //                               qkv,
-        //                               past_key,
-        //                               attn_probs,
-        //                               key_total_seq_lens,
-        //                               mask);
+        auto softmax = masked_softmax(mod,
+                                      ins,
+                                      attn_probs,
+                                      block_row_indices,
+                                      block_col_indices,
+                                      sparse_block_size,
+                                      key_total_seq_lens,
+                                      attn_probs->get_shape().lens());
 
         auto attn_scores = attention_scores(mod, ins, softmax, v);
 
@@ -596,14 +563,12 @@ struct find_sparse_attention
             updates);
     }
 
-    std::tuple<instruction_ref, instruction_ref>
-    make_block_masks(module& mod,
-                     instruction_ref ins,
-                     instruction_ref block_row_ind,
-                     instruction_ref block_col_ind,
-                     size_t sparse_block_size,
-                     size_t num_heads,
-                     const std::vector<size_t>& bnsm) const
+    instruction_ref make_block_masks(module& mod,
+                                     instruction_ref ins,
+                                     instruction_ref block_row_ind,
+                                     instruction_ref block_col_ind,
+                                     size_t sparse_block_size,
+                                     const std::vector<size_t>& bnsm) const
     {
         auto masks = unpack_block_masks(mod, ins, block_row_ind, block_col_ind);
         // Want masks to go from:
@@ -616,8 +581,8 @@ struct find_sparse_attention
         // is: {layout_1, layout_2, ..., layout_n} -> {layout_1, layout_2, ..., layout_n, layout_1,
         // layout_2, ..., layout_n, ...}
         auto num_layouts        = masks->get_shape().lens()[0];
-        auto head_layout_factor = (num_heads + num_layouts - 1) / num_layouts;
-        auto expanded_lens = masks->get_shape().lens();
+        auto head_layout_factor = (bnsm[1] + num_layouts - 1) / num_layouts;
+        auto expanded_lens      = masks->get_shape().lens();
         expanded_lens.insert(expanded_lens.begin(), bnsm[0]);
         expanded_lens[1] *= head_layout_factor;
         expanded_lens[2] *= sparse_block_size;
@@ -642,7 +607,10 @@ struct find_sparse_attention
         if(expanded_masks->get_shape().lens()[2] > bnsm[2])
         {
             axes.push_back(2);
-            starts.push_back(bnsm[2] == 1 ? -2 : bnsm[2] - 1);
+            // TODO - -2 ... -1 is incorrect. The range  to slice from should actually be
+            // [past_sequence_length, past_sequence_length + 1) The problem is that
+            // past_sequence_length can only be determined at runtime from key_total_seq_lens.
+            starts.push_back(bnsm[2] == 1 ? -2 : 0);
             ends.push_back(bnsm[2] == 1 ? -1 : bnsm[2]);
         }
         if(expanded_masks->get_shape().lens()[3] > bnsm[3])
@@ -659,19 +627,26 @@ struct find_sparse_attention
                 expanded_masks);
         }
 
-        return std::make_tuple(masks, expanded_masks);
+        return mod.insert_instruction(
+            ins, make_op("convert", {{"target_type", shape::bool_type}}), expanded_masks);
     }
 
     instruction_ref make_causal_mask(module& mod,
                                      instruction_ref ins,
-                                     shape::type_t dtype,
                                      const std::vector<size_t>& bnsm,
                                      instruction_ref ktsl) const
     {
-        std::vector<size_t> causal_lens_vals(bnsm[2]);
-        // TODO: Starting value would have to be offset when sequence length == 1
+        auto dtype = ktsl->get_shape().type();
 
-        dtype = ktsl->get_shape().type();
+        auto sl = mod.insert_literal(ins, {{ktsl->get_shape().type(), {1}}, {bnsm[2]}});
+        sl      = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}), sl);
+
+        auto psl = mod.insert_instruction(ins, make_op("sub"), ktsl, sl);
+        psl = mod.insert_instruction(ins, make_op("reshape", {{"dims", {bnsm[0], 1, 1, 1}}}), psl);
+        psl = mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", bnsm}}), psl);
+
+        std::vector<size_t> causal_lens_vals(bnsm[2]);
         std::iota(causal_lens_vals.begin(), causal_lens_vals.end(), 0);
         // Have to do literal->reshape->broadcast instead of literal with appropriate shape ->
         // broadcast to avoid simplify algebra messing up
@@ -680,12 +655,7 @@ struct find_sparse_attention
             mod.insert_instruction(ins, make_op("reshape", {{"dims", {bnsm[2], 1}}}), causal_lens);
         causal_lens = mod.insert_instruction(
             ins, make_op("multibroadcast", {{"out_lens", bnsm}}), causal_lens);
-        auto sl = mod.insert_literal(ins, {{ktsl->get_shape().type(), {1}}, {bnsm[2]}});
-        sl      = mod.insert_instruction(
-            ins, make_op("multibroadcast", {{"out_lens", ktsl->get_shape().lens()}}), sl);
-        auto psl = mod.insert_instruction(ins, make_op("sub"), ktsl, sl);
-        psl = mod.insert_instruction(ins, make_op("reshape", {{"dims", {bnsm[0], 1, 1, 1}}}), psl);
-        psl = mod.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", bnsm}}), psl);
+
         causal_lens = mod.insert_instruction(ins, make_op("add"), causal_lens, psl);
 
         std::vector<size_t> column_indices_vals(bnsm[3]);
@@ -706,10 +676,6 @@ struct find_sparse_attention
         module& mod, instruction_ref ins, instruction_ref q, instruction_ref k, float scale) const
     {
         k = mod.insert_instruction(ins, make_op("transpose", {{"permutation", {0, 1, 3, 2}}}), k);
-        // TODO: This does not handle key_total_seq_lens at all, if it's different to
-        // max_cache_sequence_length, behavior will not be as expected
-        // Could set elements for which idx > total_sequence_length to 0, thus nullifying their
-        // effect on the gemm.
         auto attn_probs = mod.insert_instruction(ins, make_op("dot"), q, k);
         scale           = float_equal(scale, 0.0f)
                               ? 1.0f / std::sqrt(static_cast<float>(q->get_shape().lens()[3]))
@@ -722,27 +688,30 @@ struct find_sparse_attention
         return mod.insert_instruction(ins, make_op("mul"), attn_probs, scale_lit);
     }
 
-    instruction_ref insert_softmax(module& mod,
+    instruction_ref masked_softmax(module& mod,
                                    instruction_ref ins,
-                                   bool do_rotary,
-                                   bool rotary_interleaved,
-                                   size_t num_heads,
-                                   size_t kv_num_heads,
-                                   float scale,
-                                   size_t sparse_block_size,
-                                   instruction_ref qkv,
-                                   instruction_ref past_key,
                                    instruction_ref attn_probs,
+                                   instruction_ref block_row_indices,
+                                   instruction_ref block_col_indices,
+                                   size_t sparse_block_size,
                                    instruction_ref key_total_seq_lens,
-                                   instruction_ref mask) const
+                                   const std::vector<size_t>& bnsm) const
     {
-        auto softmax = mod.insert_instruction(
+        auto ninf = mod.insert_literal(
             ins,
-            gpu_sparse_attn_softmax{
-                do_rotary, rotary_interleaved, num_heads, kv_num_heads, scale, sparse_block_size},
-            {qkv, past_key, attn_probs, key_total_seq_lens, mask});
+            {{attn_probs->get_shape().type(), {1}}, {-std::numeric_limits<float>::infinity()}});
+        ninf = mod.insert_instruction(
+            ins, make_op("multibroadcast", {{"out_lens", attn_probs->get_shape().lens()}}), ninf);
 
-        return softmax;
+        auto block_mask = make_block_masks(
+            mod, ins, block_row_indices, block_col_indices, sparse_block_size, bnsm);
+        auto causal_mask = make_causal_mask(mod, ins, bnsm, key_total_seq_lens);
+        // TODO: Add mask to mask out elements based on key_total_seq_lens
+        auto final_mask =
+            mod.insert_instruction(ins, make_op("logical_and"), block_mask, causal_mask);
+        attn_probs = mod.insert_instruction(ins, make_op("where"), final_mask, attn_probs, ninf);
+
+        return mod.insert_instruction(ins, make_op("softmax", {{"axis", 3}}), attn_probs);
     }
 
     instruction_ref attention_scores(module& mod,

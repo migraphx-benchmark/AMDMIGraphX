@@ -79,7 +79,7 @@ struct sparse_attn_parameters
 // 1.  output             (batch_size, sequence_length, num_heads * head_size)
 // 2.  present_key        (batch_size, kv_num_heads, max_cache_sequence_length, head_size)
 // 3.  present_value      (batch_size, kv_num_heads, max_cache_sequence_length, head_size)
-struct sparse_attention : op_name<sparse_attention>
+struct sparse_attention
 {
     bool do_rotary          = false;
     bool rotary_interleaved = false;
@@ -98,6 +98,8 @@ struct sparse_attention : op_name<sparse_attention>
                     f(self.scale, "scale"),
                     f(self.sparse_block_size, "sparse_block_size"));
     }
+
+    std::string name() const { return "sparse_attention"; }
 
     shape compute_shape(std::vector<shape> inputs) const
     {
@@ -161,9 +163,16 @@ struct sparse_attention : op_name<sparse_attention>
                                     block_row_indices,
                                     block_col_indices,
                                     key_total_sequence_lengths,
-                                    params);
+                                    params,
+                                    attention_probs_arg);
                 });
             });
+        
+        // std::cout << "Attention probs arg" << std::endl;
+        // std::cout << attention_probs_arg << std::endl;
+
+        // std::cout << "Attention arg" << std::endl;
+        // std::cout << output_arg << std::endl;
 
         return {{output_arg, past_key_arg, past_value_arg}};
     }
@@ -342,7 +351,8 @@ struct sparse_attention : op_name<sparse_attention>
                          U block_row_indices,
                          U block_col_indices,
                          U key_total_sequence_lengths,
-                         const sparse_attn_parameters& params) const
+                         const sparse_attn_parameters& params,
+                         const argument& arg) const
     {
         std::vector<bool> is_dense_layout(params.num_layouts);
         for(auto l = 0; l < params.num_layouts; ++l)
@@ -401,6 +411,9 @@ struct sparse_attention : op_name<sparse_attention>
                      0.0f,
                      &attn_probs[0],
                      params.total_sequence_length);
+                
+                // std::cout << "First GEMM" << std::endl;
+                // std::cout << arg << std::endl;
 
                 auto layout_idx = head_idx % params.num_layouts;
                 softmax_masked(attn_probs,
@@ -413,7 +426,8 @@ struct sparse_attention : op_name<sparse_attention>
                                layout_idx,
                                block_row_indices,
                                block_col_indices);
-
+                // std::cout << "SOFTMAX" << std::endl;
+                // std::cout << arg << std::endl;
                 auto out_offset =
                     (batch_idx * params.sequence_length * num_heads + head_idx) * params.head_size;
                 auto out = output.begin() + out_offset;
@@ -506,6 +520,7 @@ struct sparse_attention : op_name<sparse_attention>
             // If past_sequence_length is 0, Q.KT will be a square matrix, if it
             // isn't we pretend otherwise by offseting q_idx
             size_t causal_length = past_sequence_length + q_idx + 1;
+            // std::cout <<"past_seq_len: " <<  past_sequence_length <<  ", causal_length: " << causal_length << std::endl;
             size_t q_abs_idx     = past_sequence_length + q_idx;
             // Expand mask for layout row when q_idx aligns with block edge
             // The mask remains in use for all subsequent q_idx that belong to the same block
